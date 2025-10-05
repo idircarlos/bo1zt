@@ -1,0 +1,4 @@
+#pragma code_page(65001)
+
+1 24 "example.static.manifest"
+IDI_ICON1 ICON "icon.ico"
