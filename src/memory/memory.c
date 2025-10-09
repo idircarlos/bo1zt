@@ -16,14 +16,12 @@ ProcessHandle *memoryOpenProcess(const char *executableName) {
 
     PROCESSENTRY32 pe;
     pe.dwSize = sizeof(pe);
-    BOOL found = FALSE;
     if (Process32First(snap, &pe)) {
         do {
             if (_stricmp(pe.szExeFile, executableName) == 0) {
                 out = (ProcessHandle*)malloc(sizeof(ProcessHandle));
                 out->pid = pe.th32ProcessID;
                 out->handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pe.th32ProcessID);
-                found = (out->handle != NULL);
                 break;
             }
         } while (Process32Next(snap, &pe));

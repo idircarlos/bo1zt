@@ -7,11 +7,48 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 400
 
+// Controller instance
+static Controller *controller = NULL;
+
+// UI Elements
 static uiWindow *window = NULL;
+static uiCheckbox *godmodeCheckbox = NULL;
+static uiCheckbox *noclipCheckbox = NULL;
+static uiCheckbox *invisibleCheckbox = NULL;
+
+// Handlers
 
 static int onClosing(uiWindow *window, void *data) {
+    (void)window;
+    (void)data;
     uiQuit();
     return 1;
+}
+
+static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
+    Cheat cheat = (Cheat)(uintptr_t)data;
+    bool enabled = uiCheckboxChecked(checkbox);
+    bool success = controllerSetCheat(controller, cheat, enabled);
+    if (!success) {
+        fprintf(stderr, "Failed to set cheat %d to %d\n", cheat, enabled);
+        uiCheckboxSetChecked(checkbox, !enabled); // Revert checkbox state
+    }
+}
+
+// UI Api
+bool guiIsCheatChecked(Controller *controller, Cheat cheat) {
+    if (!controller) return false;
+    switch (cheat) {
+        case CHEAT_GOD_MODE:
+            return uiCheckboxChecked(godmodeCheckbox);
+        case CHEAT_NO_CLIP:
+            return uiCheckboxChecked(noclipCheckbox);
+        case CHEAT_INVISIBLE:
+            return uiCheckboxChecked(invisibleCheckbox);
+        default:
+            fprintf(stderr, "Unknown cheat %d\n", cheat);
+            return false;
+    }
 }
 
 static void setupUi() {
@@ -109,8 +146,17 @@ static uiControl* buildGameTab() {
     uiBoxSetPadded(cheatsBox, 1);
     uiBoxAppend(cheatsBox, uiControl(uiNewCheckbox(" Infinite Ammo")), 0);
     uiBoxAppend(cheatsBox, uiControl(uiNewCheckbox(" Instant Kill")), 0);
-    uiBoxAppend(cheatsBox, uiControl(uiNewCheckbox(" God Mode")), 0);
-    uiBoxAppend(cheatsBox, uiControl(uiNewCheckbox(" No Clip")), 0);
+
+    godmodeCheckbox = uiNewCheckbox(" God Mode");
+    uiCheckboxOnToggled(godmodeCheckbox, onCheckboxToggled, (void*)CHEAT_GOD_MODE);
+    uiBoxAppend(cheatsBox, uiControl(godmodeCheckbox), 0);
+    noclipCheckbox = uiNewCheckbox(" No Clip");
+    uiCheckboxOnToggled(noclipCheckbox, onCheckboxToggled, (void*)CHEAT_NO_CLIP);
+    uiBoxAppend(cheatsBox, uiControl(noclipCheckbox), 0);
+    invisibleCheckbox = uiNewCheckbox(" Invisible");
+    uiCheckboxOnToggled(invisibleCheckbox, onCheckboxToggled, (void*)CHEAT_INVISIBLE);
+    uiBoxAppend(cheatsBox, uiControl(invisibleCheckbox), 0);
+
     uiBoxAppend(cheatsBox, uiControl(uiNewCheckbox(" No Recoil")), 0);
     uiBoxAppend(cheatsBox, uiControl(uiNewCheckbox(" Box Never Moves")), 0);
     uiGroupSetChild(cheatsGroup, uiControl(cheatsBox));
@@ -166,7 +212,8 @@ static uiControl* buildGraphicsTab() {
     return uiControl(graphicsGroup);
 }
 
-void guiInit(void) {
+void guiInit(Controller *controllerInstance) {
+    controller = controllerInstance;
     setupUi();
     setupWindow();
 }
