@@ -1,4 +1,6 @@
-#pragma once
+#ifndef API_H_
+#define API_H_
+
 #include <stdint.h>
 #include <stdbool.h>
 #include "../memory/memory.h"
@@ -16,3 +18,5 @@ bool apiSetNoClip(Api *api, bool enabled);
 
 bool apiGetInvisible(Api *api);
 bool apiSetInvisible(Api *api, bool enabled);
+
+#endif // API_H_

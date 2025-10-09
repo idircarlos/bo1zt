@@ -1,4 +1,5 @@
-#pragma once
+#ifndef OFFSET_H_
+#define OFFSET_H_
 
 #include <stdint.h>
 
@@ -25,3 +26,5 @@ typedef enum {
 
     CHEAT_VALUE_INVISIBLE_ON = 2085, // There is no off value for Invisible. Invisible is just God Mode attributes + Invisible.
 } CheatValue;
+
+#endif // OFFSET_H_
