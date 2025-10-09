@@ -6,7 +6,7 @@
 
 typedef struct Controller Controller;
 
-Controller* controllerCreate(const char *executableName);
+Controller* controllerCreate();
 
 ProcessHandle* controllerGetProcessHandle(Controller *controller);
 

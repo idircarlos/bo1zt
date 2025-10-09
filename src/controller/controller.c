@@ -10,10 +10,10 @@ struct Controller {
     Api *api;
 };
 
-Controller* controllerCreate(const char *executableName) {
+Controller* controllerCreate() {
     Controller *controller = (Controller*)malloc(sizeof(Controller));
     if (!controller) return NULL;
-    controller->ph = memoryOpenProcess(executableName);
+    controller->ph = memoryOpenProcess("BlackOps.exe");
     controller->api = apiCreate(controller);
     if (!controller->ph) {
         free(controller);
