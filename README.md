@@ -2,7 +2,7 @@
 
 **Black Ops 1 Zombies Trainer**
 
-A simple trainer for *Call of Duty Black Ops 1 Zombies* written in C.
+A simple trainer for *Black Ops 1 Zombies* written in C.
 This tool is being created just for fun while learning reverse engineering fundamentals. This tool is still under development. Main features available:
 
 - [x] God Mode
@@ -19,7 +19,7 @@ And a lot more stuff not yet scoped.
 
 To build and run this project, you’ll need:
 
-* **MinGW-32** - This is for the `g++` compilar and `make`.
+* **MinGW-32** - This is for the `g++` compiler and `make`.
 * **Meson** (version **0.58.0** - I didn't test it with newer versions) — required to build the [libui]([https://github.com/libui-ng/libui-ng](https://github.com/libui-ng/libui-ng)) library.
 
 ---
