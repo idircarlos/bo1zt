@@ -20,7 +20,7 @@ And a lot more stuff not yet scoped.
 To build and run this project, you’ll need:
 
 * **MinGW-32** - This is for the `g++` compilar and `make`.
-* **Meson** (version **0.58.0** (I didn't test it with newer versions)) — required to build the [libui]([https://github.com/libui-ng/libui-ng](https://github.com/libui-ng/libui-ng)) library.
+* **Meson** (version **0.58.0** - I didn't test it with newer versions) — required to build the [libui]([https://github.com/libui-ng/libui-ng](https://github.com/libui-ng/libui-ng)) library.
 
 ---
 
