@@ -6,7 +6,7 @@
 void guiInit(Controller *controller);
 void guiRun(void);
 
-bool guiIsCheatChecked(Controller *controller, Cheat cheat);
+bool guiIsCheatChecked(Controller *controller, CheatName cheat);
 
 void guiCleanup(void);
 

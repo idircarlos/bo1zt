@@ -19,4 +19,13 @@ bool apiSetNoClip(Api *api, bool enabled);
 bool apiGetInvisible(Api *api);
 bool apiSetInvisible(Api *api, bool enabled);
 
+bool apiGetNoRecoil(Api *api);
+bool apiSetNoRecoil(Api *api, bool enabled);
+
+bool apiGetInfiniteAmmo(Api *api);
+bool apiSetInfiniteAmmo(Api *api, bool enabled);
+
+bool apiGetInstantKill(Api *api);
+bool apiSetInstantKill(Api *api, bool enabled);
+
 #endif // API_H_

@@ -12,9 +12,18 @@ static Controller *controller = NULL;
 
 // UI Elements
 static uiWindow *window = NULL;
+
+// CheatName Checkboxes
 static uiCheckbox *godmodeCheckbox = NULL;
 static uiCheckbox *noclipCheckbox = NULL;
 static uiCheckbox *invisibleCheckbox = NULL;
+static uiCheckbox *infiniteAmoCheckbox = NULL;
+static uiCheckbox *instantKillCheckbox = NULL;
+static uiCheckbox *noRecoilCheckbox = NULL;
+static uiCheckbox *boxNeverMovesCheckbox = NULL;
+static uiCheckbox *thirdPersonCheckbox = NULL;
+static uiCheckbox *freezeZombies = NULL;
+static uiCheckbox *zombieSpawn = NULL;
 
 // Handlers
 
@@ -26,7 +35,7 @@ static int onClosing(uiWindow *window, void *data) {
 }
 
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
-    Cheat cheat = (Cheat)(uintptr_t)data;
+    CheatName cheat = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
     bool success = controllerSetCheat(controller, cheat, enabled);
     if (!success) {
@@ -36,15 +45,21 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
 }
 
 // UI Api
-bool guiIsCheatChecked(Controller *controller, Cheat cheat) {
+bool guiIsCheatChecked(Controller *controller, CheatName cheat) {
     if (!controller) return false;
     switch (cheat) {
-        case CHEAT_GOD_MODE:
+        case CHEAT_NAME_GOD_MODE:
             return uiCheckboxChecked(godmodeCheckbox);
-        case CHEAT_NO_CLIP:
+        case CHEAT_NAME_NO_CLIP:
             return uiCheckboxChecked(noclipCheckbox);
-        case CHEAT_INVISIBLE:
+        case CHEAT_NAME_INVISIBLE:
             return uiCheckboxChecked(invisibleCheckbox);
+        case CHEAT_NAME_NO_RECOIL:
+            return uiCheckboxChecked(noRecoilCheckbox);
+        case CHEAT_NAME_INFINITE_AMMO:
+            return uiCheckboxChecked(infiniteAmoCheckbox);
+        case CHEAT_NAME_INSTANT_KILL:
+            return uiCheckboxChecked(instantKillCheckbox);
         default:
             fprintf(stderr, "Unknown cheat %d\n", cheat);
             return false;
@@ -144,21 +159,45 @@ static uiControl* buildGameTab() {
     uiGroup *cheatsGroup = uiNewGroup("Cheats");
     uiBox *cheatsBox = uiNewVerticalBox();
     uiBoxSetPadded(cheatsBox, 1);
-    uiBoxAppend(cheatsBox, uiControl(uiNewCheckbox(" Infinite Ammo")), 0);
-    uiBoxAppend(cheatsBox, uiControl(uiNewCheckbox(" Instant Kill")), 0);
-
+    
+    infiniteAmoCheckbox = uiNewCheckbox(" Infinite Ammo");
+    instantKillCheckbox = uiNewCheckbox(" Instant Kill");
     godmodeCheckbox = uiNewCheckbox(" God Mode");
-    uiCheckboxOnToggled(godmodeCheckbox, onCheckboxToggled, (void*)CHEAT_GOD_MODE);
-    uiBoxAppend(cheatsBox, uiControl(godmodeCheckbox), 0);
     noclipCheckbox = uiNewCheckbox(" No Clip");
-    uiCheckboxOnToggled(noclipCheckbox, onCheckboxToggled, (void*)CHEAT_NO_CLIP);
-    uiBoxAppend(cheatsBox, uiControl(noclipCheckbox), 0);
     invisibleCheckbox = uiNewCheckbox(" Invisible");
-    uiCheckboxOnToggled(invisibleCheckbox, onCheckboxToggled, (void*)CHEAT_INVISIBLE);
-    uiBoxAppend(cheatsBox, uiControl(invisibleCheckbox), 0);
+    noRecoilCheckbox = uiNewCheckbox(" No Recoil");
+    boxNeverMovesCheckbox = uiNewCheckbox(" Box Never Moves");
+    thirdPersonCheckbox = uiNewCheckbox(" Third Person");
+    freezeZombies = uiNewCheckbox(" Freeze Zombies");
+    zombieSpawn = uiNewCheckbox(" Zombie Spawn");
 
-    uiBoxAppend(cheatsBox, uiControl(uiNewCheckbox(" No Recoil")), 0);
-    uiBoxAppend(cheatsBox, uiControl(uiNewCheckbox(" Box Never Moves")), 0);
+    uiCheckboxOnToggled(infiniteAmoCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_INFINITE_AMMO);
+    uiCheckboxOnToggled(instantKillCheckbox, onCheckboxToggled, (void*) CHEAT_NAME_INSTANT_KILL);
+    uiCheckboxOnToggled(godmodeCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_GOD_MODE);
+    uiCheckboxOnToggled(noclipCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_NO_CLIP);
+    uiCheckboxOnToggled(invisibleCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_INVISIBLE);
+    uiCheckboxOnToggled(noRecoilCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_NO_RECOIL);
+    uiCheckboxOnToggled(boxNeverMovesCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_BOX_NEVER_MOVES);
+    uiCheckboxOnToggled(thirdPersonCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_THIRD_PERSON);
+    uiCheckboxOnToggled(freezeZombies, onCheckboxToggled, (void*)CHEAT_NAME_FREEZE_ZOMBIES);
+    uiCheckboxOnToggled(zombieSpawn, onCheckboxToggled, (void*)CHEAT_NAME_ZOMBIE_SPAWN);
+
+    // Organizar los cheats en un grid 5x2
+    uiGrid *cheatsGrid = uiNewGrid();
+    uiGridSetPadded(cheatsGrid, 1);
+    uiGridAppend(cheatsGrid, uiControl(infiniteAmoCheckbox), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(cheatsGrid, uiControl(instantKillCheckbox), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(cheatsGrid, uiControl(godmodeCheckbox), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(cheatsGrid, uiControl(noclipCheckbox), 1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(cheatsGrid, uiControl(invisibleCheckbox), 0, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(cheatsGrid, uiControl(noRecoilCheckbox), 1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(cheatsGrid, uiControl(boxNeverMovesCheckbox), 0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(cheatsGrid, uiControl(thirdPersonCheckbox), 1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(cheatsGrid, uiControl(freezeZombies), 0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(cheatsGrid, uiControl(zombieSpawn), 1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiBoxAppend(cheatsBox, uiControl(cheatsGrid), 1);
+    
+
     uiGroupSetChild(cheatsGroup, uiControl(cheatsBox));
     uiGroupSetMargined(cheatsGroup, 1);
 
@@ -170,6 +209,9 @@ static uiControl* buildGameTab() {
     uiComboboxAppend(weaponsCombo, "Ray Gun");
     uiComboboxAppend(weaponsCombo, "Thunder Gun");
     uiComboboxAppend(weaponsCombo, "Galil");
+
+    uiComboboxSetSelected(weaponsCombo, 0);
+    
     uiButton *giveWeaponBtn = uiNewButton("Give Weapon");
     uiBoxAppend(weaponsVBox, uiControl(weaponsCombo), 0);
     uiBoxAppend(weaponsVBox, uiControl(giveWeaponBtn), 0);

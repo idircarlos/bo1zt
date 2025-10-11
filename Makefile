@@ -1,7 +1,7 @@
 # Detectar cambios en cualquier fuente de external/libui
 
 CC=g++
-CFLAGS = -Wall -Wextra -pedantic -Iexternal/libui
+CFLAGS = -std=c++20 -Wall -Wextra -pedantic -Iexternal/libui
 LDFLAGS=-Llib -lui -lole32 -luuid -lcomctl32 -lgdi32 -lmsimg32 -loleaut32 -ld2d1 -ldwrite -static-libgcc -static-libstdc++ -luxtheme
 TARGET=build/bo1zt.exe
 SRC := $(wildcard src/*.c src/**/*.h src/**/*.c src/**/*.rc)

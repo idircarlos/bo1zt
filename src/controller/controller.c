@@ -27,15 +27,43 @@ ProcessHandle* controllerGetProcessHandle(Controller *controller) {
     return controller->ph;
 }
 
-bool controllerSetCheat(Controller *controller, Cheat cheat, bool enabled) {
+bool controllerGetCheat(Controller *controller, CheatName cheat) {
     if (!controller || !controller->api) return false;
     switch (cheat) {
-        case CHEAT_GOD_MODE:
+        case CHEAT_NAME_GOD_MODE:
+            return apiGetGodMode(controller->api);
+        case CHEAT_NAME_NO_CLIP:
+            return apiGetNoClip(controller->api);
+        case CHEAT_NAME_INVISIBLE:
+            return apiGetInvisible(controller->api);
+        case CHEAT_NAME_NO_RECOIL:
+            return apiGetNoRecoil(controller->api);
+        case CHEAT_NAME_INFINITE_AMMO:
+            return apiGetInfiniteAmmo(controller->api);
+        case CHEAT_NAME_INSTANT_KILL:
+            return apiGetInstantKill(controller->api);
+        
+        default:
+            fprintf(stderr, "Unknown cheat %d\n", cheat);
+            return false;
+    }
+}
+
+bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled) {
+    if (!controller || !controller->api) return false;
+    switch (cheat) {
+        case CHEAT_NAME_GOD_MODE:
             return apiSetGodMode(controller->api, enabled);
-        case CHEAT_NO_CLIP:
+        case CHEAT_NAME_NO_CLIP:
             return apiSetNoClip(controller->api, enabled);
-        case CHEAT_INVISIBLE:
+        case CHEAT_NAME_INVISIBLE:
             return apiSetInvisible(controller->api, enabled);
+        case CHEAT_NAME_NO_RECOIL:
+            return apiSetNoRecoil(controller->api, enabled);
+        case CHEAT_NAME_INFINITE_AMMO:
+            return apiSetInfiniteAmmo(controller->api, enabled);
+        case CHEAT_NAME_INSTANT_KILL:
+            return apiSetInstantKill(controller->api, enabled);
         default:
             fprintf(stderr, "Unknown cheat %d\n", cheat);
             return false;
@@ -52,7 +80,7 @@ void controllerDestroy(Controller *controller) {
     }
 }
 
-bool controllerIsCheckboxChecked(Controller *controller, Cheat cheat) {
+bool controllerIsCheckboxChecked(Controller *controller, CheatName cheat) {
     if (!controller || !controller->ph) return false;
     return guiIsCheatChecked(controller, cheat);
 }
