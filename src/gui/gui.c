@@ -50,10 +50,10 @@ bool guiIsCheatChecked(Controller *controller, CheatName cheat) {
     switch (cheat) {
         case CHEAT_NAME_GOD_MODE:
             return uiCheckboxChecked(godmodeCheckbox);
-        case CHEAT_NAME_NO_CLIP:
-            return uiCheckboxChecked(noclipCheckbox);
         case CHEAT_NAME_INVISIBLE:
             return uiCheckboxChecked(invisibleCheckbox);
+        case CHEAT_NAME_NO_CLIP:
+            return uiCheckboxChecked(noclipCheckbox);
         case CHEAT_NAME_NO_RECOIL:
             return uiCheckboxChecked(noRecoilCheckbox);
         case CHEAT_NAME_INFINITE_AMMO:

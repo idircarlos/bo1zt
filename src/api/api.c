@@ -43,29 +43,6 @@ bool apiSetGodMode(Api *api, bool enabled) {
     return memoryWrite(ph, CHEAT_GOD_MODE.offset, &value, sizeof(value));
 }
 
-bool apiGetNoClip(Api *api) {
-    if (!api || !api->controller) return false;
-    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
-    if (!ph) return false;
-
-    uint8_t value = 0;
-    bool success = memoryRead(ph, CHEAT_NO_CLIP.offset, &value, sizeof(value));
-    if (!success) {
-        printf("Failed to read No Clip value\n");
-        return false;
-    }
-    return value == CHEAT_NO_CLIP.on.byte;
-}
-
-bool apiSetNoClip(Api *api, bool enabled) {
-    if (!api || !api->controller) return false;
-    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
-    if (!ph) return false;
-
-    uint8_t value = enabled ? CHEAT_NO_CLIP.on.byte : CHEAT_NO_CLIP.off.byte;
-    return memoryWrite(ph, CHEAT_NO_CLIP.offset, &value, sizeof(value));
-}
-
 bool apiGetInvisible(Api *api) {
     if (!api || !api->controller) return false;
     ProcessHandle *ph = controllerGetProcessHandle(api->controller);
@@ -89,6 +66,29 @@ bool apiSetInvisible(Api *api, bool enabled) {
     
     uint32_t value = enabled ? CHEAT_INVISIBLE.on.u32 : (isGodModeChecked ? CHEAT_GOD_MODE.on.u32 : CHEAT_GOD_MODE.off.u32); // Restore back God Mode if it was enabled in the GUI.
     return memoryWrite(ph, CHEAT_INVISIBLE.offset, &value, sizeof(value));
+}
+
+bool apiGetNoClip(Api *api) {
+    if (!api || !api->controller) return false;
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) return false;
+
+    uint8_t value = 0;
+    bool success = memoryRead(ph, CHEAT_NO_CLIP.offset, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read No Clip value\n");
+        return false;
+    }
+    return value == CHEAT_NO_CLIP.on.byte;
+}
+
+bool apiSetNoClip(Api *api, bool enabled) {
+    if (!api || !api->controller) return false;
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) return false;
+
+    uint8_t value = enabled ? CHEAT_NO_CLIP.on.byte : CHEAT_NO_CLIP.off.byte;
+    return memoryWrite(ph, CHEAT_NO_CLIP.offset, &value, sizeof(value));
 }
 
 bool apiGetNoRecoil(Api *api) {
