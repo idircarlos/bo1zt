@@ -32,10 +32,10 @@ bool controllerGetCheat(Controller *controller, CheatName cheat) {
     switch (cheat) {
         case CHEAT_NAME_GOD_MODE:
             return apiGetGodMode(controller->api);
-        case CHEAT_NAME_NO_CLIP:
-            return apiGetNoClip(controller->api);
         case CHEAT_NAME_INVISIBLE:
             return apiGetInvisible(controller->api);
+        case CHEAT_NAME_NO_CLIP:
+            return apiGetNoClip(controller->api);
         case CHEAT_NAME_NO_RECOIL:
             return apiGetNoRecoil(controller->api);
         case CHEAT_NAME_INFINITE_AMMO:
@@ -54,10 +54,10 @@ bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled) {
     switch (cheat) {
         case CHEAT_NAME_GOD_MODE:
             return apiSetGodMode(controller->api, enabled);
-        case CHEAT_NAME_NO_CLIP:
-            return apiSetNoClip(controller->api, enabled);
         case CHEAT_NAME_INVISIBLE:
             return apiSetInvisible(controller->api, enabled);
+        case CHEAT_NAME_NO_CLIP:
+            return apiSetNoClip(controller->api, enabled);
         case CHEAT_NAME_NO_RECOIL:
             return apiSetNoRecoil(controller->api, enabled);
         case CHEAT_NAME_INFINITE_AMMO:
