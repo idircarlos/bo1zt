@@ -29,53 +29,12 @@ ProcessHandle* controllerGetProcessHandle(Controller *controller) {
 
 bool controllerGetCheat(Controller *controller, CheatName cheat) {
     if (!controller || !controller->api) return false;
-    switch (cheat) {
-        case CHEAT_NAME_GOD_MODE:
-            return apiGetGodMode(controller->api);
-        case CHEAT_NAME_INVISIBLE:
-            return apiGetInvisible(controller->api);
-        case CHEAT_NAME_NO_CLIP:
-            return apiGetNoClip(controller->api);
-        case CHEAT_NAME_NO_RECOIL:
-            return apiGetNoRecoil(controller->api);
-        case CHEAT_NAME_BOX_NEVER_MOVES:
-            return apiGetBoxNeverMoves(controller->api);
-        case CHEAT_NAME_THIRD_PERSON:
-            return apiGetThirdPerson(controller->api);
-        case CHEAT_NAME_INFINITE_AMMO:
-            return apiGetInfiniteAmmo(controller->api);
-        case CHEAT_NAME_INSTANT_KILL:
-            return apiGetInstantKill(controller->api);
-        
-        default:
-            fprintf(stderr, "Unknown cheat %d\n", cheat);
-            return false;
-    }
+    return apiIsCheatEnabled(controller->api, cheat);
 }
 
 bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled) {
     if (!controller || !controller->api) return false;
-    switch (cheat) {
-        case CHEAT_NAME_GOD_MODE:
-            return apiSetGodMode(controller->api, enabled);
-        case CHEAT_NAME_INVISIBLE:
-            return apiSetInvisible(controller->api, enabled);
-        case CHEAT_NAME_NO_CLIP:
-            return apiSetNoClip(controller->api, enabled);
-        case CHEAT_NAME_NO_RECOIL:
-            return apiSetNoRecoil(controller->api, enabled);
-        case CHEAT_NAME_BOX_NEVER_MOVES:
-            return apiSetBoxNeverMoves(controller->api, enabled);
-        case CHEAT_NAME_THIRD_PERSON:
-            return apiSetThirdPerson(controller->api, enabled);
-        case CHEAT_NAME_INFINITE_AMMO:
-            return apiSetInfiniteAmmo(controller->api, enabled);
-        case CHEAT_NAME_INSTANT_KILL:
-            return apiSetInstantKill(controller->api, enabled);
-        default:
-            fprintf(stderr, "Unknown cheat %d\n", cheat);
-            return false;
-    }
+    return apiSetCheatEnabled(controller->api, cheat, enabled);
 }
 
 void controllerDestroy(Controller *controller) {
