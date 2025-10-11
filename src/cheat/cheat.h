@@ -16,8 +16,6 @@ typedef enum {
     CHEAT_NAME_NO_RECOIL,
     CHEAT_NAME_BOX_NEVER_MOVES,
     CHEAT_NAME_THIRD_PERSON,
-    CHEAT_NAME_FREEZE_ZOMBIES,
-    CHEAT_NAME_ZOMBIE_SPAWN,
 } CheatName;
 
 typedef union {
@@ -49,11 +47,13 @@ typedef struct {
 } CheatAsm;
 
 extern Cheat CHEAT_GOD_MODE;
-extern Cheat CHEAT_NO_CLIP;
 extern Cheat CHEAT_INVISIBLE;
+extern Cheat CHEAT_NO_CLIP;
+extern Cheat CHEAT_NO_RECOIL;
+extern Cheat CHEAT_BOX_NEVER_MOVES;
+extern Cheat CHEAT_THIRD_PERSON;
 extern Cheat CHEAT_INFINITE_AMMO;
 extern Cheat CHEAT_INSTANT_KILL;
-extern Cheat CHEAT_NO_RECOIL;
 
 extern CheatAsm CHEAT_ASM_INSTRUCTION_INFINITE_AMMO;
 extern CheatAsm CHEAT_ASM_INSTRUCTION_INSTANT_KILL;

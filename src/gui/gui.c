@@ -22,8 +22,6 @@ static uiCheckbox *instantKillCheckbox = NULL;
 static uiCheckbox *noRecoilCheckbox = NULL;
 static uiCheckbox *boxNeverMovesCheckbox = NULL;
 static uiCheckbox *thirdPersonCheckbox = NULL;
-static uiCheckbox *freezeZombies = NULL;
-static uiCheckbox *zombieSpawn = NULL;
 
 // Handlers
 
@@ -56,6 +54,10 @@ bool guiIsCheatChecked(Controller *controller, CheatName cheat) {
             return uiCheckboxChecked(noclipCheckbox);
         case CHEAT_NAME_NO_RECOIL:
             return uiCheckboxChecked(noRecoilCheckbox);
+        case CHEAT_NAME_BOX_NEVER_MOVES:
+            return uiCheckboxChecked(boxNeverMovesCheckbox);
+        case CHEAT_NAME_THIRD_PERSON:
+            return uiCheckboxChecked(thirdPersonCheckbox);
         case CHEAT_NAME_INFINITE_AMMO:
             return uiCheckboxChecked(infiniteAmoCheckbox);
         case CHEAT_NAME_INSTANT_KILL:
@@ -168,8 +170,6 @@ static uiControl* buildGameTab() {
     noRecoilCheckbox = uiNewCheckbox(" No Recoil");
     boxNeverMovesCheckbox = uiNewCheckbox(" Box Never Moves");
     thirdPersonCheckbox = uiNewCheckbox(" Third Person");
-    freezeZombies = uiNewCheckbox(" Freeze Zombies");
-    zombieSpawn = uiNewCheckbox(" Zombie Spawn");
 
     uiCheckboxOnToggled(infiniteAmoCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_INFINITE_AMMO);
     uiCheckboxOnToggled(instantKillCheckbox, onCheckboxToggled, (void*) CHEAT_NAME_INSTANT_KILL);
@@ -179,8 +179,6 @@ static uiControl* buildGameTab() {
     uiCheckboxOnToggled(noRecoilCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_NO_RECOIL);
     uiCheckboxOnToggled(boxNeverMovesCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_BOX_NEVER_MOVES);
     uiCheckboxOnToggled(thirdPersonCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_THIRD_PERSON);
-    uiCheckboxOnToggled(freezeZombies, onCheckboxToggled, (void*)CHEAT_NAME_FREEZE_ZOMBIES);
-    uiCheckboxOnToggled(zombieSpawn, onCheckboxToggled, (void*)CHEAT_NAME_ZOMBIE_SPAWN);
 
     // Organizar los cheats en un grid 5x2
     uiGrid *cheatsGrid = uiNewGrid();
@@ -193,11 +191,9 @@ static uiControl* buildGameTab() {
     uiGridAppend(cheatsGrid, uiControl(noRecoilCheckbox), 1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(cheatsGrid, uiControl(boxNeverMovesCheckbox), 0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(cheatsGrid, uiControl(thirdPersonCheckbox), 1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(freezeZombies), 0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(zombieSpawn), 1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+
     uiBoxAppend(cheatsBox, uiControl(cheatsGrid), 1);
     
-
     uiGroupSetChild(cheatsGroup, uiControl(cheatsBox));
     uiGroupSetMargined(cheatsGroup, 1);
 

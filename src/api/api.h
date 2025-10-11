@@ -22,6 +22,12 @@ bool apiSetNoClip(Api *api, bool enabled);
 bool apiGetNoRecoil(Api *api);
 bool apiSetNoRecoil(Api *api, bool enabled);
 
+bool apiGetBoxNeverMoves(Api *api);
+bool apiSetBoxNeverMoves(Api *api, bool enabled);
+
+bool apiGetThirdPerson(Api *api);
+bool apiSetThirdPerson(Api *api, bool enabled);
+
 bool apiGetInfiniteAmmo(Api *api);
 bool apiSetInfiniteAmmo(Api *api, bool enabled);
 

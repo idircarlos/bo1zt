@@ -114,6 +114,76 @@ bool apiSetNoRecoil(Api *api, bool enabled) {
     return memoryWrite(ph, CHEAT_NO_RECOIL.offset, &value, sizeof(value));
 }
 
+bool apiGetBoxNeverMoves(Api *api) {
+    if (!api || !api->controller) return false;
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) return false;
+
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_BOX_NEVER_MOVES.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Box Never Moves address\n");
+        return false;
+    }
+    uint8_t value = 0;
+    success = memoryRead(ph, address1 + 0x18, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read Box Never Moves value\n");
+        return false;
+    }
+    return value == CHEAT_BOX_NEVER_MOVES.on.u32;
+}
+
+bool apiSetBoxNeverMoves(Api *api, bool enabled) {
+    if (!api || !api->controller) return false;
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) return false;
+
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_BOX_NEVER_MOVES.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Box Never Moves address\n");
+        return false;
+    }
+    uint8_t value = enabled ? CHEAT_BOX_NEVER_MOVES.on.u32 : CHEAT_BOX_NEVER_MOVES.off.u32;
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(value));
+}
+
+bool apiGetThirdPerson(Api *api) {
+    if (!api || !api->controller) return false;
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) return false;
+
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_THIRD_PERSON.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Third Person address\n");
+        return false;
+    }
+    uint8_t value = 0;
+    success = memoryRead(ph, address1 + 0x18, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read Third Person value\n");
+        return false;
+    }
+    return value == CHEAT_THIRD_PERSON.on.byte;
+}
+
+bool apiSetThirdPerson(Api *api, bool enabled) {
+    if (!api || !api->controller) return false;
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) return false;
+
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_THIRD_PERSON.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Third Person address\n");
+        return false;
+    }
+    uint8_t value = enabled ? CHEAT_THIRD_PERSON.on.byte : CHEAT_THIRD_PERSON.off.byte;
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(value));
+}
+
 bool apiGetInfiniteAmmo(Api *api) {
     if (!api || !api->controller) return false;
     ProcessHandle *ph = controllerGetProcessHandle(api->controller);

@@ -38,6 +38,10 @@ bool controllerGetCheat(Controller *controller, CheatName cheat) {
             return apiGetNoClip(controller->api);
         case CHEAT_NAME_NO_RECOIL:
             return apiGetNoRecoil(controller->api);
+        case CHEAT_NAME_BOX_NEVER_MOVES:
+            return apiGetBoxNeverMoves(controller->api);
+        case CHEAT_NAME_THIRD_PERSON:
+            return apiGetThirdPerson(controller->api);
         case CHEAT_NAME_INFINITE_AMMO:
             return apiGetInfiniteAmmo(controller->api);
         case CHEAT_NAME_INSTANT_KILL:
@@ -60,6 +64,10 @@ bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled) {
             return apiSetNoClip(controller->api, enabled);
         case CHEAT_NAME_NO_RECOIL:
             return apiSetNoRecoil(controller->api, enabled);
+        case CHEAT_NAME_BOX_NEVER_MOVES:
+            return apiSetBoxNeverMoves(controller->api, enabled);
+        case CHEAT_NAME_THIRD_PERSON:
+            return apiSetThirdPerson(controller->api, enabled);
         case CHEAT_NAME_INFINITE_AMMO:
             return apiSetInfiniteAmmo(controller->api, enabled);
         case CHEAT_NAME_INSTANT_KILL:
