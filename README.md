@@ -8,8 +8,8 @@ This tool is being created just for fun while learning reverse engineering funda
 - [x] God Mode
 - [x] No Clip
 - [x] Invisible
-- [ ] No Recoil
-- [ ] No Reload
+- [x] No Recoil
+- [x] No Reload
 - [ ] Don't move Box
 - [ ] Freeze Zombies
 
