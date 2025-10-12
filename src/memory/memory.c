@@ -1,4 +1,5 @@
 #include "memory.h"
+#include "../logger/logger.h"
 #include <windows.h>
 #include <tlhelp32.h>
 #include <string.h>
@@ -46,4 +47,13 @@ bool memoryRead(ProcessHandle *ph, uint32_t address, void *buffer, size_t size) 
 bool memoryWrite(ProcessHandle *ph, uint32_t address, const void *buffer, size_t size) {
     SIZE_T bytesWritten;
     return WriteProcessMemory(ph->handle, (LPVOID)(uintptr_t)address, buffer, size, &bytesWritten) && bytesWritten == size;
+}
+
+bool memoryVirtualProtect(ProcessHandle *ph, uint32_t address, size_t size, uint32_t protect, uint32_t *oldProtect) {
+    return VirtualProtectEx(ph->handle, (LPVOID)(uintptr_t)address, size, protect, (PDWORD)oldProtect);
+}
+
+bool memoryAllocatePage(ProcessHandle *ph, size_t size, uintptr_t *address) {
+    *address = (uintptr_t)VirtualAllocEx(ph->handle, NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    return address != NULL;
 }

@@ -2,13 +2,16 @@
 #include "../cheat/cheat.h"
 #include "../controller/controller.h"
 #include "../logger/logger.h"
+#include "../map/map.h"
+#include "../memory/hook.h"
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-struct  Api {
+struct Api {
     Controller *controller;
+    Map *hooks;
 };
 
 bool _apiGetGodMode(ProcessHandle *ph);
@@ -44,13 +47,21 @@ bool _apiSetThirdPerson(ProcessHandle *ph, bool enabled);
 bool _apiGetInfiniteAmmo(ProcessHandle *ph);
 bool _apiSetInfiniteAmmo(ProcessHandle *ph, bool enabled);
 
-bool _apiGetInstantKill(ProcessHandle *phi);
-bool _apiSetInstantKill(ProcessHandle *ph, bool enabled);
+bool _apiGetInstantKill(ProcessHandle *ph, Map *hooks);
+bool _apiSetInstantKill(ProcessHandle *ph, Map *hooks, bool enabled);
+
+
+// Hooks IDs (Hash for Hook Map)
+static const char* HOOK_INSTANT_KILL_ID = "HOOK_INSTANT_KILL";
 
 Api *apiCreate(Controller *controller) {
     Api *api = (Api*)malloc(sizeof(Api));
     if (!api) return NULL;
     api->controller = controller;
+    api->hooks = mapCreate();
+    if (!api->hooks) {
+        LOG_ERROR("Couldn't create Hook Map\n");
+    }
     return api;
 }
 
@@ -90,7 +101,7 @@ bool apiIsCheatEnabled(Api *api, CheatName cheat) {
         case CHEAT_NAME_INFINITE_AMMO:
             return _apiGetInfiniteAmmo(ph);
         case CHEAT_NAME_INSTANT_KILL:
-            return _apiGetInstantKill(ph);
+            return _apiGetInstantKill(ph, api->hooks);
         default:
             LOG_WARN("Unkwown cheat %d\n", cheat);
             return false;
@@ -133,7 +144,7 @@ bool apiSetCheatEnabled(Api *api, CheatName cheat, bool enabled) {
         case CHEAT_NAME_INFINITE_AMMO:
             return _apiSetInfiniteAmmo(ph, enabled);
         case CHEAT_NAME_INSTANT_KILL:
-            return _apiSetInstantKill(ph, enabled);
+            return _apiSetInstantKill(ph, api->hooks, enabled);
         default:
             LOG_WARN("Unkwown cheat %d\n", cheat);
             return false;
@@ -339,15 +350,15 @@ bool _apiSetThirdPerson(ProcessHandle *ph, bool enabled) {
 
 bool _apiGetInfiniteAmmo(ProcessHandle *ph) {
     uint8_t buffer[MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE];
-    bool success = memoryRead(ph, CHEAT_ASM_INSTRUCTION_INFINITE_AMMO.offset, &buffer, sizeof(buffer)); // Read all MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE bytes even if we need less. This is for a future comparation with Cheat On vs Cheat Off, which may differ in Bytes OpCode length.
+    bool success = memoryRead(ph, CHEAT_ASM_INFINITE_AMMO.offset, &buffer, sizeof(buffer)); // Read all MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE bytes even if we need less. This is for a future comparation with Cheat On vs Cheat Off, which may differ in Bytes OpCode length.
     if (!success) {
         printf("Failed to read Infinite Ammo value\n");
         return false;
     }
-    bool infiniteAmmoEnabled = memcmp(CHEAT_ASM_INSTRUCTION_INFINITE_AMMO.on.instructions, buffer, sizeof(CHEAT_ASM_INSTRUCTION_INFINITE_AMMO.on.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is On.
+    bool infiniteAmmoEnabled = memcmp(CHEAT_ASM_INFINITE_AMMO.on.instructions, buffer, sizeof(CHEAT_ASM_INFINITE_AMMO.on.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is On.
     if (infiniteAmmoEnabled) return true;
 
-    bool infiniteAmmoDisabled = memcmp(CHEAT_ASM_INSTRUCTION_INFINITE_AMMO.off.instructions, buffer, sizeof(CHEAT_ASM_INSTRUCTION_INFINITE_AMMO.off.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is Off.
+    bool infiniteAmmoDisabled = memcmp(CHEAT_ASM_INFINITE_AMMO.off.instructions, buffer, sizeof(CHEAT_ASM_INFINITE_AMMO.off.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is Off.
     if (!infiniteAmmoDisabled) {
         LOG_WARN("Infinite Ammo bytes do not match known patterns. Possible memory corruption or external modification.\n");
         return false;
@@ -356,32 +367,7 @@ bool _apiGetInfiniteAmmo(ProcessHandle *ph) {
 }
 
 bool _apiSetInfiniteAmmo(ProcessHandle *ph, bool enabled) {
-    CheatAsm *instructionSet = &CHEAT_ASM_INSTRUCTION_INFINITE_AMMO;
-    uint8_t *instructions = enabled ? instructionSet->on.instructions : instructionSet->off.instructions;
-    size_t size = enabled ? instructionSet->on.size : instructionSet->off.size;
-    return memoryWrite(ph, instructionSet->offset, instructions, size);
-}
-
-bool _apiGetInstantKill(ProcessHandle *ph) {
-    uint8_t buffer[MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE];
-    bool success = memoryRead(ph, CHEAT_ASM_INSTRUCTION_INSTANT_KILL.offset, &buffer, sizeof(buffer)); // Read all MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE bytes even if we need less. This is for a future comparation with Cheat On vs Cheat Off, which may differ in Bytes OpCode length.
-    if (!success) {
-        printf("Failed to read Instant Kill value\n");
-        return false;
-    }
-    bool instantKillEnabled = memcmp(CHEAT_ASM_INSTRUCTION_INSTANT_KILL.on.instructions, buffer, sizeof(CHEAT_ASM_INSTRUCTION_INSTANT_KILL.on.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is On.
-    if (instantKillEnabled) return true;
-
-    bool instantKillDisabled = memcmp(CHEAT_ASM_INSTRUCTION_INSTANT_KILL.off.instructions, buffer, sizeof(CHEAT_ASM_INSTRUCTION_INSTANT_KILL.off.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is Off.
-    if (!instantKillDisabled) {
-        LOG_WARN("Instant Kill bytes do not match known patterns. Possible memory corruption or external modification.\n");
-        return false;
-    }
-    return false;
-}
-
-bool _apiSetInstantKill(ProcessHandle *ph, bool enabled) {
-    CheatAsm *instructionSet = &CHEAT_ASM_INSTRUCTION_INSTANT_KILL;
+    CheatAsm *instructionSet = &CHEAT_ASM_INFINITE_AMMO;
     uint8_t *instructions = enabled ? instructionSet->on.instructions : instructionSet->off.instructions;
     size_t size = enabled ? instructionSet->on.size : instructionSet->off.size;
     return memoryWrite(ph, instructionSet->offset, instructions, size);
@@ -389,15 +375,15 @@ bool _apiSetInstantKill(ProcessHandle *ph, bool enabled) {
 
 bool _apiGetSmallCrosshair(ProcessHandle *ph) {
     uint8_t buffer[MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE];
-    bool success = memoryRead(ph, CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR.offset, &buffer, sizeof(buffer)); // Read all MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE bytes even if we need less. This is for a future comparation with Cheat On vs Cheat Off, which may differ in Bytes OpCode length.
+    bool success = memoryRead(ph, CHEAT_ASM_SMALL_CROSSHAIR.offset, &buffer, sizeof(buffer)); // Read all MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE bytes even if we need less. This is for a future comparation with Cheat On vs Cheat Off, which may differ in Bytes OpCode length.
     if (!success) {
         printf("Failed to read Small Crosshair value\n");
         return false;
     }
-    bool smallCrosshairEnabled = memcmp(CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR.on.instructions, buffer, sizeof(CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR.on.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is On.
+    bool smallCrosshairEnabled = memcmp(CHEAT_ASM_SMALL_CROSSHAIR.on.instructions, buffer, sizeof(CHEAT_ASM_SMALL_CROSSHAIR.on.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is On.
     if (smallCrosshairEnabled) return true;
 
-    bool smallCrosshairDisabled = memcmp(CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR.off.instructions, buffer, sizeof(CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR.off.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is Off.
+    bool smallCrosshairDisabled = memcmp(CHEAT_ASM_SMALL_CROSSHAIR.off.instructions, buffer, sizeof(CHEAT_ASM_SMALL_CROSSHAIR.off.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is Off.
     if (!smallCrosshairDisabled) {
         LOG_WARN("Small Crosshair bytes do not match known patterns. Possible memory corruption or external modification.\n");
         return false;
@@ -406,7 +392,7 @@ bool _apiGetSmallCrosshair(ProcessHandle *ph) {
 }
 
 bool _apiSetSmallCrosshair(ProcessHandle *ph, bool enabled) {
-    CheatAsm *instructionSet = &CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR;
+    CheatAsm *instructionSet = &CHEAT_ASM_SMALL_CROSSHAIR;
     uint8_t *instructions = enabled ? instructionSet->on.instructions : instructionSet->off.instructions;
     size_t size = enabled ? instructionSet->on.size : instructionSet->off.size;
     bool success = memoryWrite(ph, instructionSet->offset, instructions, size);
@@ -424,4 +410,22 @@ bool _apiSetSmallCrosshair(ProcessHandle *ph, bool enabled) {
     }
     float value = enabled ? CHEAT_SMALL_CROSSHAIR.on.f32 : CHEAT_SMALL_CROSSHAIR.off.f32;
     return memoryWrite(ph, address1 + 0x18, &value, sizeof(value));
+}
+
+bool _apiGetInstantKill(ProcessHandle *ph, Map *hooks) {
+    Hook *hook = (Hook*)mapGet(hooks, HOOK_INSTANT_KILL_ID);
+    return hookIsActivated(hook);
+}
+
+bool _apiSetInstantKill(ProcessHandle *ph, Map *hooks, bool enabled) {
+    CheatAsm *instructionSet = &CHEAT_ASM_INSTANT_KILL;
+    Hook *hook;
+    if (!mapContains(hooks, HOOK_INSTANT_KILL_ID)) {
+        hook = hookCreate(ph, instructionSet->offset, instructionSet->off.size, instructionSet->on.instructions, instructionSet->on.size);
+        mapPut(hooks, HOOK_INSTANT_KILL_ID, hook);
+    } else {
+        hook = (Hook*)mapGet(hooks, HOOK_INSTANT_KILL_ID);
+    }
+
+    return enabled ? hookActivate(hook) : hookDeactivate(hookDeactivate);
 }
