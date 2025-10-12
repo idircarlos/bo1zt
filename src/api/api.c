@@ -23,6 +23,18 @@ bool _apiSetNoClip(ProcessHandle *ph, bool enabled);
 bool _apiGetNoRecoil(ProcessHandle *ph);
 bool _apiSetNoRecoil(ProcessHandle *ph, bool enabled);
 
+bool _apiGetSmallCrosshair(ProcessHandle *ph);
+bool _apiSetSmallCrosshair(ProcessHandle *ph, bool enabled);
+
+bool _apiGetFastGameplay(ProcessHandle *ph);
+bool _apiSetFastGameplay(ProcessHandle *ph, bool enabled);
+
+bool _apiGetNoShellshock(ProcessHandle *ph);
+bool _apiSetNoShellshock(ProcessHandle *ph, bool enabled);
+
+bool _apiGetIncreaseKnifeRange(ProcessHandle *ph);
+bool _apiSetIncreaseKnifeRange(ProcessHandle *ph, bool enabled);
+
 bool _apiGetBoxNeverMoves(ProcessHandle *ph);
 bool _apiSetBoxNeverMoves(ProcessHandle *ph, bool enabled);
 
@@ -63,6 +75,14 @@ bool apiIsCheatEnabled(Api *api, CheatName cheat) {
             return _apiGetNoClip(ph);
         case CHEAT_NAME_NO_RECOIL:
             return _apiGetNoRecoil(ph);
+        case CHEAT_NAME_SMALL_CROSSHAIR:
+            return _apiGetSmallCrosshair(ph);
+        case CHEAT_NAME_FAST_GAMEPLAY:
+            return _apiGetFastGameplay(ph);
+        case CHEAT_NAME_NO_SHELLSHOCK:
+            return _apiGetNoShellshock(ph);
+        case CHEAT_NAME_INCREASE_KNIFE_RANGE:
+            return _apiGetIncreaseKnifeRange(ph);
         case CHEAT_NAME_BOX_NEVER_MOVES:
             return _apiGetBoxNeverMoves(ph);
         case CHEAT_NAME_THIRD_PERSON:
@@ -98,6 +118,14 @@ bool apiSetCheatEnabled(Api *api, CheatName cheat, bool enabled) {
             return _apiSetNoClip(ph, enabled);
         case CHEAT_NAME_NO_RECOIL:
             return _apiSetNoRecoil(ph, enabled);
+        case CHEAT_NAME_SMALL_CROSSHAIR:
+            return _apiSetSmallCrosshair(ph, enabled);
+        case CHEAT_NAME_FAST_GAMEPLAY:
+            return _apiSetFastGameplay(ph, enabled);
+        case CHEAT_NAME_NO_SHELLSHOCK:
+            return _apiSetNoShellshock(ph, enabled);
+        case CHEAT_NAME_INCREASE_KNIFE_RANGE:
+            return _apiSetIncreaseKnifeRange(ph, enabled);
         case CHEAT_NAME_BOX_NEVER_MOVES:
             return _apiSetBoxNeverMoves(ph, enabled);
         case CHEAT_NAME_THIRD_PERSON:
@@ -172,6 +200,87 @@ bool _apiGetNoRecoil(ProcessHandle *ph) {
 bool _apiSetNoRecoil(ProcessHandle *ph, bool enabled) {
     uint8_t value = enabled ? CHEAT_NO_RECOIL.on.byte : CHEAT_NO_RECOIL.off.byte;
     return memoryWrite(ph, CHEAT_NO_RECOIL.offset, &value, sizeof(value));
+}
+
+bool _apiGetFastGameplay(ProcessHandle *ph) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_FAST_GAMEPLAY.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Fast Gameplay address\n");
+        return false;
+    }
+    float value = 0;
+    success = memoryRead(ph, address1 + 0x18, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read Fast Gameplay value\n");
+        return false;
+    }
+    return value == CHEAT_FAST_GAMEPLAY.on.f32;
+}
+
+bool _apiSetFastGameplay(ProcessHandle *ph, bool enabled) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_FAST_GAMEPLAY.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Fast Gameplay address\n");
+        return false;
+    }
+    float value = enabled ? CHEAT_FAST_GAMEPLAY.on.f32 : CHEAT_FAST_GAMEPLAY.off.f32;
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(value));
+}
+
+bool _apiGetNoShellshock(ProcessHandle *ph) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_NO_SHELLSHOCK.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read No Shellshock address\n");
+        return false;
+    }
+    uint8_t value = 0;
+    success = memoryRead(ph, address1 + 0x18, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read No Shellshock value\n");
+        return false;
+    }
+    return value == CHEAT_NO_SHELLSHOCK.on.u32;
+}
+
+bool _apiSetNoShellshock(ProcessHandle *ph, bool enabled) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_NO_SHELLSHOCK.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read No Shellshock address\n");
+        return false;
+    }
+    uint8_t value = enabled ? CHEAT_NO_SHELLSHOCK.on.u32 : CHEAT_NO_SHELLSHOCK.off.u32;
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(value));
+}
+
+bool _apiGetIncreaseKnifeRange(ProcessHandle *ph) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_INCREASE_KNIFE_RANGE.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Increase Knife Range address\n");
+        return false;
+    }
+    float value = 0;
+    success = memoryRead(ph, address1 + 0x18, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read Increase Knife Range value\n");
+        return false;
+    }
+    return value == CHEAT_INCREASE_KNIFE_RANGE.on.f32;
+}
+
+bool _apiSetIncreaseKnifeRange(ProcessHandle *ph, bool enabled) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_INCREASE_KNIFE_RANGE.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Increase Knife Range address\n");
+        return false;
+    }
+    float value = enabled ? CHEAT_INCREASE_KNIFE_RANGE.on.f32 : CHEAT_INCREASE_KNIFE_RANGE.off.f32;
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(value));
 }
 
 bool _apiGetBoxNeverMoves(ProcessHandle *ph) {
@@ -276,4 +385,43 @@ bool _apiSetInstantKill(ProcessHandle *ph, bool enabled) {
     uint8_t *instructions = enabled ? instructionSet->on.instructions : instructionSet->off.instructions;
     size_t size = enabled ? instructionSet->on.size : instructionSet->off.size;
     return memoryWrite(ph, instructionSet->offset, instructions, size);
+}
+
+bool _apiGetSmallCrosshair(ProcessHandle *ph) {
+    uint8_t buffer[MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE];
+    bool success = memoryRead(ph, CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR.offset, &buffer, sizeof(buffer)); // Read all MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE bytes even if we need less. This is for a future comparation with Cheat On vs Cheat Off, which may differ in Bytes OpCode length.
+    if (!success) {
+        printf("Failed to read Small Crosshair value\n");
+        return false;
+    }
+    bool smallCrosshairEnabled = memcmp(CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR.on.instructions, buffer, sizeof(CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR.on.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is On.
+    if (smallCrosshairEnabled) return true;
+
+    bool smallCrosshairDisabled = memcmp(CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR.off.instructions, buffer, sizeof(CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR.off.size)) == 0; // Compare only with the first OpCode Bytes when Cheat is Off.
+    if (!smallCrosshairDisabled) {
+        LOG_WARN("Small Crosshair bytes do not match known patterns. Possible memory corruption or external modification.\n");
+        return false;
+    }
+    return false;
+}
+
+bool _apiSetSmallCrosshair(ProcessHandle *ph, bool enabled) {
+    CheatAsm *instructionSet = &CHEAT_ASM_INSTRUCTION_SMALL_CROSSHAIR;
+    uint8_t *instructions = enabled ? instructionSet->on.instructions : instructionSet->off.instructions;
+    size_t size = enabled ? instructionSet->on.size : instructionSet->off.size;
+    bool success = memoryWrite(ph, instructionSet->offset, instructions, size);
+    LOG_INFO("yes\n");
+    if (!success) {
+        printf("Failed to write Asm code for Small Crosshair.\n");
+        return false;
+    }
+    uint32_t address1 = 0;
+    success = memoryRead(ph, CHEAT_SMALL_CROSSHAIR.offset, &address1, sizeof(address1));
+    LOG_INFO("address1 %x\n", address1);
+    if (!success) {
+        printf("Failed to read Small Crosshair address\n");
+        return false;
+    }
+    float value = enabled ? CHEAT_SMALL_CROSSHAIR.on.f32 : CHEAT_SMALL_CROSSHAIR.off.f32;
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(value));
 }
