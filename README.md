@@ -9,9 +9,14 @@ This tool is being created just for fun while learning reverse engineering funda
 - [x] No Clip
 - [x] Invisible
 - [x] No Recoil
-- [x] No Reload
-- [ ] Don't move Box
-- [ ] Freeze Zombies
+- [x] Infinite Ammo
+- [x] Box Never Moves
+- [x] Instant Kill
+- [x] Fast Gameplay
+- [x] Third Person
+- [x] No Shellshock
+- [x] Increase Knife Rangee
+- [x] Small Crosshair 
 
 And a lot more stuff not yet scoped.
 
