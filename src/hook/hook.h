@@ -1,7 +1,7 @@
 #ifndef HOOK_H_
 #define HOOK_H_
 
-#include "memory.h"
+#include "../memory/memory.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>

@@ -158,7 +158,6 @@ bool hookActivate(Hook *hook) {
     // Before writing the hook, we need make sure all bytes which will be overwritten are NOPed
     // because if the hook size is not equal with the size of the jmp + address we will have left over bytes.
     if (hook->originalBytesSize > 5) {
-        LOG_INFO("Filling with NOPs\n");
 		for(uint32_t idx = 0; idx < hook->originalBytesSize; idx++) {
 			memoryWrite(hook->ph, hook->startAddress + idx, &NOP_INSTRUCTION, 1); // NOP opcode
         }

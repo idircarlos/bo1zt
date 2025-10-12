@@ -3,7 +3,8 @@
 #include "../controller/controller.h"
 #include "../logger/logger.h"
 #include "../map/map.h"
-#include "../memory/hook.h"
+#include "../hook/hook.h"
+#include "../memory/memory.h"
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -47,7 +48,7 @@ bool _apiSetThirdPerson(ProcessHandle *ph, bool enabled);
 bool _apiGetInfiniteAmmo(ProcessHandle *ph);
 bool _apiSetInfiniteAmmo(ProcessHandle *ph, bool enabled);
 
-bool _apiGetInstantKill(ProcessHandle *ph, Map *hooks);
+bool _apiGetInstantKill(Map *hooks);
 bool _apiSetInstantKill(ProcessHandle *ph, Map *hooks, bool enabled);
 
 
@@ -101,7 +102,7 @@ bool apiIsCheatEnabled(Api *api, CheatName cheat) {
         case CHEAT_NAME_INFINITE_AMMO:
             return _apiGetInfiniteAmmo(ph);
         case CHEAT_NAME_INSTANT_KILL:
-            return _apiGetInstantKill(ph, api->hooks);
+            return _apiGetInstantKill(api->hooks);
         default:
             LOG_WARN("Unkwown cheat %d\n", cheat);
             return false;
@@ -412,7 +413,7 @@ bool _apiSetSmallCrosshair(ProcessHandle *ph, bool enabled) {
     return memoryWrite(ph, address1 + 0x18, &value, sizeof(value));
 }
 
-bool _apiGetInstantKill(ProcessHandle *ph, Map *hooks) {
+bool _apiGetInstantKill(Map *hooks) {
     Hook *hook = (Hook*)mapGet(hooks, HOOK_INSTANT_KILL_ID);
     return hookIsActivated(hook);
 }
@@ -427,5 +428,5 @@ bool _apiSetInstantKill(ProcessHandle *ph, Map *hooks, bool enabled) {
         hook = (Hook*)mapGet(hooks, HOOK_INSTANT_KILL_ID);
     }
 
-    return enabled ? hookActivate(hook) : hookDeactivate(hookDeactivate);
+    return enabled ? hookActivate(hook) : hookDeactivate(hook);
 }
