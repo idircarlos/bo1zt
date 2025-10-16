@@ -5,8 +5,8 @@
 #include "gui.h"
 #include "../logger/logger.h"
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 400
+#define WINDOW_WIDTH 300
+#define WINDOW_HEIGHT 450
 
 // Controller instance
 static Controller *controller = NULL;
@@ -29,7 +29,6 @@ static uiCheckbox *boxNeverMovesCheckbox = NULL;
 static uiCheckbox *thirdPersonCheckbox = NULL;
 
 // Handlers
-
 static int onClosing(uiWindow *window, void *data) {
     (void)window;
     (void)data;
@@ -124,51 +123,80 @@ static uiControl* buildGameTab() {
     uiLabel *infoLabel = uiNewLabel(
         "Wait until Round 2 before using this.\nE.g: Current round 2, Next round 19, then press Change Round.\nComplete your current round and the next will be 20."
     );
-    uiBoxAppend(roundVBox, uiControl(infoLabel), 0);
+    uiBoxAppend(roundVBox, uiControl(infoLabel), 1);
 
     uiButton *changeRoundBtn = uiNewButton("Change Round");
-    uiBoxAppend(roundVBox, uiControl(changeRoundBtn), 0);
+    uiBoxAppend(roundVBox, uiControl(changeRoundBtn), 1);
 
     uiGroupSetChild(roundGroup, uiControl(roundVBox));
     uiGroupSetMargined(roundGroup, 1);
 
     // --- Stats Group ---
-    uiGroup *statsGroup = uiNewGroup("Stats");
-    uiGrid *statsGrid = uiNewGrid();
-    uiGridSetPadded(statsGrid, 1);
+    uiGroup *playerGroup = uiNewGroup("Player");
+    uiGrid *playerGrid = uiNewGrid();
+    uiGridSetPadded(playerGrid, 1);
 
+    // Columna izquierda
     uiButton *nameBtn = uiNewButton("Change Name");
     uiEntry *nameEntry = uiNewEntry();
-    uiGridAppend(statsGrid, uiControl(nameBtn), 0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(statsGrid, uiControl(nameEntry), 1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+
+    // Columna izquierda
+    uiButton *healthBtn = uiNewButton("Set Health");
+    uiSpinbox *healthSpin = uiNewSpinbox(0, 999999);
+
+    uiButton *moneyBtn = uiNewButton("Set Money");
+    uiSpinbox *moneySpin = uiNewSpinbox(0, 999999);
+
+    uiButton *speedBtn = uiNewButton("Set Speed");
+    uiSpinbox *speedSpin = uiNewSpinbox(0, 999999);
 
     uiButton *pointsBtn = uiNewButton("Set Points");
     uiSpinbox *pointsSpin = uiNewSpinbox(0, 9999999);
-    uiGridAppend(statsGrid, uiControl(pointsBtn), 0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(statsGrid, uiControl(pointsSpin), 1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
 
+    // Columna derecha
     uiButton *headshotsBtn = uiNewButton("Set Headshots");
     uiSpinbox *headshotsSpin = uiNewSpinbox(0, 999999);
-    uiGridAppend(statsGrid, uiControl(headshotsBtn), 0, 2, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(statsGrid, uiControl(headshotsSpin), 1, 2, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
 
     uiButton *killsBtn = uiNewButton("Set Kills");
     uiSpinbox *killsSpin = uiNewSpinbox(0, 999999);
-    uiGridAppend(statsGrid, uiControl(killsBtn), 0, 3, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(statsGrid, uiControl(killsSpin), 1, 3, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
 
     uiButton *revivesBtn = uiNewButton("Set Revives");
     uiSpinbox *revivesSpin = uiNewSpinbox(0, 9999);
-    uiGridAppend(statsGrid, uiControl(revivesBtn), 0, 4, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(statsGrid, uiControl(revivesSpin), 1, 4, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
 
     uiButton *downsBtn = uiNewButton("Set Downs");
     uiSpinbox *downsSpin = uiNewSpinbox(0, 9999);
-    uiGridAppend(statsGrid, uiControl(downsBtn), 0, 5, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(statsGrid, uiControl(downsSpin), 1, 5, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
 
-    uiGroupSetChild(statsGroup, uiControl(statsGrid));
-    uiGroupSetMargined(statsGroup, 1);
+    // --- Grid Layout 5x2 ---
+    // Fila 0
+    uiGridAppend(playerGrid, uiControl(nameBtn),      0, 0, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(nameEntry),    2, 0, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    
+    // Fila 1
+    uiGridAppend(playerGrid, uiControl(healthBtn),    0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(healthSpin),   1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(headshotsBtn), 2, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(headshotsSpin),3, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+
+    // Fila 2
+    uiGridAppend(playerGrid, uiControl(moneyBtn),     0, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(moneySpin),    1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(killsBtn),     2, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(killsSpin),    3, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+
+    // Fila 3
+    uiGridAppend(playerGrid, uiControl(speedBtn),     0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(speedSpin),    1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(revivesBtn),   2, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(revivesSpin),  3, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+
+    // Fila 4
+    uiGridAppend(playerGrid, uiControl(pointsBtn),    0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(pointsSpin),   1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(downsBtn),     2, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(downsSpin),    3, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+
+    uiGroupSetChild(playerGroup, uiControl(playerGrid));
+    uiGroupSetMargined(playerGroup, 1);
 
     // --- Cheats Group ---
     uiGroup *cheatsGroup = uiNewGroup("Cheats");
@@ -226,30 +254,101 @@ static uiControl* buildGameTab() {
     uiGroup *weaponsGroup = uiNewGroup("Weapons");
     uiBox *weaponsVBox = uiNewVerticalBox();
     uiBoxSetPadded(weaponsVBox, 1);
+
+    // Combobox con lista de armas
     uiCombobox *weaponsCombo = uiNewCombobox();
     uiComboboxAppend(weaponsCombo, "Ray Gun");
     uiComboboxAppend(weaponsCombo, "Thunder Gun");
     uiComboboxAppend(weaponsCombo, "Galil");
+    uiComboboxSetSelected(weaponsCombo, 1);
 
-    uiComboboxSetSelected(weaponsCombo, 0);
-    
-    uiButton *giveWeaponBtn = uiNewButton("Give Weapon");
+    // Botones de armas
+    uiButton *giveWeapon1Btn = uiNewButton("Give Weapon Slot 1");
+    uiButton *giveWeapon2Btn = uiNewButton("Give Weapon Slot 2");
+    uiButton *giveWeapon3Btn = uiNewButton("Give Weapon Slot 3");
+
+    // Caja horizontal para los dos botones
+    uiBox *weaponsButtonsHBox = uiNewHorizontalBox();
+    uiBoxSetPadded(weaponsButtonsHBox, 1);
+    uiBoxAppend(weaponsButtonsHBox, uiControl(giveWeapon1Btn), 1);
+    uiBoxAppend(weaponsButtonsHBox, uiControl(giveWeapon2Btn), 1);
+    uiBoxAppend(weaponsButtonsHBox, uiControl(giveWeapon3Btn), 1);
+
+    // Añadir al VBox principal
     uiBoxAppend(weaponsVBox, uiControl(weaponsCombo), 0);
-    uiBoxAppend(weaponsVBox, uiControl(giveWeaponBtn), 0);
+    uiBoxAppend(weaponsVBox, uiControl(weaponsButtonsHBox), 1);
+
+    // Añadir el VBox al grupo
     uiGroupSetChild(weaponsGroup, uiControl(weaponsVBox));
     uiGroupSetMargined(weaponsGroup, 1);
 
-    // --- Organizar en un horizontal box ---
-    uiBox *mainBox = uiNewHorizontalBox();
-    uiBoxSetPadded(mainBox, 1);
 
-    // Organizar los 4 groups en un grid 2x2
+    // --- Teleport Group ---
+    uiGroup *teleportGroup = uiNewGroup("Teleport");
+    uiBox *teleportHBox = uiNewHorizontalBox();
+    uiBoxSetPadded(teleportHBox, 1);
+
+    // --- Grid de coordenadas (3x2: labels + spinboxes)
+    uiBox *coordsVBox = uiNewVerticalBox();
+    uiBoxSetPadded(coordsVBox, 1);
+
+    uiLabel *xLabel = uiNewLabel("X");
+    uiLabel *yLabel = uiNewLabel("Y");
+    uiLabel *zLabel = uiNewLabel("Z");
+
+    uiSpinbox *xSpin = uiNewSpinbox(0, 999999);
+    uiSpinbox *ySpin = uiNewSpinbox(0, 999999);
+    uiSpinbox *zSpin = uiNewSpinbox(0, 999999);
+
+    // Añadir etiquetas y spinboxes en el grid (3 filas, 2 columnas)
+    uiBoxAppend(coordsVBox, uiControl(xSpin), 1);
+    uiBoxAppend(coordsVBox, uiControl(ySpin), 1);
+    uiBoxAppend(coordsVBox, uiControl(zSpin), 1);
+    
+    //uiBoxAppend(coordsVBox, uiControl(xSpin), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignCenter);
+
+    //uiBoxAppend(coordsVBox, uiControl(yLabel), 0, 1, 1, 1, 0, uiAlignFill, 1, uiAlignFill);
+    //uiBoxAppend(coordsVBox, uiControl(ySpin), 1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignCenter);
+
+    //uiBoxAppend(coordsVBox, uiControl(zLabel), 0, 2, 1, 1, 0, uiAlignFill, 1, uiAlignFill);
+    //uiBoxAppend(coordsVBox, uiControl(zSpin), 1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignCenter);
+
+    // --- Botón Go (a la derecha del grid)
+    uiButton *goBtn = uiNewButton("Go");
+
+    // --- VBox con botones Load y Save (a la derecha del botón Go)
+    uiBox *saveLoadVBox = uiNewVerticalBox();
+    uiBoxSetPadded(saveLoadVBox, 1);
+    uiButton *loadBtn = uiNewButton("Load Position");
+    uiButton *saveBtn = uiNewButton("Save Position");
+    uiBoxAppend(saveLoadVBox, uiControl(loadBtn), 1);
+    uiBoxAppend(saveLoadVBox, uiControl(saveBtn), 1);
+    
+
+    // --- Añadir todo al box principal (coordsVBox + Go + VBox derecha)
+    uiBoxAppend(teleportHBox, uiControl(saveLoadVBox), 1);
+    uiBoxAppend(teleportHBox, uiControl(coordsVBox), 1);
+    uiBoxAppend(teleportHBox, uiControl(goBtn), 1);
+    
+
+    // --- Añadir al grupo ---
+    uiGroupSetChild(teleportGroup, uiControl(teleportHBox));
+    uiGroupSetMargined(teleportGroup, 1);
+
+    // --- Subgrid de abajo a la izquierda (Weapons + Teleport) ---
+    uiGrid *bottomLeftGrid = uiNewGrid();
+    uiGridSetPadded(bottomLeftGrid, 1);
+    uiGridAppend(bottomLeftGrid, uiControl(weaponsGroup), 0, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(bottomLeftGrid, uiControl(teleportGroup), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+
+    // --- Main grid 2x2 ---
     uiGrid *mainGrid = uiNewGrid();
     uiGridSetPadded(mainGrid, 1);
-    uiGridAppend(mainGrid, uiControl(statsGroup), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, uiControl(playerGroup), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(mainGrid, uiControl(cheatsGroup), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(mainGrid, uiControl(roundGroup), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(mainGrid, uiControl(weaponsGroup), 1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, uiControl(bottomLeftGrid), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, uiControl(roundGroup), 1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+
     return uiControl(mainGrid);
 }
 

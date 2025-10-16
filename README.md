@@ -43,3 +43,7 @@ make && make run
 2. Run `bo1zt`.
 3. Use the interface to enable or disable desired features.
 4. Train train train!
+
+## Proposed UI (WIP)
+
+![TrainerGUI](./doc/trainer.png)
