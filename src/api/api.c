@@ -189,6 +189,68 @@ bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value) {
     }
 }
 
+TeleportCoords *apiGetPlayerCurrentCoords(Api *api) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return NULL;
+    }
+    
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) {
+        LOG_ERROR("ProcessHandle is null\n");
+        return NULL;
+    }
+
+    TeleportCoords *coords = (TeleportCoords*)malloc(sizeof(TeleportCoords));
+    memoryRead(ph, TELEPORT_CHEAT.xOffset, &coords->x, sizeof(coords->x));
+    memoryRead(ph, TELEPORT_CHEAT.yOffset, &coords->y, sizeof(coords->y));
+    memoryRead(ph, TELEPORT_CHEAT.zOffset, &coords->z, sizeof(coords->z));
+
+    return coords;
+}
+
+Weapon apiGetPlayerCurrentWeapon(Api *api) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return WEAPON_UNKNOWNWEAPON;
+    }
+    
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) {
+        LOG_ERROR("ProcessHandle is null\n");
+        return WEAPON_UNKNOWNWEAPON;
+    }
+
+    uint8_t weapon;
+    bool success = memoryRead(ph, WEAPON_CHEAT.currentWeaponOffset, &weapon, sizeof(uint8_t));
+    if (!success) {
+        printf("Failed to read Current Weapon value\n");
+        return WEAPON_UNKNOWNWEAPON;
+    }
+    return (Weapon)weapon;
+}
+
+bool apiSetPlayerWeapon(Api *api, Weapon weapon, int slot) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return false;
+    }
+    
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) {
+        LOG_ERROR("ProcessHandle is null\n");
+        return false;
+    }
+
+    if (slot < 1 || slot > 3) {
+        printf("Slot %d is invalid. Posible slots are 1, 2 or 3.\n", slot);
+        return false;
+    }
+    uint32_t slotOffset = slot == 1 ? WEAPON_CHEAT.slot1Offset : (slot == 2 ? WEAPON_CHEAT.slot2Offset : WEAPON_CHEAT.slot3Offset);
+    uint8_t weaponValue = (uint8_t)weapon;
+    return memoryWrite(ph, slotOffset, &weapon, sizeof(weaponValue));
+}
+
 bool _apiGetGodMode(ProcessHandle *ph) {
     uint32_t value = 0;
     bool success = memoryRead(ph, CHEAT_GOD_MODE.offset, &value, sizeof(value));
@@ -434,7 +496,6 @@ bool _apiSetSmallCrosshair(ProcessHandle *ph, bool enabled) {
     uint8_t *instructions = enabled ? instructionSet->on.instructions : instructionSet->off.instructions;
     size_t size = enabled ? instructionSet->on.size : instructionSet->off.size;
     bool success = memoryWrite(ph, instructionSet->offset, instructions, size);
-    LOG_INFO("yes\n");
     if (!success) {
         printf("Failed to write Asm code for Small Crosshair.\n");
         return false;

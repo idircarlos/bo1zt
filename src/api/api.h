@@ -15,4 +15,9 @@ bool apiSetCheatEnabled(Api *api, CheatName cheatName, bool enabled);
 
 bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value);
 
+TeleportCoords *apiGetPlayerCurrentCoords(Api *api);
+
+Weapon apiGetPlayerCurrentWeapon(Api *api);
+bool apiSetPlayerWeapon(Api *api, Weapon weapon, int slot);
+
 #endif // API_H_

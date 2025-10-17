@@ -16,6 +16,12 @@ bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled);
 bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, void *value);
 
 bool controllerIsCheckboxChecked(Controller *controller, CheatName cheat);
+
+TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller);
+
+Weapon controllerGetPlayerCurrentWeapon(Controller *controller);
+bool controllerSetPlayerWeapon(Controller *controller, Weapon weapon, int slot);
+
 void controllerDestroy(Controller *controller);
 
 #endif // CONTROLLER_H_

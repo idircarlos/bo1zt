@@ -42,6 +42,13 @@ static uiCheckbox *increaseKnifeRangeCheckbox = NULL;
 static uiCheckbox *boxNeverMovesCheckbox = NULL;
 static uiCheckbox *thirdPersonCheckbox = NULL;
 
+// Give Weapon
+static uiCombobox *weaponsCombo = NULL;
+static uiButton *giveWeapon1Btn = NULL;
+static uiButton *giveWeapon2Btn = NULL;
+static uiButton *giveWeapon3Btn = NULL;
+
+
 // Teleport
 static uiSpinbox *xSpin = NULL;
 static uiSpinbox *ySpin = NULL;
@@ -66,6 +73,14 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     }
 }
 
+static void onPlayerChangeNameButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    char *name = uiEntryText(nameEntry);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CHANGE_NAME, (void*)name);
+    uiFreeText(name);
+}
+
 static void onPlayerButtonClick(uiButton *button, void *data) {
     (void)button;
     SimpleCheatName simpleCheatName = (SimpleCheatName)(uintptr_t)data;
@@ -77,9 +92,6 @@ static void onPlayerButtonClick(uiButton *button, void *data) {
 
     // Maybe refactor this into an array of componentes and access by index using SimpleCheatName to avoid switch-case 
     switch(simpleCheatName) {
-        case SIMPLE_CHEAT_NAME_CHANGE_NAME:
-            value = (void*)uiEntryText(nameEntry);
-            break;
         case SIMPLE_CHEAT_NAME_SET_HEALTH:
             spinBoxValue = uiSpinboxValue(healthSpin);
             value = &spinBoxValue;
@@ -101,16 +113,70 @@ static void onPlayerButtonClick(uiButton *button, void *data) {
             value = &spinBoxValue;
             break;
         default:
-            LOG_WARN("Unknown cheat %d\n", simpleCheatName);
+            LOG_WARN("Cheat %d shouldn't be handled here or it doesn't exist\n", simpleCheatName);
     }
-    LOG_INFO("jaja %x\n", value);
     controllerSetSimpleCheat(controller, simpleCheatName, value);
+}
+
+static void onGiveWeaponButton(uiButton *button, void *data) {
+    (void)button;
+    
+    int slot = (int)(uintptr_t)data;
+    if (slot < 1 || slot > 3) {
+        LOG_ERROR("Slot %d is invalid. Posible slots are 1, 2 or 3.\n", slot);
+        return;
+    }
+    LOG_INFO("Por aqui\n");
+    int index = uiComboboxSelected(weaponsCombo);
+    Weapon weapon = cheatGetSanitizedWeapon(index);
+    controllerSetPlayerWeapon(controller, weapon, slot);
 }
 
 static void onTeleportGoButtonClick(uiButton *button, void *data) {
     (void)button;
+    (void)data;
     TeleportCoords coords = {.x = (float)uiSpinboxValue(xSpin), .y = (float)uiSpinboxValue(ySpin), .z = (float)uiSpinboxValue(zSpin)};
     controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_TELEPORT, &coords);
+}
+
+static void onTeleportSaveButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    TeleportCoords *coords = controllerGetPlayerCurrentCoords(controller);
+    char *filePath = uiSaveFile(window);
+    if (filePath == NULL) return;
+
+    FILE *fp = fopen(filePath, "w");
+    if (fp == NULL) {
+        uiMsgBoxError(window, "Unexpected error", "Error saving the coords");
+    }
+
+    fprintf(fp, "%d %d %d", (int)coords->x, (int)coords->y, (int)coords->z);
+    fclose(fp);
+    free(coords);
+    uiFreeText(filePath);
+}
+
+static void onTeleportLoadButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    char *filePath = uiOpenFile(window);
+    if (!filePath) return;
+
+    FILE *fp = fopen(filePath, "r");
+    if (fp == NULL) {
+        uiMsgBoxError(window, "Unexpected error", "Error loading the coords");
+    }
+
+    int x, y, z;
+    if (fscanf(fp, "%d %d %d", &x, &y, &z) != 3) {
+        uiMsgBoxError(window, "Unexpected error", "Error loading the coords");
+    }
+
+    uiSpinboxSetValue(xSpin, x);
+    uiSpinboxSetValue(ySpin, y);
+    uiSpinboxSetValue(zSpin, z);    
+    uiFreeText(filePath);
 }
 
 // UI Api
@@ -216,7 +282,7 @@ static uiControl* buildWindowContent() {
     headshotsSpin = uiNewSpinbox(0, 999999);
     killsSpin = uiNewSpinbox(0, 999999);
 
-    uiButtonOnClicked(nameBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_CHANGE_NAME);
+    uiButtonOnClicked(nameBtn, onPlayerChangeNameButtonClick, (void*)SIMPLE_CHEAT_NAME_CHANGE_NAME);
     uiButtonOnClicked(healthBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_SET_HEALTH);
     uiButtonOnClicked(pointsBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_SET_POINTS);
     uiButtonOnClicked(speedBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_SET_SPEED);
@@ -321,16 +387,24 @@ static uiControl* buildWindowContent() {
     uiBoxSetPadded(weaponsVBox, 1);
 
     // Combobox con lista de armas
-    uiCombobox *weaponsCombo = uiNewCombobox();
-    uiComboboxAppend(weaponsCombo, "Ray Gun");
-    uiComboboxAppend(weaponsCombo, "Thunder Gun");
-    uiComboboxAppend(weaponsCombo, "Galil");
-    uiComboboxSetSelected(weaponsCombo, 1);
+    weaponsCombo = uiNewCombobox();
+    for (int i = 0, j = 0; i < NUM_WEAPON_IDS; i++) {
+        const char *weaponName = cheatGetWeaponName((Weapon)i);
+        if (weaponName != NULL) {
+            uiComboboxAppend(weaponsCombo, weaponName);
+        }
+    } 
+    uiComboboxSetSelected(weaponsCombo, 2);
+    int items = uiComboboxNumItems(weaponsCombo);
 
     // Botones de armas
-    uiButton *giveWeapon1Btn = uiNewButton("Give Weapon Slot 1");
-    uiButton *giveWeapon2Btn = uiNewButton("Give Weapon Slot 2");
-    uiButton *giveWeapon3Btn = uiNewButton("Give Weapon Slot 3");
+    giveWeapon1Btn = uiNewButton("Give Weapon Slot 1");
+    giveWeapon2Btn = uiNewButton("Give Weapon Slot 2");
+    giveWeapon3Btn = uiNewButton("Give Weapon Slot 3");
+
+    uiButtonOnClicked(giveWeapon1Btn, onGiveWeaponButton, (void*)1);
+    uiButtonOnClicked(giveWeapon2Btn, onGiveWeaponButton, (void*)2);
+    uiButtonOnClicked(giveWeapon3Btn, onGiveWeaponButton, (void*)3);
 
     // Caja horizontal para los dos botones
     uiBox *weaponsButtonsHBox = uiNewHorizontalBox();
@@ -377,6 +451,9 @@ static uiControl* buildWindowContent() {
     uiButton *saveBtn = uiNewButton("Save Position");
     uiBoxAppend(saveLoadVBox, uiControl(loadBtn), 1);
     uiBoxAppend(saveLoadVBox, uiControl(saveBtn), 1);
+
+    uiButtonOnClicked(saveBtn, onTeleportSaveButtonClick, NULL);
+    uiButtonOnClicked(loadBtn, onTeleportLoadButtonClick, NULL);
     
 
     // --- Añadir todo al box principal (coordsVBox + Go + VBox derecha)

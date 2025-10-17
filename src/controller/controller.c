@@ -56,3 +56,18 @@ bool controllerIsCheckboxChecked(Controller *controller, CheatName cheat) {
     if (!controller || !controller->ph) return false;
     return guiIsCheatChecked(controller, cheat);
 }
+
+TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller) {
+    if (!controller || !controller->ph) return NULL;
+    return apiGetPlayerCurrentCoords(controller->api);
+}
+
+Weapon controllerGetPlayerCurrentWeapon(Controller *controller) {
+    if (!controller || !controller->ph) return WEAPON_UNKNOWNWEAPON;
+    return apiGetPlayerCurrentWeapon(controller->api);
+}
+
+bool controllerSetPlayerWeapon(Controller *controller, Weapon weapon, int slot) {
+    if (!controller || !controller->ph) return false;
+    return apiSetPlayerWeapon(controller->api, weapon, slot);
+}
