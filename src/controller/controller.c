@@ -37,6 +37,11 @@ bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled) {
     return apiSetCheatEnabled(controller->api, cheat, enabled);
 }
 
+bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, void *value) {
+    if (!controller || !controller->api) return false;
+    return apiSetSimpleCheat(controller->api, cheat, value);
+}
+
 void controllerDestroy(Controller *controller) {
     if (controller) {
         if (controller->ph) {

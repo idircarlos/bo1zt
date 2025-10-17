@@ -6,13 +6,27 @@
 #include "../logger/logger.h"
 
 #define WINDOW_WIDTH 300
-#define WINDOW_HEIGHT 450
+#define WINDOW_HEIGHT 250
 
 // Controller instance
 static Controller *controller = NULL;
 
 // UI Elements
 static uiWindow *window = NULL;
+
+// SimpleCheatName Components (Button + Entry/Spinbox)
+static uiButton *nameBtn = NULL;
+static uiButton *healthBtn = NULL;
+static uiButton *pointsBtn = NULL;
+static uiButton *speedBtn = NULL;
+static uiButton *headshotsBtn = NULL;
+static uiButton *killsBtn = NULL;
+static uiEntry *nameEntry = NULL;
+static uiSpinbox *healthSpin = NULL;
+static uiSpinbox *pointsSpin = NULL;
+static uiSpinbox *speedSpin = NULL;
+static uiSpinbox *headshotsSpin = NULL;
+static uiSpinbox *killsSpin = NULL;
 
 // CheatName Checkboxes
 static uiCheckbox *godModeCheckbox = NULL;
@@ -37,13 +51,54 @@ static int onClosing(uiWindow *window, void *data) {
 }
 
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
-    CheatName cheat = (CheatName)(uintptr_t)data;
+    CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
-    bool success = controllerSetCheat(controller, cheat, enabled);
+    bool success = controllerSetCheat(controller, cheatName, enabled);
     if (!success) {
-        fprintf(stderr, "Failed to set cheat %d to %d\n", cheat, enabled);
+        fprintf(stderr, "Failed to set cheat %d to %d\n", cheatName, enabled);
         uiCheckboxSetChecked(checkbox, !enabled); // Revert checkbox state
     }
+}
+
+static void onPlayerButtonClick(uiButton *button, void *data) {
+    (void)button;
+    SimpleCheatName simpleCheatName = (SimpleCheatName)(uintptr_t)data;
+    LOG_INFO("Cheat %d\n", simpleCheatName);
+    void *value = NULL;
+    int spinBoxValue;
+
+    LOG_INFO("val %x\n", (void*)(intptr_t)uiSpinboxValue(pointsSpin));
+
+    // Maybe refactor this into an array of componentes and access by index using SimpleCheatName to avoid switch-case 
+    switch(simpleCheatName) {
+        case SIMPLE_CHEAT_NAME_CHANGE_NAME:
+            value = (void*)uiEntryText(nameEntry);
+            break;
+        case SIMPLE_CHEAT_NAME_SET_HEALTH:
+            spinBoxValue = uiSpinboxValue(healthSpin);
+            value = &spinBoxValue;
+            break;
+        case SIMPLE_CHEAT_NAME_SET_POINTS:
+            spinBoxValue = uiSpinboxValue(pointsSpin);
+            value = &spinBoxValue;
+            break;
+        case SIMPLE_CHEAT_NAME_SET_SPEED:
+            spinBoxValue = uiSpinboxValue(speedSpin);
+            value = &spinBoxValue;
+            break;
+        case SIMPLE_CHEAT_NAME_SET_KILLS:
+            spinBoxValue = uiSpinboxValue(killsSpin);
+            value = &spinBoxValue;
+            break;
+        case SIMPLE_CHEAT_NAME_SET_HEADSHOTS:
+            spinBoxValue = uiSpinboxValue(headshotsSpin);
+            value = &spinBoxValue;
+            break;
+        default:
+            LOG_WARN("Unknown cheat %d\n", simpleCheatName);
+    }
+    LOG_INFO("jaja %x\n", value);
+    controllerSetSimpleCheat(controller, simpleCheatName, value);
 }
 
 // UI Api
@@ -102,7 +157,7 @@ static void setupWindow() {
     uiWindowSetResizeable(window, 0);
 }
 
-static uiControl* buildGameTab() {
+static uiControl* buildWindowContent() {
     // --- Round Changer Group ---
     uiGroup *roundGroup = uiNewGroup("Round Changer");
     uiBox *roundVBox = uiNewVerticalBox();
@@ -131,72 +186,62 @@ static uiControl* buildGameTab() {
     uiGroupSetChild(roundGroup, uiControl(roundVBox));
     uiGroupSetMargined(roundGroup, 1);
 
-    // --- Stats Group ---
+    // --- Player Group ---
     uiGroup *playerGroup = uiNewGroup("Player");
     uiGrid *playerGrid = uiNewGrid();
     uiGridSetPadded(playerGrid, 1);
 
-    // Columna izquierda
-    uiButton *nameBtn = uiNewButton("Change Name");
-    uiEntry *nameEntry = uiNewEntry();
+    nameBtn = uiNewButton("Change Name");
+    healthBtn = uiNewButton("Set Health");
+    pointsBtn = uiNewButton("Set Points");
+    speedBtn = uiNewButton("Set Speed");
+    killsBtn = uiNewButton("Set Kills");
+    headshotsBtn = uiNewButton("Set Headshots");
+    nameEntry = uiNewEntry();
+    healthSpin = uiNewSpinbox(0, 999999);
+    pointsSpin = uiNewSpinbox(0, 9999999);
+    speedSpin = uiNewSpinbox(0, 999999);
+    headshotsSpin = uiNewSpinbox(0, 999999);
+    killsSpin = uiNewSpinbox(0, 999999);
 
-    // Columna izquierda
-    uiButton *healthBtn = uiNewButton("Set Health");
-    uiSpinbox *healthSpin = uiNewSpinbox(0, 999999);
-
-    uiButton *moneyBtn = uiNewButton("Set Money");
-    uiSpinbox *moneySpin = uiNewSpinbox(0, 999999);
-
-    uiButton *speedBtn = uiNewButton("Set Speed");
-    uiSpinbox *speedSpin = uiNewSpinbox(0, 999999);
-
-    uiButton *pointsBtn = uiNewButton("Set Points");
-    uiSpinbox *pointsSpin = uiNewSpinbox(0, 9999999);
-
-    // Columna derecha
-    uiButton *headshotsBtn = uiNewButton("Set Headshots");
-    uiSpinbox *headshotsSpin = uiNewSpinbox(0, 999999);
-
-    uiButton *killsBtn = uiNewButton("Set Kills");
-    uiSpinbox *killsSpin = uiNewSpinbox(0, 999999);
-
-    uiButton *revivesBtn = uiNewButton("Set Revives");
-    uiSpinbox *revivesSpin = uiNewSpinbox(0, 9999);
-
-    uiButton *downsBtn = uiNewButton("Set Downs");
-    uiSpinbox *downsSpin = uiNewSpinbox(0, 9999);
+    uiButtonOnClicked(nameBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_CHANGE_NAME);
+    uiButtonOnClicked(healthBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_SET_HEALTH);
+    uiButtonOnClicked(pointsBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_SET_POINTS);
+    uiButtonOnClicked(speedBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_SET_SPEED);
+    uiButtonOnClicked(killsBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_SET_KILLS);
+    uiButtonOnClicked(headshotsBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_SET_HEADSHOTS);
 
     // --- Grid Layout 5x2 ---
-    // Fila 0
-    uiGridAppend(playerGrid, uiControl(nameBtn),      0, 0, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(nameEntry),    2, 0, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
     
     // Fila 1
-    uiGridAppend(playerGrid, uiControl(healthBtn),    0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(healthSpin),   1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(headshotsBtn), 2, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(headshotsSpin),3, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(nameBtn),      0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(nameEntry),    1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(healthBtn),    0, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(healthSpin),   1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+
 
     // Fila 2
-    uiGridAppend(playerGrid, uiControl(moneyBtn),     0, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(moneySpin),    1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(killsBtn),     2, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(killsSpin),    3, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(pointsBtn),    0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(pointsSpin),   1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(killsBtn),     0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(killsSpin),    1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     // Fila 3
-    uiGridAppend(playerGrid, uiControl(speedBtn),     0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(speedSpin),    1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(revivesBtn),   2, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(revivesSpin),  3, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(speedBtn),     0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(speedSpin),    1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(headshotsBtn), 0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(headshotsSpin),1, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
-    // Fila 4
-    uiGridAppend(playerGrid, uiControl(pointsBtn),    0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(pointsSpin),   1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(downsBtn),     2, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(downsSpin),    3, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     uiGroupSetChild(playerGroup, uiControl(playerGrid));
     uiGroupSetMargined(playerGroup, 1);
+
+    // --- Graphics Group ---
+    uiGroup *graphicsGroup = uiNewGroup("Graphics");
+    uiBox *graphicsBox = uiNewVerticalBox();
+    uiBoxSetPadded(graphicsBox, 1);
+
+
 
     // --- Cheats Group ---
     uiGroup *cheatsGroup = uiNewGroup("Cheats");
@@ -212,8 +257,8 @@ static uiControl* buildGameTab() {
     smallCrosshairCheckbox = uiNewCheckbox(" Small Crosshair");
     fastGameplayCheckbox = uiNewCheckbox(" Fast Gameplay");
     noShellshockCheckbox = uiNewCheckbox(" No Shellshock");
-    increaseKnifeRangeCheckbox = uiNewCheckbox(" Increase Knife Range");
-    boxNeverMovesCheckbox = uiNewCheckbox(" Box Never Moves");
+    increaseKnifeRangeCheckbox = uiNewCheckbox(" Knife Range");
+    boxNeverMovesCheckbox = uiNewCheckbox(" Static Box");
     thirdPersonCheckbox = uiNewCheckbox(" Third Person");
 
     uiCheckboxOnToggled(infiniteAmoCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_INFINITE_AMMO);
@@ -249,6 +294,14 @@ static uiControl* buildGameTab() {
     
     uiGroupSetChild(cheatsGroup, uiControl(cheatsBox));
     uiGroupSetMargined(cheatsGroup, 1);
+
+    // --- Game Group ---
+    uiGroup *gameGroup = uiNewGroup("Game");
+    uiBox *gameBox = uiNewVerticalBox();
+    uiBoxSetPadded(gameBox, 1);
+
+
+
 
     // --- Weapons Group ---
     uiGroup *weaponsGroup = uiNewGroup("Weapons");
@@ -292,10 +345,6 @@ static uiControl* buildGameTab() {
     uiBox *coordsVBox = uiNewVerticalBox();
     uiBoxSetPadded(coordsVBox, 1);
 
-    uiLabel *xLabel = uiNewLabel("X");
-    uiLabel *yLabel = uiNewLabel("Y");
-    uiLabel *zLabel = uiNewLabel("Z");
-
     uiSpinbox *xSpin = uiNewSpinbox(0, 999999);
     uiSpinbox *ySpin = uiNewSpinbox(0, 999999);
     uiSpinbox *zSpin = uiNewSpinbox(0, 999999);
@@ -304,14 +353,6 @@ static uiControl* buildGameTab() {
     uiBoxAppend(coordsVBox, uiControl(xSpin), 1);
     uiBoxAppend(coordsVBox, uiControl(ySpin), 1);
     uiBoxAppend(coordsVBox, uiControl(zSpin), 1);
-    
-    //uiBoxAppend(coordsVBox, uiControl(xSpin), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignCenter);
-
-    //uiBoxAppend(coordsVBox, uiControl(yLabel), 0, 1, 1, 1, 0, uiAlignFill, 1, uiAlignFill);
-    //uiBoxAppend(coordsVBox, uiControl(ySpin), 1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignCenter);
-
-    //uiBoxAppend(coordsVBox, uiControl(zLabel), 0, 2, 1, 1, 0, uiAlignFill, 1, uiAlignFill);
-    //uiBoxAppend(coordsVBox, uiControl(zSpin), 1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignCenter);
 
     // --- Botón Go (a la derecha del grid)
     uiButton *goBtn = uiNewButton("Go");
@@ -335,6 +376,18 @@ static uiControl* buildGameTab() {
     uiGroupSetChild(teleportGroup, uiControl(teleportHBox));
     uiGroupSetMargined(teleportGroup, 1);
 
+    // --- Subgrid de arriba a la izquierda (Player + Cheats) ---
+    uiGrid *topRightGrid = uiNewGrid();
+    uiGridSetPadded(topRightGrid, 1);
+    uiGridAppend(topRightGrid, uiControl(graphicsGroup), 0, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(topRightGrid, uiControl(gameGroup), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+
+    // --- Subgrid de arriba a la derecha (Cheats + Game) ---
+    uiGrid *topLeftGrid = uiNewGrid();
+    uiGridSetPadded(topLeftGrid, 1);
+    uiGridAppend(topLeftGrid, uiControl(playerGroup), 0, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(topLeftGrid, uiControl(cheatsGroup), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+
     // --- Subgrid de abajo a la izquierda (Weapons + Teleport) ---
     uiGrid *bottomLeftGrid = uiNewGrid();
     uiGridSetPadded(bottomLeftGrid, 1);
@@ -344,34 +397,12 @@ static uiControl* buildGameTab() {
     // --- Main grid 2x2 ---
     uiGrid *mainGrid = uiNewGrid();
     uiGridSetPadded(mainGrid, 1);
-    uiGridAppend(mainGrid, uiControl(playerGroup), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(mainGrid, uiControl(cheatsGroup), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, uiControl(topLeftGrid), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, uiControl(topRightGrid), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(mainGrid, uiControl(bottomLeftGrid), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(mainGrid, uiControl(roundGroup), 1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     return uiControl(mainGrid);
-}
-
-static uiControl* buildGraphicsTab() {
-    uiGroup *graphicsGroup = uiNewGroup("Graphics");
-    uiForm *graphicsForm = uiNewForm();
-    uiFormSetPadded(graphicsForm, 1);
-    uiSpinbox *fovSpin = uiNewSpinbox(0, 180);
-    uiSpinbox *fovScaleSpin = uiNewSpinbox(0, 10);
-    uiSpinbox *fpsSpin = uiNewSpinbox(0, 1000);
-    uiCheckbox *patchSpeed = uiNewCheckbox("Patch Movement Speed");
-    uiCheckbox *borderless = uiNewCheckbox("Borderless Window");
-    uiButton *customizeUIBtn = uiNewButton("Customize Game UI");
-
-    uiFormAppend(graphicsForm, "FOV", uiControl(fovSpin), 0);
-    uiFormAppend(graphicsForm, "FOV Scale", uiControl(fovScaleSpin), 0);
-    uiFormAppend(graphicsForm, "FPS", uiControl(fpsSpin), 0);
-    uiFormAppend(graphicsForm, "", uiControl(patchSpeed), 0);
-    uiFormAppend(graphicsForm, "", uiControl(borderless), 0);
-    uiFormAppend(graphicsForm, "", uiControl(customizeUIBtn), 0);
-
-    uiGroupSetChild(graphicsGroup, uiControl(graphicsForm));
-    return uiControl(graphicsGroup);
 }
 
 void guiInit(Controller *controllerInstance) {
@@ -381,15 +412,11 @@ void guiInit(Controller *controllerInstance) {
 }
 
 void guiRun(void) {
-    uiTab *tabs = uiNewTab();
-    uiTabAppend(tabs, "Game", buildGameTab());
-    uiTabSetMargined(tabs, 0, 1);
-    uiTabAppend(tabs, "Graphics", buildGraphicsTab());
-    uiTabSetMargined(tabs, 1, 1);
-
-    uiWindowSetChild(window, uiControl(tabs));
+    uiControl *c = buildWindowContent();
+    uiWindowSetChild(window,c);
     uiControlShow(uiControl(window));
-    uiMain();
+    while (uiMainStep(1));
+    
 }
 
 void guiCleanup(void) {

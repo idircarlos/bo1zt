@@ -10,7 +10,9 @@ typedef struct Api Api;
 
 Api *apiCreate(Controller *controller);
 
-bool apiIsCheatEnabled(Api *api, CheatName cheat);
-bool apiSetCheatEnabled(Api *api, CheatName cheat, bool enabled);
+bool apiIsCheatEnabled(Api *api, CheatName cheatName);
+bool apiSetCheatEnabled(Api *api, CheatName cheatName, bool enabled);
+
+bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value);
 
 #endif // API_H_

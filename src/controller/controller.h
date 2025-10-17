@@ -13,6 +13,8 @@ ProcessHandle* controllerGetProcessHandle(Controller *controller);
 bool controllerGetCheat(Controller *controller, CheatName cheat);
 bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled);
 
+bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, void *value);
+
 bool controllerIsCheckboxChecked(Controller *controller, CheatName cheat);
 void controllerDestroy(Controller *controller);
 

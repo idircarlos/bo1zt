@@ -50,6 +50,112 @@ typedef struct {
     CheatAsmInstructionSet off;
 } CheatAsm;
 
+typedef enum {
+    SIMPLE_CHEAT_NAME_CHANGE_NAME,
+    SIMPLE_CHEAT_NAME_SET_HEALTH,
+    SIMPLE_CHEAT_NAME_SET_POINTS,
+    SIMPLE_CHEAT_NAME_SET_KILLS,
+    SIMPLE_CHEAT_NAME_SET_SPEED,
+    SIMPLE_CHEAT_NAME_SET_HEADSHOTS,
+    SIMPLE_CHEAT_NAME_GIVE_WEAPON,
+    SIMPLE_CHEAT_NAME_TELEPORT
+} SimpleCheatName;
+
+typedef struct {
+    uint32_t offset;
+} SimpleCheat;
+
+typedef struct {
+    uint32_t xOffset;
+    uint32_t yOffset;
+    uint32_t zOffset;
+} TeleportCheat;
+
+typedef enum {
+    WEAPON_UNKNOWNWEAPON = 0,
+    WEAPON_DEFAULTWEAPON,
+    INVISIBLE_MACHINE_GUN,
+    AK47,
+    M1911,
+    MUSTAND_AND_SALLY,
+    MUSTAND_AND_SALLY_BROKEN,
+    PYTHON,
+    COBRA,
+    CZ_75,
+    CALAMITY,
+    M14,
+    MNESIA,
+    M16,
+    SKULLCRUSHER,
+    G11,
+    G115_GENERATOR,
+    FAMAS,
+    G16_GL35,
+    AK74U,
+    AK74FU2,
+    MP5K,
+    MP115_KOLLIDER,
+    MP40,
+    THE_AFTERBURNER,
+    MPL,
+    MPL_LF,
+    PM63,
+    TOKYO_AND_ROSE,
+    TOKYO_AND_ROSE_BROKEN,
+    SPECTRE,
+    PHANTOM,
+    CZ_75_DUAL_WIELD,
+    CZ_75_DUAL_WIELD_BROKEN,
+    CALAMITY_AND_JANE,
+    CALAMITY_AND_JANE_BROKEN,
+    STAKEOUT,
+    RAID,
+    OLYMPIA,
+    HADES,
+    SPAS_12,
+    SPAZ_24,
+    HS10,
+    TYPHOID_AND_MARY,
+    TYPHOID_AND_MARY_BROKEN,
+    AUG,
+    AUG_50M3,
+    GALIL,
+    LAMENTATION,
+    COMMANDO,
+    PREDATOR,
+    FN_FAL,
+    EPC_WN,
+    DRAGUNOV,
+    D115_DISASSEMBLER,
+    L96A1,
+    L115_ISOLATOR,
+    RPK,
+    R115_RESONATOR,
+    HK21,
+    H115_OSCILLATOR,
+    M72_LAW,
+    M72_ANARCHY,
+    CHINA_LAKE,
+    CHINA_BEACH,
+    RAY_GUN,
+    PORTERS_X2_RAY_GUN,
+    THUNDERGUN,
+    ZEUSCANNON,
+    CROSSBOW_EXPLOSIVE_TIP,
+    AWFUL_LAWTON,
+    BALLISTIC_KNIFE,
+    THE_KRAUSS_REFIBRILLATOR,
+    BALLISTIC_KNIFE_BUTCHER_KNIFE,
+    THE_KRAUSS_REFIBRILLATOR_BUTCHER_KNIFE
+} Weapon;
+
+typedef struct {
+    uint32_t currentWeaponOffset;
+    uint32_t slot1Offset;
+    uint32_t slot2Offset;
+    uint32_t slot3Offset;
+} WeaponCheat;
+
 extern Cheat CHEAT_GOD_MODE;
 extern Cheat CHEAT_INVISIBLE;
 extern Cheat CHEAT_NO_CLIP;
@@ -66,5 +172,17 @@ extern Cheat CHEAT_INSTANT_KILL;
 extern CheatAsm CHEAT_ASM_INFINITE_AMMO;
 extern CheatAsm CHEAT_ASM_SMALL_CROSSHAIR;
 extern CheatAsm CHEAT_ASM_INSTANT_KILL;
+
+extern SimpleCheat SIMPLE_CHEAT_CHANGE_NAME;
+extern SimpleCheat SIMPLE_CHEAT_SET_HEALTH;
+extern SimpleCheat SIMPLE_CHEAT_SET_POINTS;
+extern SimpleCheat SIMPLE_CHEAT_SET_KILLS;
+extern SimpleCheat SIMPLE_CHEAT_SET_SPEED;
+extern SimpleCheat SIMPLE_CHEAT_SET_HEADSHOTS;
+
+extern TeleportCheat TELEPORT_CHEAT;
+extern WeaponCheat WEAPON_CHAT;
+
+SimpleCheat cheatGetSimpleCheat(SimpleCheatName cheatName);
 
 #endif // CHEAT_H_

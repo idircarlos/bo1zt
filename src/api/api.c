@@ -51,6 +51,10 @@ bool _apiSetInfiniteAmmo(ProcessHandle *ph, bool enabled);
 bool _apiGetInstantKill(Map *hooks);
 bool _apiSetInstantKill(ProcessHandle *ph, Map *hooks, bool enabled);
 
+bool _apiChangeName(ProcessHandle *ph, char *name);
+bool _apiSetSpeed(ProcessHandle *ph, uint32_t *value);
+bool _apiSetSimpleCheatIntValue(ProcessHandle *ph, SimpleCheatName simpleCheatName, uint32_t *value);
+
 
 // Hooks IDs (Hash for Hook Map)
 static const char* HOOK_INSTANT_KILL_ID = "HOOK_INSTANT_KILL";
@@ -66,7 +70,7 @@ Api *apiCreate(Controller *controller) {
     return api;
 }
 
-bool apiIsCheatEnabled(Api *api, CheatName cheat) {
+bool apiIsCheatEnabled(Api *api, CheatName cheatName) {
     if (!api || !api->controller) {
         LOG_ERROR("Api or Controller is null\n");
         return false;
@@ -78,7 +82,7 @@ bool apiIsCheatEnabled(Api *api, CheatName cheat) {
         return false;
     }
 
-    switch (cheat) {
+    switch (cheatName) {
         case CHEAT_NAME_GOD_MODE:
             return _apiGetGodMode(ph);
         case CHEAT_NAME_INVISIBLE:
@@ -104,12 +108,12 @@ bool apiIsCheatEnabled(Api *api, CheatName cheat) {
         case CHEAT_NAME_INSTANT_KILL:
             return _apiGetInstantKill(api->hooks);
         default:
-            LOG_WARN("Unkwown cheat %d\n", cheat);
+            LOG_WARN("Unkwown cheatName %d\n", cheatName);
             return false;
     }
 }
 
-bool apiSetCheatEnabled(Api *api, CheatName cheat, bool enabled) {
+bool apiSetCheatEnabled(Api *api, CheatName cheatName, bool enabled) {
     if (!api || !api->controller) {
         LOG_ERROR("Api or Controller is null\n");
         return false;
@@ -121,7 +125,7 @@ bool apiSetCheatEnabled(Api *api, CheatName cheat, bool enabled) {
         return false;
     }
 
-    switch (cheat) {
+    switch (cheatName) {
         case CHEAT_NAME_GOD_MODE:
             return _apiSetGodMode(ph, api->controller, enabled);
         case CHEAT_NAME_INVISIBLE:
@@ -147,7 +151,37 @@ bool apiSetCheatEnabled(Api *api, CheatName cheat, bool enabled) {
         case CHEAT_NAME_INSTANT_KILL:
             return _apiSetInstantKill(ph, api->hooks, enabled);
         default:
-            LOG_WARN("Unkwown cheat %d\n", cheat);
+            LOG_WARN("Unknown cheatName %d\n", cheatName);
+            return false;
+    }
+}
+
+bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return false;
+    }
+    
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) {
+        LOG_ERROR("ProcessHandle is null\n");
+        return false;
+    }
+
+    LOG_INFO("Setting Simple Cheat %d with value %x\n", simpleCheatName, value);
+
+    switch(simpleCheatName) {
+        case SIMPLE_CHEAT_NAME_CHANGE_NAME:
+            return _apiChangeName(ph, (char*)value);
+        case SIMPLE_CHEAT_NAME_SET_SPEED:
+            return _apiSetSpeed(ph, (uint32_t*)value);
+        case SIMPLE_CHEAT_NAME_SET_HEALTH:
+        case SIMPLE_CHEAT_NAME_SET_POINTS:
+        case SIMPLE_CHEAT_NAME_SET_KILLS:
+        case SIMPLE_CHEAT_NAME_SET_HEADSHOTS:
+            return _apiSetSimpleCheatIntValue(ph, simpleCheatName, (uint32_t*)value);
+        default:
+            LOG_WARN("Unknown simpleCheatName %d\n", simpleCheatName);
             return false;
     }
 }
@@ -429,4 +463,29 @@ bool _apiSetInstantKill(ProcessHandle *ph, Map *hooks, bool enabled) {
     }
 
     return enabled ? hookActivate(hook) : hookDeactivate(hook);
+}
+
+// Simple cheats
+
+bool _apiChangeName(ProcessHandle *ph, char *name) {
+    SimpleCheat cheat = SIMPLE_CHEAT_CHANGE_NAME;
+    return memoryWrite(ph, cheat.offset, name, strlen(name) + 1);
+}
+
+bool _apiSetSpeed(ProcessHandle *ph, uint32_t *value) {
+    SimpleCheat cheat = SIMPLE_CHEAT_SET_SPEED;
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, cheat.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Speed address\n");
+        return false;
+    }
+    LOG_INFO("Writting %d in %x\n", *value, cheat.offset);
+    return memoryWrite(ph, address1 + 0x18, value, sizeof(uint32_t));
+}
+
+bool _apiSetSimpleCheatIntValue(ProcessHandle *ph, SimpleCheatName simpleCheatName, uint32_t *value) {
+    SimpleCheat cheat = cheatGetSimpleCheat(simpleCheatName);
+    LOG_INFO("Writting %x in %x\n", value, cheat.offset);
+    return memoryWrite(ph, cheat.offset, value, sizeof(uint32_t));
 }
