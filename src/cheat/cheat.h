@@ -71,6 +71,12 @@ typedef struct {
     uint32_t zOffset;
 } TeleportCheat;
 
+typedef struct {
+    float x;
+    float y;
+    float z;
+} TeleportCoords;
+
 typedef enum {
     WEAPON_UNKNOWNWEAPON = 0,
     WEAPON_DEFAULTWEAPON,

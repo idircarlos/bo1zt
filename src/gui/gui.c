@@ -42,6 +42,12 @@ static uiCheckbox *increaseKnifeRangeCheckbox = NULL;
 static uiCheckbox *boxNeverMovesCheckbox = NULL;
 static uiCheckbox *thirdPersonCheckbox = NULL;
 
+// Teleport
+static uiSpinbox *xSpin = NULL;
+static uiSpinbox *ySpin = NULL;
+static uiSpinbox *zSpin = NULL;
+static uiButton *goBtn = NULL;
+
 // Handlers
 static int onClosing(uiWindow *window, void *data) {
     (void)window;
@@ -99,6 +105,12 @@ static void onPlayerButtonClick(uiButton *button, void *data) {
     }
     LOG_INFO("jaja %x\n", value);
     controllerSetSimpleCheat(controller, simpleCheatName, value);
+}
+
+static void onTeleportGoButtonClick(uiButton *button, void *data) {
+    (void)button;
+    TeleportCoords coords = {.x = (float)uiSpinboxValue(xSpin), .y = (float)uiSpinboxValue(ySpin), .z = (float)uiSpinboxValue(zSpin)};
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_TELEPORT, &coords);
 }
 
 // UI Api
@@ -345,9 +357,9 @@ static uiControl* buildWindowContent() {
     uiBox *coordsVBox = uiNewVerticalBox();
     uiBoxSetPadded(coordsVBox, 1);
 
-    uiSpinbox *xSpin = uiNewSpinbox(0, 999999);
-    uiSpinbox *ySpin = uiNewSpinbox(0, 999999);
-    uiSpinbox *zSpin = uiNewSpinbox(0, 999999);
+    xSpin = uiNewSpinbox(-500000, 500000);
+    ySpin = uiNewSpinbox(-500000, 500000);
+    zSpin = uiNewSpinbox(-500000, 500000);
 
     // Añadir etiquetas y spinboxes en el grid (3 filas, 2 columnas)
     uiBoxAppend(coordsVBox, uiControl(xSpin), 1);
@@ -355,7 +367,8 @@ static uiControl* buildWindowContent() {
     uiBoxAppend(coordsVBox, uiControl(zSpin), 1);
 
     // --- Botón Go (a la derecha del grid)
-    uiButton *goBtn = uiNewButton("Go");
+    goBtn = uiNewButton("Go");
+    uiButtonOnClicked(goBtn, onTeleportGoButtonClick, NULL);
 
     // --- VBox con botones Load y Save (a la derecha del botón Go)
     uiBox *saveLoadVBox = uiNewVerticalBox();

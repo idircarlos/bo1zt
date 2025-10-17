@@ -53,6 +53,7 @@ bool _apiSetInstantKill(ProcessHandle *ph, Map *hooks, bool enabled);
 
 bool _apiChangeName(ProcessHandle *ph, char *name);
 bool _apiSetSpeed(ProcessHandle *ph, uint32_t *value);
+bool _apiTeleport(ProcessHandle *ph, TeleportCoords *value);
 bool _apiSetSimpleCheatIntValue(ProcessHandle *ph, SimpleCheatName simpleCheatName, uint32_t *value);
 
 
@@ -175,6 +176,8 @@ bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value) {
             return _apiChangeName(ph, (char*)value);
         case SIMPLE_CHEAT_NAME_SET_SPEED:
             return _apiSetSpeed(ph, (uint32_t*)value);
+        case SIMPLE_CHEAT_NAME_TELEPORT:
+            return _apiTeleport(ph, (TeleportCoords*)value);
         case SIMPLE_CHEAT_NAME_SET_HEALTH:
         case SIMPLE_CHEAT_NAME_SET_POINTS:
         case SIMPLE_CHEAT_NAME_SET_KILLS:
@@ -482,6 +485,12 @@ bool _apiSetSpeed(ProcessHandle *ph, uint32_t *value) {
     }
     LOG_INFO("Writting %d in %x\n", *value, cheat.offset);
     return memoryWrite(ph, address1 + 0x18, value, sizeof(uint32_t));
+}
+
+bool _apiTeleport(ProcessHandle *ph, TeleportCoords *value) {
+    return memoryWrite(ph, TELEPORT_CHEAT.xOffset, &(value->x), sizeof(value->x)) &&
+           memoryWrite(ph, TELEPORT_CHEAT.yOffset, &(value->y), sizeof(value->y)) &&
+           memoryWrite(ph, TELEPORT_CHEAT.zOffset, &(value->z), sizeof(value->z));
 }
 
 bool _apiSetSimpleCheatIntValue(ProcessHandle *ph, SimpleCheatName simpleCheatName, uint32_t *value) {
