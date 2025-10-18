@@ -59,6 +59,7 @@ typedef enum {
     SIMPLE_CHEAT_NAME_SET_KILLS,
     SIMPLE_CHEAT_NAME_SET_HEADSHOTS,
     SIMPLE_CHEAT_NAME_GIVE_WEAPON,
+    SIMPLE_CHEAT_NAME_GIVE_AMMO,
     SIMPLE_CHEAT_NAME_TELEPORT
 } SimpleCheatName;
 
@@ -154,13 +155,19 @@ typedef enum {
     THE_KRAUSS_REFIBRILLATOR = 78,
     BALLISTIC_KNIFE_BUTCHER_KNIFE = 79,
     THE_KRAUSS_REFIBRILLATOR_BUTCHER_KNIFE = 80
+} WeaponName;
+
+typedef struct {
+    uint32_t weaponOffset;
+    uint32_t clipOffset;
+    uint32_t ammoOffset;
 } Weapon;
 
 typedef struct {
     uint32_t currentWeaponOffset;
-    uint32_t slot1Offset;
-    uint32_t slot2Offset;
-    uint32_t slot3Offset;
+    Weapon weapon1;
+    Weapon weapon2;
+    Weapon weapon3;
 } WeaponCheat;
 
 extern Cheat CHEAT_GOD_MODE;
@@ -191,7 +198,7 @@ extern TeleportCheat TELEPORT_CHEAT;
 extern WeaponCheat WEAPON_CHEAT;
 
 SimpleCheat cheatGetSimpleCheat(SimpleCheatName cheatName);
-const char *cheatGetWeaponName(Weapon weapon);
-Weapon cheatGetSanitizedWeapon(int index);
+const char *cheatGetWeaponName(WeaponName weapon);
+WeaponName cheatGetSanitizedWeapon(int index);
 
 #endif // CHEAT_H_

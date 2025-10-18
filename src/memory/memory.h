@@ -7,6 +7,7 @@
 typedef struct ProcessHandle ProcessHandle;
 
 ProcessHandle *memoryOpenProcess(const char *executableName);
+void memoryWaitUntilProcessCloses(ProcessHandle *ph);
 void memoryCloseProcess(ProcessHandle *ph);
 
 bool memoryRead(ProcessHandle *ph, uint32_t address, void *buffer, size_t size);

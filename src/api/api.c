@@ -53,6 +53,7 @@ bool _apiSetInstantKill(ProcessHandle *ph, Map *hooks, bool enabled);
 
 bool _apiChangeName(ProcessHandle *ph, char *name);
 bool _apiSetSpeed(ProcessHandle *ph, uint32_t *value);
+bool _apiGiveWeaponAmmo(ProcessHandle *ph, Weapon weapon);
 bool _apiTeleport(ProcessHandle *ph, TeleportCoords *value);
 bool _apiSetSimpleCheatIntValue(ProcessHandle *ph, SimpleCheatName simpleCheatName, uint32_t *value);
 
@@ -209,7 +210,7 @@ TeleportCoords *apiGetPlayerCurrentCoords(Api *api) {
     return coords;
 }
 
-Weapon apiGetPlayerCurrentWeapon(Api *api) {
+WeaponName apiGetPlayerCurrentWeapon(Api *api) {
     if (!api || !api->controller) {
         LOG_ERROR("Api or Controller is null\n");
         return WEAPON_UNKNOWNWEAPON;
@@ -224,13 +225,13 @@ Weapon apiGetPlayerCurrentWeapon(Api *api) {
     uint8_t weapon;
     bool success = memoryRead(ph, WEAPON_CHEAT.currentWeaponOffset, &weapon, sizeof(uint8_t));
     if (!success) {
-        printf("Failed to read Current Weapon value\n");
+        printf("Failed to read Current WeaponName value\n");
         return WEAPON_UNKNOWNWEAPON;
     }
-    return (Weapon)weapon;
+    return (WeaponName)weapon;
 }
 
-bool apiSetPlayerWeapon(Api *api, Weapon weapon, int slot) {
+bool apiSetPlayerWeapon(Api *api, WeaponName weapon, int slot) {
     if (!api || !api->controller) {
         LOG_ERROR("Api or Controller is null\n");
         return false;
@@ -246,9 +247,27 @@ bool apiSetPlayerWeapon(Api *api, Weapon weapon, int slot) {
         printf("Slot %d is invalid. Posible slots are 1, 2 or 3.\n", slot);
         return false;
     }
-    uint32_t slotOffset = slot == 1 ? WEAPON_CHEAT.slot1Offset : (slot == 2 ? WEAPON_CHEAT.slot2Offset : WEAPON_CHEAT.slot3Offset);
+    uint32_t slotOffset = slot == 1 ? WEAPON_CHEAT.weapon1.weaponOffset : (slot == 2 ? WEAPON_CHEAT.weapon2.weaponOffset : WEAPON_CHEAT.weapon3.weaponOffset);
     uint8_t weaponValue = (uint8_t)weapon;
     return memoryWrite(ph, slotOffset, &weapon, sizeof(weaponValue));
+}
+
+bool apiGivePlayerAmmo(Api *api) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return false;
+    }
+    
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) {
+        LOG_ERROR("ProcessHandle is null\n");
+        return false;
+    }
+    LOG_INFO("XD\n");
+
+    return _apiGiveWeaponAmmo(ph, WEAPON_CHEAT.weapon1) &&
+           _apiGiveWeaponAmmo(ph, WEAPON_CHEAT.weapon2) &&
+           _apiGiveWeaponAmmo(ph, WEAPON_CHEAT.weapon3);
 }
 
 bool _apiGetGodMode(ProcessHandle *ph) {
@@ -546,6 +565,13 @@ bool _apiSetSpeed(ProcessHandle *ph, uint32_t *value) {
     }
     LOG_INFO("Writting %d in %x\n", *value, cheat.offset);
     return memoryWrite(ph, address1 + 0x18, value, sizeof(uint32_t));
+}
+
+bool _apiGiveWeaponAmmo(ProcessHandle *ph, Weapon weapon) {
+    uint32_t bullets = 1000;
+    LOG_INFO("XD1\n");
+    return memoryWrite(ph, weapon.clipOffset, &bullets, sizeof(bullets)) &&
+           memoryWrite(ph, weapon.ammoOffset, &bullets, sizeof(bullets));
 }
 
 bool _apiTeleport(ProcessHandle *ph, TeleportCoords *value) {

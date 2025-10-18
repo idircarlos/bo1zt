@@ -28,7 +28,13 @@ ProcessHandle *memoryOpenProcess(const char *executableName) {
         } while (Process32Next(snap, &pe));
     }
     CloseHandle(snap);
+    //DWORD r = WaitForSingleObject(out->handle, INFINITE);
+    //LOG_INFO("r = %d\n", r);
     return out;
+}
+
+void memoryWaitUntilProcessCloses(ProcessHandle *ph) {
+    WaitForSingleObject(ph->handle, INFINITE);
 }
 
 void memoryCloseProcess(ProcessHandle *ph) {
@@ -37,6 +43,7 @@ void memoryCloseProcess(ProcessHandle *ph) {
         ph->handle = NULL;
         ph->pid = 0;
     }
+    free(ph);
 }
 
 bool memoryRead(ProcessHandle *ph, uint32_t address, void *buffer, size_t size) {

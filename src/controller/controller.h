@@ -9,6 +9,9 @@ typedef struct Controller Controller;
 Controller* controllerCreate();
 
 ProcessHandle* controllerGetProcessHandle(Controller *controller);
+bool controllerAttachProcess(Controller *controller);
+bool controllerIsGameRunning(Controller *controller);
+void controllerWaitUntilGameCloses(Controller *controller);
 
 bool controllerGetCheat(Controller *controller, CheatName cheat);
 bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled);
@@ -19,8 +22,9 @@ bool controllerIsCheckboxChecked(Controller *controller, CheatName cheat);
 
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller);
 
-Weapon controllerGetPlayerCurrentWeapon(Controller *controller);
-bool controllerSetPlayerWeapon(Controller *controller, Weapon weapon, int slot);
+WeaponName controllerGetPlayerCurrentWeapon(Controller *controller);
+bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int slot);
+bool controllerGivePlayerAmmo(Controller *controller);
 
 void controllerDestroy(Controller *controller);
 

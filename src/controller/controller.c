@@ -2,6 +2,7 @@
 #include "../memory/memory.h"
 #include "../api/api.h"
 #include "../gui/gui.h"
+#include "../logger/logger.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -10,14 +11,15 @@ struct Controller {
     Api *api;
 };
 
+ProcessHandle *_controllerAttachProcess(Controller *controller);
+
 Controller* controllerCreate() {
     Controller *controller = (Controller*)malloc(sizeof(Controller));
     if (!controller) return NULL;
-    controller->ph = memoryOpenProcess("BlackOps.exe");
+    controller->ph = _controllerAttachProcess(controller);
     controller->api = apiCreate(controller);
     if (!controller->ph) {
-        free(controller);
-        return NULL;
+        LOG_WARN("Could not create ProcessHandle. Game is not running.\n");
     }
     return controller;
 }
@@ -25,6 +27,22 @@ Controller* controllerCreate() {
 ProcessHandle* controllerGetProcessHandle(Controller *controller) {
     if (!controller) return NULL;
     return controller->ph;
+}
+
+bool controllerIsGameRunning(Controller *controller) {
+    if (!controller) return false;
+    controller->ph = _controllerAttachProcess(controller);
+    if (!controller->ph) return false;
+    // TODO: Finish this to check if game has been closed
+    return true;
+}
+
+void controllerWaitUntilGameCloses(Controller *controller) {
+    if (!controller) return;
+    if (!controller->ph) return;
+    memoryWaitUntilProcessCloses(controller->ph);
+    memoryCloseProcess(controller->ph);
+    controller->ph = NULL;
 }
 
 bool controllerGetCheat(Controller *controller, CheatName cheat) {
@@ -62,12 +80,27 @@ TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller) {
     return apiGetPlayerCurrentCoords(controller->api);
 }
 
-Weapon controllerGetPlayerCurrentWeapon(Controller *controller) {
+WeaponName controllerGetPlayerCurrentWeapon(Controller *controller) {
     if (!controller || !controller->ph) return WEAPON_UNKNOWNWEAPON;
     return apiGetPlayerCurrentWeapon(controller->api);
 }
 
-bool controllerSetPlayerWeapon(Controller *controller, Weapon weapon, int slot) {
+bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int slot) {
     if (!controller || !controller->ph) return false;
     return apiSetPlayerWeapon(controller->api, weapon, slot);
+}
+
+bool controllerGivePlayerAmmo(Controller *controller) {
+    if (!controller || !controller->ph) return false;
+    return apiGivePlayerAmmo(controller->api);
+}
+
+ProcessHandle *_controllerAttachProcess(Controller *controller) {
+    if (!controller) return NULL;
+    ProcessHandle *ph = memoryOpenProcess("BlackOps.exe");
+    if (!ph) {
+        LOG_WARN("Game is not running\n");
+        return NULL;
+    }
+    return ph;
 }

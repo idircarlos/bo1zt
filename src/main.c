@@ -3,16 +3,32 @@
 #include "memory/memory.h"
 #include "controller/controller.h"
 #include "logger/logger.h"
+#include "thread/thread.h"
+
+static Controller *controller = NULL;
+
+int threadEntryPointTest(void *data) {
+    (void)data;
+    while(true) {
+        while(!controllerIsGameRunning(controller)) {
+            LOG_INFO("Waiting for game running...\n");
+            threadSleep(3000);
+        }
+        LOG_INFO("Game attached! Waiting until game is closed...\n");
+        controllerWaitUntilGameCloses(controller);
+        LOG_INFO("Game has been closed\n");
+    }
+    
+    return 0;
+}
 
 int main(void) {
-    Controller *controller = controllerCreate();
+    controller = controllerCreate();
     loggerInit(controller);
-    if (!controller) {
-        LOG_ERROR("Could not create controller. Make sure the game is running.\n");
-        return 1;
-    }
+    threadCreate(threadEntryPointTest, NULL);
     guiInit(controller);
     guiRun();
     guiCleanup();
+    
     return 0;
 }

@@ -42,12 +42,11 @@ static uiCheckbox *increaseKnifeRangeCheckbox = NULL;
 static uiCheckbox *boxNeverMovesCheckbox = NULL;
 static uiCheckbox *thirdPersonCheckbox = NULL;
 
-// Give Weapon
+// Give WeaponName
 static uiCombobox *weaponsCombo = NULL;
-static uiButton *giveWeapon1Btn = NULL;
-static uiButton *giveWeapon2Btn = NULL;
-static uiButton *giveWeapon3Btn = NULL;
-
+static uiButton *giveAmmoBtn = NULL;
+static uiButton *giveWeaponBtn = NULL;
+static uiRadioButtons *weaponSlotsRadioButtons = NULL;
 
 // Teleport
 static uiSpinbox *xSpin = NULL;
@@ -118,18 +117,26 @@ static void onPlayerButtonClick(uiButton *button, void *data) {
     controllerSetSimpleCheat(controller, simpleCheatName, value);
 }
 
-static void onGiveWeaponButton(uiButton *button, void *data) {
+static void onGiveWeaponButtonClicked(uiButton *button, void *data) {
     (void)button;
-    
-    int slot = (int)(uintptr_t)data;
-    if (slot < 1 || slot > 3) {
-        LOG_ERROR("Slot %d is invalid. Posible slots are 1, 2 or 3.\n", slot);
-        return;
-    }
-    LOG_INFO("Por aqui\n");
+    (void)data;
+    int slot = uiRadioButtonsSelected(weaponSlotsRadioButtons) + 1;
     int index = uiComboboxSelected(weaponsCombo);
-    Weapon weapon = cheatGetSanitizedWeapon(index);
+    WeaponName weapon = cheatGetSanitizedWeapon(index);
     controllerSetPlayerWeapon(controller, weapon, slot);
+}
+
+static void onGiveAmmoButtonClicked(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    LOG_INFO("XD\n");
+    controllerGivePlayerAmmo(controller);
+}
+
+static void onWeaponSlotsSelected(uiRadioButtons *radioButtons, void *data) {
+    (void)radioButtons;
+    (void)data;
+    uiControlEnable(uiControl(giveWeaponBtn));
 }
 
 static void onTeleportGoButtonClick(uiButton *button, void *data) {
@@ -388,30 +395,37 @@ static uiControl* buildWindowContent() {
 
     // Combobox con lista de armas
     weaponsCombo = uiNewCombobox();
-    for (int i = 0, j = 0; i < NUM_WEAPON_IDS; i++) {
-        const char *weaponName = cheatGetWeaponName((Weapon)i);
+    for (int i = 0; i < NUM_WEAPON_IDS; i++) {
+        const char *weaponName = cheatGetWeaponName((WeaponName)i);
         if (weaponName != NULL) {
             uiComboboxAppend(weaponsCombo, weaponName);
         }
     } 
     uiComboboxSetSelected(weaponsCombo, 2);
-    int items = uiComboboxNumItems(weaponsCombo);
+    uiComboboxNumItems(weaponsCombo);
 
     // Botones de armas
-    giveWeapon1Btn = uiNewButton("Give Weapon Slot 1");
-    giveWeapon2Btn = uiNewButton("Give Weapon Slot 2");
-    giveWeapon3Btn = uiNewButton("Give Weapon Slot 3");
+    giveWeaponBtn = uiNewButton("Give Weapon");
+    uiControlDisable(uiControl(giveWeaponBtn));
+    uiButtonOnClicked(giveWeaponBtn, onGiveWeaponButtonClicked, NULL);
 
-    uiButtonOnClicked(giveWeapon1Btn, onGiveWeaponButton, (void*)1);
-    uiButtonOnClicked(giveWeapon2Btn, onGiveWeaponButton, (void*)2);
-    uiButtonOnClicked(giveWeapon3Btn, onGiveWeaponButton, (void*)3);
+    giveAmmoBtn = uiNewButton("Give Ammo");
+    uiButtonOnClicked(giveAmmoBtn, onGiveAmmoButtonClicked, NULL);
+
+    weaponSlotsRadioButtons = uiNewRadioButtons();
+    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 1   ");
+    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 2   ");
+    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 3   ");
+
+    uiRadioButtonsOnSelected(weaponSlotsRadioButtons, onWeaponSlotsSelected, NULL);
+    
 
     // Caja horizontal para los dos botones
     uiBox *weaponsButtonsHBox = uiNewHorizontalBox();
     uiBoxSetPadded(weaponsButtonsHBox, 1);
-    uiBoxAppend(weaponsButtonsHBox, uiControl(giveWeapon1Btn), 1);
-    uiBoxAppend(weaponsButtonsHBox, uiControl(giveWeapon2Btn), 1);
-    uiBoxAppend(weaponsButtonsHBox, uiControl(giveWeapon3Btn), 1);
+    uiBoxAppend(weaponsButtonsHBox, uiControl(weaponSlotsRadioButtons), 0);
+    uiBoxAppend(weaponsButtonsHBox, uiControl(giveAmmoBtn), 1);
+    uiBoxAppend(weaponsButtonsHBox, uiControl(giveWeaponBtn), 1);
 
     // Añadir al VBox principal
     uiBoxAppend(weaponsVBox, uiControl(weaponsCombo), 0);

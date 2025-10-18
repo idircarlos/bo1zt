@@ -64,8 +64,14 @@
 #define SIMPLE_CHEAT_OFFSET_SET_HEADSHOTS 0x01C0A6EC
 #define SIMPLE_CHEAT_OFFSET_CURRENT_WEAPON 0x01C08C84
 #define SIMPLE_CHEAT_OFFSET_GIVE_WEAPON_1 0x01C08D34
+#define SIMPLE_CHEAT_OFFSET_CLIP_WEAPON_1 0x01C08F00
+#define SIMPLE_CHEAT_OFFSET_AMMO_WEAPON_1 0x01C08E88
 #define SIMPLE_CHEAT_OFFSET_GIVE_WEAPON_2 0x01C08D64
+#define SIMPLE_CHEAT_OFFSET_CLIP_WEAPON_2 0x01C08F10
+#define SIMPLE_CHEAT_OFFSET_AMMO_WEAPON_2 0x01C08E98
 #define SIMPLE_CHEAT_OFFSET_GIVE_WEAPON_3 0x01C08D7C
+#define SIMPLE_CHEAT_OFFSET_CLIP_WEAPON_3 0x01C08F18
+#define SIMPLE_CHEAT_OFFSET_AMMO_WEAPON_3 0x01C08EA0
 #define SIMPLE_CHEAT_OFFSET_TELEPORT_X 0x01C08B6C
 #define SIMPLE_CHEAT_OFFSET_TELEPORT_Y 0x01C08B68
 #define SIMPLE_CHEAT_OFFSET_TELEPORT_Z 0x01C08B64
@@ -183,9 +189,21 @@ TeleportCheat TELEPORT_CHEAT = {
 
 WeaponCheat WEAPON_CHEAT = {
     .currentWeaponOffset = SIMPLE_CHEAT_OFFSET_CURRENT_WEAPON,
-    .slot1Offset = SIMPLE_CHEAT_OFFSET_GIVE_WEAPON_1,
-    .slot2Offset = SIMPLE_CHEAT_OFFSET_GIVE_WEAPON_2,
-    .slot3Offset = SIMPLE_CHEAT_OFFSET_GIVE_WEAPON_3,
+    .weapon1 = {
+        .weaponOffset = SIMPLE_CHEAT_OFFSET_GIVE_WEAPON_1,
+        .clipOffset = SIMPLE_CHEAT_OFFSET_CLIP_WEAPON_1,
+        .ammoOffset = SIMPLE_CHEAT_OFFSET_AMMO_WEAPON_1,
+    },
+    .weapon2 = {
+        .weaponOffset = SIMPLE_CHEAT_OFFSET_GIVE_WEAPON_2,
+        .clipOffset = SIMPLE_CHEAT_OFFSET_CLIP_WEAPON_2,
+        .ammoOffset = SIMPLE_CHEAT_OFFSET_AMMO_WEAPON_2,
+    },
+    .weapon3 = {
+        .weaponOffset = SIMPLE_CHEAT_OFFSET_GIVE_WEAPON_3,
+        .clipOffset = SIMPLE_CHEAT_OFFSET_CLIP_WEAPON_3,
+        .ammoOffset = SIMPLE_CHEAT_OFFSET_AMMO_WEAPON_3,
+    },
 };
 
 const char *WEAPON_LOOKUP [] = {
@@ -272,7 +290,7 @@ const char *WEAPON_LOOKUP [] = {
     "The Krauss Refibrillator + Bowie"
 };
 
-static const Weapon WEAPON_SANITIZED [] = {
+static const WeaponName WEAPON_SANITIZED [] = {
     WEAPON_UNKNOWNWEAPON,                   // 0
     WEAPON_DEFAULTWEAPON,                   // 1
     INVISIBLE_MACHINE_GUN,                  // 2
@@ -354,10 +372,10 @@ SimpleCheat cheatGetSimpleCheat(SimpleCheatName cheatName) {
     return SIMPLE_CHEAT_LOOKUP[cheatName];
 }
 
-const char *cheatGetWeaponName(Weapon weapon) {
+const char *cheatGetWeaponName(WeaponName weapon) {
     return WEAPON_LOOKUP[weapon];
 }
 
-Weapon cheatGetSanitizedWeapon(int index) {
+WeaponName cheatGetSanitizedWeapon(int index) {
     return WEAPON_SANITIZED[index];
 }
