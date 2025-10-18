@@ -198,3 +198,16 @@ uiRadioButtons *uiNewRadioButtons(void)
 
 	return r;
 }
+
+void uiEnableRadioButton(uiRadioButtons *r, int index)
+{
+	HWND h = (*(r->hwnds))[index];
+	EnableWindow(h, TRUE);
+}
+
+
+void uiDisableRadioButton(uiRadioButtons *r, int index)
+{
+	HWND h = (*(r->hwnds))[index];
+	EnableWindow(h, FALSE);
+}

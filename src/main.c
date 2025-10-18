@@ -7,9 +7,9 @@
 
 static Controller *controller = NULL;
 
-int threadEntryPointTest(void *data) {
+int processRunningThread(void *data) {
     (void)data;
-    while(true) {
+    while (true) {
         while(!controllerIsGameRunning(controller)) {
             LOG_INFO("Waiting for game running...\n");
             threadSleep(3000);
@@ -18,15 +18,26 @@ int threadEntryPointTest(void *data) {
         controllerWaitUntilGameCloses(controller);
         LOG_INFO("Game has been closed\n");
     }
-    
     return 0;
+}
+
+int refreshWindowThread(void *data) {
+    (void)data;
+    while (true) {
+        while(!controllerIsGameRunning(controller)) {
+            threadSleep(3000);
+        }
+        guiUpdate(controller);
+        threadSleep(1000);
+    }
 }
 
 int main(void) {
     controller = controllerCreate();
     loggerInit(controller);
-    threadCreate(threadEntryPointTest, NULL);
+    threadCreate(processRunningThread, NULL);
     guiInit(controller);
+    threadCreate(refreshWindowThread, NULL);
     guiRun();
     guiCleanup();
     

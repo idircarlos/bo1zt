@@ -129,7 +129,6 @@ static void onGiveWeaponButtonClicked(uiButton *button, void *data) {
 static void onGiveAmmoButtonClicked(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    LOG_INFO("XD\n");
     controllerGivePlayerAmmo(controller);
 }
 
@@ -218,6 +217,19 @@ bool guiIsCheatChecked(Controller *controller, CheatName cheat) {
             fprintf(stderr, "Unknown cheat %d\n", cheat);
             return false;
     }
+}
+
+void updateWeaponBox(Controller *controller) {
+    WeaponName w2 = controllerGetPlayerWeapon(controller, 2);
+    WeaponName w3 = controllerGetPlayerWeapon(controller, 3);
+
+    w2 == WEAPON_UNKNOWNWEAPON ? uiDisableRadioButton(weaponSlotsRadioButtons, 1) : uiEnableRadioButton(weaponSlotsRadioButtons, 1);
+    w3 == WEAPON_UNKNOWNWEAPON ? uiDisableRadioButton(weaponSlotsRadioButtons, 2) : uiEnableRadioButton(weaponSlotsRadioButtons, 2);
+}
+
+void guiUpdate(Controller *controller) {
+    // Update Weapon Box
+    updateWeaponBox(controller);
 }
 
 static void setupUi() {
@@ -513,14 +525,13 @@ void guiInit(Controller *controllerInstance) {
     controller = controllerInstance;
     setupUi();
     setupWindow();
+    uiControl *c = buildWindowContent();
+    uiWindowSetChild(window,c);
 }
 
 void guiRun(void) {
-    uiControl *c = buildWindowContent();
-    uiWindowSetChild(window,c);
     uiControlShow(uiControl(window));
     while (uiMainStep(1));
-    
 }
 
 void guiCleanup(void) {

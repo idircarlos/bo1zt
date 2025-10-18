@@ -4080,6 +4080,22 @@ _UI_EXTERN SetIconErrorCode uiWindowSetIcon(uiWindow *w, const char *resourceNam
  */
 _UI_EXTERN void uiScreenGetResolution(int *horizontal, int *vertical);
 
+/**
+ * Enable a specific radio button
+ *
+ * @param r uiRadioButtons instace.
+ * @param index Radio Button index to enable.
+ */
+_UI_EXTERN void uiEnableRadioButton(uiRadioButtons *r, int index);
+
+/**
+ * Disable a specific radio button
+ *
+ * @param r uiRadioButtons instace.
+ * @param index Radio Button index to disable.
+ */
+_UI_EXTERN void uiDisableRadioButton(uiRadioButtons *r, int index);
+
 #ifdef __cplusplus
 }
 #endif

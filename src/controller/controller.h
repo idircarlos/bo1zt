@@ -23,6 +23,7 @@ bool controllerIsCheckboxChecked(Controller *controller, CheatName cheat);
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller);
 
 WeaponName controllerGetPlayerCurrentWeapon(Controller *controller);
+WeaponName controllerGetPlayerWeapon(Controller *controller, int slot);
 bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int slot);
 bool controllerGivePlayerAmmo(Controller *controller);
 

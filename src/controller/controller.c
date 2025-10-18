@@ -85,6 +85,11 @@ WeaponName controllerGetPlayerCurrentWeapon(Controller *controller) {
     return apiGetPlayerCurrentWeapon(controller->api);
 }
 
+WeaponName controllerGetPlayerWeapon(Controller *controller, int slot) {
+    if (!controller || !controller->ph) return WEAPON_UNKNOWNWEAPON;
+    return apiGetPlayerWeapon(controller->api, slot);
+}
+
 bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int slot) {
     if (!controller || !controller->ph) return false;
     return apiSetPlayerWeapon(controller->api, weapon, slot);
