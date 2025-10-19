@@ -346,7 +346,7 @@ bool apiIsZombiesGameRunning(Api *api) {
 }
 
 int apiGetGameResets(Api *api) {
-        if (!api || !api->controller) {
+    if (!api || !api->controller) {
         LOG_ERROR("Api or Controller is null\n");
         return false;
     }
