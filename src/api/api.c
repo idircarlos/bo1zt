@@ -295,6 +295,50 @@ bool apiGivePlayerAmmo(Api *api) {
            _apiGiveWeaponAmmo(ph, WEAPON_CHEAT.weapon3);
 }
 
+bool apiSetRound(Api *api, int currentRound, int nextRound) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return false;
+    }
+    
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) {
+        LOG_ERROR("ProcessHandle is null\n");
+        return false;
+    }
+
+    uint8_t pattern[ROUND_CHANGE_PATTERN_SIZE];
+    printf("Pattern bytes: ");
+    for (size_t i = 0; i < ROUND_CHEAT.patternSize; ++i) {
+        printf("0x%02X ", ROUND_CHEAT.pattern[i]);
+    }
+    memcpy(pattern, ROUND_CHEAT.pattern, ROUND_CHEAT.patternSize);  // Copy the Cheat pattern to avoid modifying the array.
+    printf("Pattern bytes: ");
+    for (size_t i = 0; i < sizeof(pattern); ++i) {
+        printf("0x%02X ", pattern[i]);
+    }
+    memcpy(pattern, &currentRound, 4*sizeof(uint8_t));                      // Replacing first 4 bytes with current round.
+    // Imprimimos el array completo para verificar
+    printf("Pattern bytes: ");
+    for (size_t i = 0; i < sizeof(pattern); ++i) {
+        printf("0x%02X ", pattern[i]);
+    }
+    printf("\n");
+    uintptr_t addressFound;
+    bool found = memoryFindPattern(ph, ROUND_CHEAT.regionOffset, ROUND_CHEAT.regionSize, pattern, sizeof(pattern), &addressFound);
+    if (!found) {
+        LOG_ERROR("Couldn't find Round Change memory pattern!\n");
+        return false;
+    }
+    bool success = memoryWrite(ph, addressFound, &nextRound, sizeof(nextRound));
+    if (!success) {
+        printf("Failed to write Next Round value\n");
+        return false;
+    }
+    LOG_INFO("Next round successfully changed. Finish the current round %d and next round will be %d\n", currentRound, nextRound);
+    return true;
+}
+
 bool _apiGetGodMode(ProcessHandle *ph) {
     uint32_t value = 0;
     bool success = memoryRead(ph, CHEAT_GOD_MODE.offset, &value, sizeof(value));

@@ -28,8 +28,6 @@ ProcessHandle *memoryOpenProcess(const char *executableName) {
         } while (Process32Next(snap, &pe));
     }
     CloseHandle(snap);
-    //DWORD r = WaitForSingleObject(out->handle, INFINITE);
-    //LOG_INFO("r = %d\n", r);
     return out;
 }
 
@@ -63,4 +61,39 @@ bool memoryVirtualProtect(ProcessHandle *ph, uint32_t address, size_t size, uint
 bool memoryAllocatePage(ProcessHandle *ph, size_t size, uintptr_t *address) {
     *address = (uintptr_t)VirtualAllocEx(ph->handle, NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     return address != NULL;
+}
+
+bool memoryFindPattern(ProcessHandle *ph, uintptr_t startAddress, size_t regionSize, const uint8_t *pattern, size_t patternSize, uintptr_t *outAddress) {
+    if (!ph || !pattern || patternSize == 0 || regionSize == 0 || !outAddress)
+        return false;
+
+    uint8_t *buffer = (uint8_t*)malloc(regionSize);
+    if (!buffer) {
+        LOG_ERROR("memoryFindPattern: sin memoria (regionSize=%zu)", regionSize);
+        return false;
+    }
+
+    if (!memoryRead(ph, (uint32_t)startAddress, buffer, regionSize)) {
+        LOG_ERROR("memoryFindPattern: no se pudo leer la memoria en 0x%08X", (unsigned)startAddress);
+        free(buffer);
+        return false;
+    }
+
+    for (size_t i = 0; i <= regionSize - patternSize; ++i) {
+        bool match = true;
+        for (size_t j = 0; j < patternSize; ++j) {
+            if (pattern[j] != 0x3F && buffer[i + j] != pattern[j]) {
+                match = false;
+                break;
+            }
+        }
+        if (match) {
+            *outAddress = startAddress + i;
+            free(buffer);
+            return true;
+        }
+    }
+
+    free(buffer);
+    return false;
 }

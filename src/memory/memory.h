@@ -16,4 +16,6 @@ bool memoryWrite(ProcessHandle *ph, uint32_t address, const void *buffer, size_t
 bool memoryAllocatePage(ProcessHandle *ph, size_t size, uintptr_t *address);
 bool memoryVirtualProtect(ProcessHandle *ph, uint32_t address, size_t size, uint32_t protect, uint32_t *oldProtect);
 
+bool memoryFindPattern(ProcessHandle *ph, uintptr_t startAddress, size_t regionSize, const uint8_t *pattern, size_t patternSize, uintptr_t *outAddress);
+
 #endif // MEMORY_H_

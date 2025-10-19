@@ -27,6 +27,8 @@ WeaponName controllerGetPlayerWeapon(Controller *controller, int slot);
 bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int slot);
 bool controllerGivePlayerAmmo(Controller *controller);
 
+bool controllerSetRound(Controller *controller, int currentRound, int nextRound);
+
 void controllerDestroy(Controller *controller);
 
 #endif // CONTROLLER_H_

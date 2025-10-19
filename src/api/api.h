@@ -22,4 +22,6 @@ WeaponName apiGetPlayerWeapon(Api *api, int slot);
 bool apiSetPlayerWeapon(Api *api, WeaponName weapon, int slot);
 bool apiGivePlayerAmmo(Api *api);
 
+bool apiSetRound(Api *api, int currentRound, int nextRound);
+
 #endif // API_H_

@@ -7,6 +7,7 @@
 #define MAX_CHEAT_VALUE_SIZE 1024 // 1KB max size for flexibility
 #define MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE 1024 // 1KB max size for flexibility
 #define NUM_WEAPON_IDS 81
+#define ROUND_CHANGE_PATTERN_SIZE 8
 
 typedef enum {
     CHEAT_NAME_GOD_MODE,
@@ -170,6 +171,13 @@ typedef struct {
     Weapon weapon3;
 } WeaponCheat;
 
+typedef struct {
+    uintptr_t regionOffset;
+    size_t regionSize;
+    uint8_t pattern[ROUND_CHANGE_PATTERN_SIZE];
+    size_t patternSize;
+} RoundCheat;
+
 extern Cheat CHEAT_GOD_MODE;
 extern Cheat CHEAT_INVISIBLE;
 extern Cheat CHEAT_NO_CLIP;
@@ -196,6 +204,7 @@ extern SimpleCheat SIMPLE_CHEAT_SET_HEADSHOTS;
 
 extern TeleportCheat TELEPORT_CHEAT;
 extern WeaponCheat WEAPON_CHEAT;
+extern RoundCheat ROUND_CHEAT;
 
 SimpleCheat cheatGetSimpleCheat(SimpleCheatName cheatName);
 const char *cheatGetWeaponName(WeaponName weapon);

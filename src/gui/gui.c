@@ -54,12 +54,18 @@ static uiSpinbox *ySpin = NULL;
 static uiSpinbox *zSpin = NULL;
 static uiButton *goBtn = NULL;
 
+// Change Round
+static uiSpinbox *currentSpin = NULL;
+static uiSpinbox *nextSpin = NULL;
+static uiButton *changeRoundBtn = NULL;
+
+
 // Handlers
 static int onClosing(uiWindow *window, void *data) {
     (void)window;
     (void)data;
     uiQuit();
-    return 1;
+    exit(0);
 }
 
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
@@ -185,6 +191,14 @@ static void onTeleportLoadButtonClick(uiButton *button, void *data) {
     uiFreeText(filePath);
 }
 
+static void onChangeRoundButtonClicked(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    int currentRound = uiSpinboxValue(currentSpin);
+    int nextRound = uiSpinboxValue(nextSpin);
+    controllerSetRound(controller, currentRound, nextRound);
+}
+
 // UI Api
 bool guiIsCheatChecked(Controller *controller, CheatName cheat) {
     if (!controller) return false;
@@ -263,9 +277,9 @@ static uiControl* buildWindowContent() {
     uiGrid *roundGrid = uiNewGrid();
     uiGridSetPadded(roundGrid, 1);
     uiLabel *currentLabel = uiNewLabel("Current Round");
-    uiSpinbox *currentSpin = uiNewSpinbox(0, 256);
+    currentSpin = uiNewSpinbox(0, 256);
     uiLabel *nextLabel = uiNewLabel("Next Round");
-    uiSpinbox *nextSpin = uiNewSpinbox(0, 256);
+    nextSpin = uiNewSpinbox(0, 256);
     uiGridAppend(roundGrid, uiControl(currentLabel), 0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignCenter);
     uiGridAppend(roundGrid, uiControl(currentSpin), 1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(roundGrid, uiControl(nextLabel), 0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignCenter);
@@ -277,7 +291,9 @@ static uiControl* buildWindowContent() {
     );
     uiBoxAppend(roundVBox, uiControl(infoLabel), 1);
 
-    uiButton *changeRoundBtn = uiNewButton("Change Round");
+    changeRoundBtn = uiNewButton("Change Round");
+    uiButtonOnClicked(changeRoundBtn, onChangeRoundButtonClicked, NULL);
+
     uiBoxAppend(roundVBox, uiControl(changeRoundBtn), 1);
 
     uiGroupSetChild(roundGroup, uiControl(roundVBox));
@@ -339,7 +355,6 @@ static uiControl* buildWindowContent() {
     uiBoxSetPadded(graphicsBox, 1);
 
 
-
     // --- Cheats Group ---
     uiGroup *cheatsGroup = uiNewGroup("Cheats");
     uiBox *cheatsBox = uiNewVerticalBox();
@@ -396,9 +411,6 @@ static uiControl* buildWindowContent() {
     uiGroup *gameGroup = uiNewGroup("Game");
     uiBox *gameBox = uiNewVerticalBox();
     uiBoxSetPadded(gameBox, 1);
-
-
-
 
     // --- Weapons Group ---
     uiGroup *weaponsGroup = uiNewGroup("Weapons");

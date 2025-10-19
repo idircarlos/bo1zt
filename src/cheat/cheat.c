@@ -76,6 +76,13 @@
 #define SIMPLE_CHEAT_OFFSET_TELEPORT_Y 0x01C08B68
 #define SIMPLE_CHEAT_OFFSET_TELEPORT_Z 0x01C08B64
 
+// Other Cheats
+#define ROUND_CHANGE_OFFSET 0x2AB00000
+#define ROUND_CHANGE_REGION_SIZE 0x000F0000
+#define ROUND_CHANGE_PATTERN {  0x00, 0x00, 0x00, 0x00,   /* Current round uint32_t to be replaced */  \
+                                0x3F, 0x3F, 0x12, 0x00  } /* Wildcard 0x0012???? in Little Endian */   \
+                             
+
 
 Cheat CHEAT_GOD_MODE = {
     CHEAT_OFFSET_GOD_MODE,
@@ -204,6 +211,13 @@ WeaponCheat WEAPON_CHEAT = {
         .clipOffset = SIMPLE_CHEAT_OFFSET_CLIP_WEAPON_3,
         .ammoOffset = SIMPLE_CHEAT_OFFSET_AMMO_WEAPON_3,
     },
+};
+
+RoundCheat ROUND_CHEAT = {
+    .regionOffset = ROUND_CHANGE_OFFSET,
+    .regionSize = ROUND_CHANGE_REGION_SIZE,
+    .pattern = ROUND_CHANGE_PATTERN,
+    .patternSize = ROUND_CHANGE_PATTERN_SIZE,
 };
 
 const char *WEAPON_LOOKUP [] = {

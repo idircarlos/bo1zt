@@ -33,7 +33,6 @@ bool controllerIsGameRunning(Controller *controller) {
     if (!controller) return false;
     controller->ph = _controllerAttachProcess(controller);
     if (!controller->ph) return false;
-    // TODO: Finish this to check if game has been closed
     return true;
 }
 
@@ -98,6 +97,11 @@ bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int sl
 bool controllerGivePlayerAmmo(Controller *controller) {
     if (!controller || !controller->ph) return false;
     return apiGivePlayerAmmo(controller->api);
+}
+
+bool controllerSetRound(Controller *controller, int currentRound, int nextRound) {
+    if (!controller || !controller->ph) return false;
+    return apiSetRound(controller->api, currentRound, nextRound);
 }
 
 ProcessHandle *_controllerAttachProcess(Controller *controller) {
