@@ -81,7 +81,9 @@
 #define ROUND_CHANGE_REGION_SIZE 0x000F0000
 #define ROUND_CHANGE_PATTERN {  0x00, 0x00, 0x00, 0x00,   /* Current round uint32_t to be replaced */  \
                                 0x3F, 0x3F, 0x12, 0x00  } /* Wildcard 0x0012???? in Little Endian */   \
-                             
+
+#define GAME_IS_ZOMBIES_GAME_ACTIVE_OFFSET 0x00BCB3AC
+#define GAME_N_RESETS 0x023A5598             
 
 
 Cheat CHEAT_GOD_MODE = {
@@ -218,6 +220,11 @@ RoundCheat ROUND_CHEAT = {
     .regionSize = ROUND_CHANGE_REGION_SIZE,
     .pattern = ROUND_CHANGE_PATTERN,
     .patternSize = ROUND_CHANGE_PATTERN_SIZE,
+};
+
+GameCheat GAME_CHEAT = {
+    .isZombiesGameActiveOffset = GAME_IS_ZOMBIES_GAME_ACTIVE_OFFSET,
+    .nResetsOffset = GAME_N_RESETS
 };
 
 const char *WEAPON_LOOKUP [] = {

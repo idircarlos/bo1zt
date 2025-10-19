@@ -3,24 +3,24 @@
 #include "../api/api.h"
 #include "../gui/gui.h"
 #include "../logger/logger.h"
+#include "../state/state.h"
 #include <stdlib.h>
 #include <stdio.h>
+
+#define GAME_EXECUTABLE_NAME "BlackOps.exe"
 
 struct Controller {
     ProcessHandle *ph;
     Api *api;
+    State *state;
 };
-
-ProcessHandle *_controllerAttachProcess(Controller *controller);
 
 Controller* controllerCreate() {
     Controller *controller = (Controller*)malloc(sizeof(Controller));
     if (!controller) return NULL;
-    controller->ph = _controllerAttachProcess(controller);
+    controllerAttachGame(controller);
     controller->api = apiCreate(controller);
-    if (!controller->ph) {
-        LOG_WARN("Could not create ProcessHandle. Game is not running.\n");
-    }
+    controller->state = stateCreate(0, 0);
     return controller;
 }
 
@@ -30,9 +30,21 @@ ProcessHandle* controllerGetProcessHandle(Controller *controller) {
 }
 
 bool controllerIsGameRunning(Controller *controller) {
+    (void)controller;
+    return memoryIsProcessRunning(GAME_EXECUTABLE_NAME);
+}
+
+bool controllerAttachGame(Controller *controller) {
     if (!controller) return false;
-    controller->ph = _controllerAttachProcess(controller);
+    if (controller->ph) {
+        LOG_WARN("Game is already attached. This souldn't happen. Omitting the operation\n");
+        return true;
+    }
+    if (!controller->ph) controller->ph = memoryOpenProcess(GAME_EXECUTABLE_NAME);
     if (!controller->ph) return false;
+    bool isZombiesActive = controllerIsZombiesGameActive(controller);
+    int gameResets = controllerGetGameResets(controller);
+    controller->state = stateCreate(isZombiesActive, gameResets);
     return true;
 }
 
@@ -41,6 +53,7 @@ void controllerWaitUntilGameCloses(Controller *controller) {
     if (!controller->ph) return;
     memoryWaitUntilProcessCloses(controller->ph);
     memoryCloseProcess(controller->ph);
+    stateReset(controller->state);
     controller->ph = NULL;
 }
 
@@ -104,12 +117,13 @@ bool controllerSetRound(Controller *controller, int currentRound, int nextRound)
     return apiSetRound(controller->api, currentRound, nextRound);
 }
 
-ProcessHandle *_controllerAttachProcess(Controller *controller) {
-    if (!controller) return NULL;
-    ProcessHandle *ph = memoryOpenProcess("BlackOps.exe");
-    if (!ph) {
-        LOG_WARN("Game is not running\n");
-        return NULL;
-    }
-    return ph;
+bool controllerIsZombiesGameActive(Controller *controller) {
+    if (!controller || !controller->ph) return false;
+    return apiIsZombiesGameRunning(controller->api);
 }
+
+int controllerGetGameResets(Controller *controller) {
+    if (!controller || !controller->ph) return false;
+    return apiGetGameResets(controller->api);
+}
+

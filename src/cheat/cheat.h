@@ -178,6 +178,12 @@ typedef struct {
     size_t patternSize;
 } RoundCheat;
 
+typedef struct {
+    // Read-only. We only want to read from these addresses
+    uintptr_t isZombiesGameActiveOffset;   // 1 if there 
+    uintptr_t nResetsOffset;
+} GameCheat;
+
 extern Cheat CHEAT_GOD_MODE;
 extern Cheat CHEAT_INVISIBLE;
 extern Cheat CHEAT_NO_CLIP;
@@ -205,6 +211,7 @@ extern SimpleCheat SIMPLE_CHEAT_SET_HEADSHOTS;
 extern TeleportCheat TELEPORT_CHEAT;
 extern WeaponCheat WEAPON_CHEAT;
 extern RoundCheat ROUND_CHEAT;
+extern GameCheat GAME_CHEAT;
 
 SimpleCheat cheatGetSimpleCheat(SimpleCheatName cheatName);
 const char *cheatGetWeaponName(WeaponName weapon);

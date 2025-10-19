@@ -7,6 +7,7 @@
 typedef struct ProcessHandle ProcessHandle;
 
 ProcessHandle *memoryOpenProcess(const char *executableName);
+bool memoryIsProcessRunning(const char *executableName);
 void memoryWaitUntilProcessCloses(ProcessHandle *ph);
 void memoryCloseProcess(ProcessHandle *ph);
 

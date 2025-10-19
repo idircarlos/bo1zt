@@ -31,6 +31,23 @@ ProcessHandle *memoryOpenProcess(const char *executableName) {
     return out;
 }
 
+bool memoryIsProcessRunning(const char *executableName) {
+    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snap == INVALID_HANDLE_VALUE) return false;
+
+    PROCESSENTRY32 pe;
+    pe.dwSize = sizeof(pe);
+    if (Process32First(snap, &pe)) {
+        do {
+            if (_stricmp(pe.szExeFile, executableName) == 0) {
+                return true;
+            }
+        } while (Process32Next(snap, &pe));
+    }
+    CloseHandle(snap);
+    return false;
+}
+
 void memoryWaitUntilProcessCloses(ProcessHandle *ph) {
     WaitForSingleObject(ph->handle, INFINITE);
 }

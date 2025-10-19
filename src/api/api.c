@@ -308,22 +308,8 @@ bool apiSetRound(Api *api, int currentRound, int nextRound) {
     }
 
     uint8_t pattern[ROUND_CHANGE_PATTERN_SIZE];
-    printf("Pattern bytes: ");
-    for (size_t i = 0; i < ROUND_CHEAT.patternSize; ++i) {
-        printf("0x%02X ", ROUND_CHEAT.pattern[i]);
-    }
     memcpy(pattern, ROUND_CHEAT.pattern, ROUND_CHEAT.patternSize);  // Copy the Cheat pattern to avoid modifying the array.
-    printf("Pattern bytes: ");
-    for (size_t i = 0; i < sizeof(pattern); ++i) {
-        printf("0x%02X ", pattern[i]);
-    }
-    memcpy(pattern, &currentRound, 4*sizeof(uint8_t));                      // Replacing first 4 bytes with current round.
-    // Imprimimos el array completo para verificar
-    printf("Pattern bytes: ");
-    for (size_t i = 0; i < sizeof(pattern); ++i) {
-        printf("0x%02X ", pattern[i]);
-    }
-    printf("\n");
+    memcpy(pattern, &currentRound, 4*sizeof(uint8_t));              // Replacing first 4 bytes with current round.
     uintptr_t addressFound;
     bool found = memoryFindPattern(ph, ROUND_CHEAT.regionOffset, ROUND_CHEAT.regionSize, pattern, sizeof(pattern), &addressFound);
     if (!found) {
@@ -337,6 +323,49 @@ bool apiSetRound(Api *api, int currentRound, int nextRound) {
     }
     LOG_INFO("Next round successfully changed. Finish the current round %d and next round will be %d\n", currentRound, nextRound);
     return true;
+}
+
+bool apiIsZombiesGameRunning(Api *api) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return false;
+    }
+    
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) {
+        LOG_ERROR("ProcessHandle is null\n");
+        return false;
+    }
+    uint32_t active;
+    bool success = memoryRead(ph, GAME_CHEAT.isZombiesGameActiveOffset, &active, sizeof(uint32_t));
+    if (!success) {
+        printf("Failed to read Is Zombies Game Active value\n");
+        return false;
+    }
+    return active == 1;
+}
+
+int apiGetGameResets(Api *api) {
+        if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return false;
+    }
+    
+    ProcessHandle *ph = controllerGetProcessHandle(api->controller);
+    if (!ph) {
+        LOG_ERROR("ProcessHandle is null\n");
+        return false;
+    }
+    uint32_t resets;
+    bool success = memoryRead(ph, GAME_CHEAT.nResetsOffset, &resets, sizeof(uint32_t));
+    if (!success) {
+        printf("Failed to read Game Resets value\n");
+        return false;
+    }
+    // We substract one since this value are the total number of games. Usually, resets refers to the number of retries, where the first try isn't a retry at all.
+    // If there are no games played so far, we keep the 0.
+    resets = resets == 0 ? resets : resets - 1;
+    return (int)resets; 
 }
 
 bool _apiGetGodMode(ProcessHandle *ph) {

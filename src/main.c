@@ -14,7 +14,9 @@ int processRunningThread(void *data) {
             LOG_INFO("Waiting for game running...\n");
             threadSleep(3000);
         }
+        controllerAttachGame(controller);
         LOG_INFO("Game attached! Waiting until game is closed...\n");
+        LOG_INFO("active = %d\t resets = %d\n", controllerIsZombiesGameActive(controller), controllerGetGameResets(controller));
         controllerWaitUntilGameCloses(controller);
         LOG_INFO("Game has been closed\n");
     }

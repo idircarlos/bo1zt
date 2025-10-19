@@ -24,4 +24,7 @@ bool apiGivePlayerAmmo(Api *api);
 
 bool apiSetRound(Api *api, int currentRound, int nextRound);
 
+bool apiIsZombiesGameRunning(Api *api);
+int apiGetGameResets(Api *api);
+
 #endif // API_H_
