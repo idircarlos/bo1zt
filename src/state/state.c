@@ -29,3 +29,11 @@ bool stateIsZombiesGameActive(State *state) {
 int stateGetGameResets(State *state) {
     return state->gameResets;
 }
+
+void stateSetZombiesGameActive(State *state, bool active) {
+    state->isZombiesGameActive = active;
+}
+
+void stateSetGameResets(State *state, int resets) {
+    state->gameResets = resets;
+}

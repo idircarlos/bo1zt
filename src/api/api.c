@@ -348,19 +348,19 @@ bool apiIsZombiesGameRunning(Api *api) {
 int apiGetGameResets(Api *api) {
     if (!api || !api->controller) {
         LOG_ERROR("Api or Controller is null\n");
-        return false;
+        return 0;
     }
     
     ProcessHandle *ph = controllerGetProcessHandle(api->controller);
     if (!ph) {
         LOG_ERROR("ProcessHandle is null\n");
-        return false;
+        return 0;
     }
     uint32_t resets;
     bool success = memoryRead(ph, GAME_CHEAT.nResetsOffset, &resets, sizeof(uint32_t));
     if (!success) {
         printf("Failed to read Game Resets value\n");
-        return false;
+        return 0;
     }
     // We substract one since this value are the total number of games. Usually, resets refers to the number of retries, where the first try isn't a retry at all.
     // If there are no games played so far, we keep the 0.

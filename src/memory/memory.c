@@ -37,15 +37,17 @@ bool memoryIsProcessRunning(const char *executableName) {
 
     PROCESSENTRY32 pe;
     pe.dwSize = sizeof(pe);
+    bool found = false;
     if (Process32First(snap, &pe)) {
         do {
             if (_stricmp(pe.szExeFile, executableName) == 0) {
-                return true;
+                found = true;
+                break;
             }
         } while (Process32Next(snap, &pe));
     }
     CloseHandle(snap);
-    return false;
+    return found;
 }
 
 void memoryWaitUntilProcessCloses(ProcessHandle *ph) {

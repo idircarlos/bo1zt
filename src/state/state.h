@@ -8,7 +8,7 @@ typedef struct State State;
 State *stateCreate(int isZombiesGameActive, int gameResets);
 void stateReset(State *state);
 bool stateIsZombiesGameActive(State *state);
-bool stateSetZombiesGameActive(State *state, bool active);
+void stateSetZombiesGameActive(State *state, bool active);
 void stateSetGameResets(State *state, int resets);
 int stateGetGameResets(State *state);
 void stateDestroy(State *state);

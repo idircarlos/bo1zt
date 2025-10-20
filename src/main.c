@@ -14,11 +14,13 @@ int processRunningThread(void *data) {
             LOG_INFO("Waiting for game running...\n");
             threadSleep(3000);
         }
-        controllerAttachGame(controller);
+        if (!controllerIsGameAttached(controller)) {
+            controllerAttachGame(controller);
+        }
         LOG_INFO("Game attached! Waiting until game is closed...\n");
-        LOG_INFO("active = %d\t resets = %d\n", controllerIsZombiesGameActive(controller), controllerGetGameResets(controller));
         controllerWaitUntilGameCloses(controller);
         LOG_INFO("Game has been closed\n");
+        controllerDetachGame(controller);
     }
     return 0;
 }
@@ -35,8 +37,8 @@ int refreshWindowThread(void *data) {
 }
 
 int main(void) {
+    loggerInit(NULL);
     controller = controllerCreate();
-    loggerInit(controller);
     threadCreate(processRunningThread, NULL);
     guiInit(controller);
     threadCreate(refreshWindowThread, NULL);

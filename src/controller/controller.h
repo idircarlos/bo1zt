@@ -8,7 +8,9 @@ typedef struct Controller Controller;
 
 Controller* controllerCreate();
 ProcessHandle* controllerGetProcessHandle(Controller *controller);
+bool controllerIsGameAttached(Controller *controller);
 bool controllerAttachGame(Controller *controller);
+bool controllerDetachGame(Controller *controller);
 bool controllerIsGameRunning(Controller *controller);
 void controllerWaitUntilGameCloses(Controller *controller); // This method should be called from a different thread to not block the main thread (UI)
 bool controllerGetCheat(Controller *controller, CheatName cheat);
