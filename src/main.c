@@ -31,7 +31,7 @@ int refreshWindowThread(void *data) {
         while(!controllerIsGameRunning(controller)) {
             threadSleep(3000);
         }
-        guiUpdate(controller);
+        guiUpdate();
         threadSleep(1000);
     }
 }

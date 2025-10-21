@@ -16,7 +16,7 @@ void controllerWaitUntilGameCloses(Controller *controller); // This method shoul
 bool controllerGetCheat(Controller *controller, CheatName cheat);
 bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled);
 bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, void *value);
-bool controllerIsCheckboxChecked(Controller *controller, CheatName cheat);
+bool controllerIsCheatCheckboxChecked(Controller *controller, CheatName cheat);
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller);
 WeaponName controllerGetPlayerCurrentWeapon(Controller *controller);
 WeaponName controllerGetPlayerWeapon(Controller *controller, int slot);

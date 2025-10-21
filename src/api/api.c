@@ -379,7 +379,7 @@ bool _apiGetGodMode(ProcessHandle *ph) {
 }
 
 bool _apiSetGodMode(ProcessHandle *ph, Controller *controller, bool enabled) {
-    bool isInvisibleModeChecked = controllerIsCheckboxChecked(controller, CHEAT_NAME_INVISIBLE);
+    bool isInvisibleModeChecked = controllerIsCheatCheckboxChecked(controller, CHEAT_NAME_INVISIBLE);
     uint32_t value = enabled ? CHEAT_GOD_MODE.on.u32 : (isInvisibleModeChecked ? CHEAT_INVISIBLE.on.u32 : CHEAT_INVISIBLE.off.u32); // Restore back Invisible if it was enabled in the GUI, otherwise disable God Mode.
     return memoryWrite(ph, CHEAT_GOD_MODE.offset, &value, sizeof(value));
 }
@@ -395,7 +395,7 @@ bool _apiGetInvisible(ProcessHandle *ph) {
 }
 
 bool _apiSetInvisible(ProcessHandle *ph, Controller *controller, bool enabled) {
-    bool isGodModeChecked = controllerIsCheckboxChecked(controller, CHEAT_NAME_GOD_MODE);
+    bool isGodModeChecked = controllerIsCheatCheckboxChecked(controller, CHEAT_NAME_GOD_MODE);
     uint32_t value = enabled ? CHEAT_INVISIBLE.on.u32 : (isGodModeChecked ? CHEAT_GOD_MODE.on.u32 : CHEAT_GOD_MODE.off.u32); // Restore back God Mode if it was enabled in the GUI.
     return memoryWrite(ph, CHEAT_INVISIBLE.offset, &value, sizeof(value));
 }

@@ -4,6 +4,7 @@
 #include "../gui/gui.h"
 #include "../logger/logger.h"
 #include "../state/state.h"
+#include "../gui/cheats/cheats.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -99,9 +100,9 @@ void controllerDestroy(Controller *controller) {
     }
 }
 
-bool controllerIsCheckboxChecked(Controller *controller, CheatName cheat) {
+bool controllerIsCheatCheckboxChecked(Controller *controller, CheatName cheat) {
     if (!controller || !controller->ph) return false;
-    return guiIsCheatChecked(controller, cheat);
+    return uiCheatsIsCheatChecked(cheat);
 }
 
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller) {
