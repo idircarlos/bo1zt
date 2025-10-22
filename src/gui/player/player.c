@@ -70,6 +70,9 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     controller = controllerInstance;
     parent = parentInstance;
     uiGroup *playerGroup = uiNewGroup("Player");
+    uiBox *playerBox = uiNewVerticalBox();
+    uiBoxSetPadded(playerBox, 1);
+
     uiGrid *playerGrid = uiNewGrid();
     uiGridSetPadded(playerGrid, 1);
 
@@ -114,8 +117,9 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     uiGridAppend(playerGrid, uiControl(headshotsBtn), 0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(headshotsSpin),1, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
+    uiBoxAppend(playerBox, uiControl(playerGrid), 1);
 
-    uiGroupSetChild(playerGroup, uiControl(playerGrid));
+    uiGroupSetChild(playerGroup, uiControl(playerBox));
     uiGroupSetMargined(playerGroup, 1);
     return playerGroup;
 }

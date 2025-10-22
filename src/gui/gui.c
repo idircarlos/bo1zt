@@ -101,11 +101,12 @@ static uiControl* buildWindowContent() {
     uiGridAppend(topLeftGrid, uiControl(playerGroup), 0, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(topLeftGrid, uiControl(cheatGroup), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
-    // Top-Right Subgrid (Graphics + Game)
-    uiGrid *topRightGrid = uiNewGrid();
-    uiGridSetPadded(topRightGrid, 1);
-    uiGridAppend(topRightGrid, uiControl(graphicsGroup), 0, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(topRightGrid, uiControl(gameGroup), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    // Top-Right Subgrid (Graphics + Round Changer + Game)
+    uiGrid *rightGrid = uiNewGrid();
+    uiGridSetPadded(rightGrid, 1);
+    uiGridAppend(rightGrid, uiControl(graphicsGroup), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(rightGrid, uiControl(roundGroup), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(rightGrid, uiControl(gameGroup), 1, 0, 1, 2, 1, uiAlignFill, 1, uiAlignFill);
 
     // Bottom-Left Subgrid (Weapons + Teleport)
     uiGrid *bottomLeftGrid = uiNewGrid();
@@ -117,10 +118,9 @@ static uiControl* buildWindowContent() {
     uiGrid *mainGrid = uiNewGrid();
     uiGridSetPadded(mainGrid, 1);
     uiGridAppend(mainGrid, uiControl(topLeftGrid), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(mainGrid, uiControl(topRightGrid), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(mainGrid, uiControl(bottomLeftGrid), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(mainGrid, uiControl(roundGroup), 1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-
+    uiGridAppend(mainGrid, uiControl(rightGrid), 1, 0, 1, 2, 1, uiAlignFill, 1, uiAlignFill);
+    
     return uiControl(mainGrid);
 }
 

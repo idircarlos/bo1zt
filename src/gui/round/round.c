@@ -25,8 +25,8 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     parent = parentInstance;
     // --- Round Changer Group ---
     uiGroup *roundGroup = uiNewGroup("Round Changer");
-    uiBox *roundVBox = uiNewVerticalBox();
-    uiBoxSetPadded(roundVBox, 1);
+    uiBox *roundBox = uiNewVerticalBox();
+    uiBoxSetPadded(roundBox, 1);
 
     uiGrid *roundGrid = uiNewGrid();
     uiGridSetPadded(roundGrid, 1);
@@ -34,23 +34,24 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     currentSpin = uiNewSpinbox(0, 256);
     uiLabel *nextLabel = uiNewLabel("Next Round");
     nextSpin = uiNewSpinbox(0, 256);
-    uiGridAppend(roundGrid, uiControl(currentLabel), 0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignCenter);
-    uiGridAppend(roundGrid, uiControl(currentSpin), 1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(roundGrid, uiControl(nextLabel), 0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignCenter);
-    uiGridAppend(roundGrid, uiControl(nextSpin), 1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiBoxAppend(roundVBox, uiControl(roundGrid), 0);
 
     uiLabel *infoLabel = uiNewLabel(
-        "Wait until Round 2 before using this.\nE.g: Current round 2, Next round 19, then press Change Round.\nComplete your current round and the next will be 20."
+        "Wait until Round 2 before using this.\nE.g: Current round 2, Next round 19.\nPress Change Round.\nComplete your current round."
     );
-    uiBoxAppend(roundVBox, uiControl(infoLabel), 1);
 
     changeRoundBtn = uiNewButton("Change Round");
     uiButtonOnClicked(changeRoundBtn, onChangeRoundButtonClicked, NULL);
 
-    uiBoxAppend(roundVBox, uiControl(changeRoundBtn), 1);
+    uiGridAppend(roundGrid, uiControl(currentLabel), 0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(roundGrid, uiControl(currentSpin), 1, 0, 1, 1, 0, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(roundGrid, uiControl(nextLabel), 0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(roundGrid, uiControl(nextSpin), 1, 1, 1, 1, 0, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(roundGrid, uiControl(infoLabel), 0, 2, 2, 1, 1, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(roundGrid, uiControl(changeRoundBtn), 0, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
 
-    uiGroupSetChild(roundGroup, uiControl(roundVBox));
+    uiBoxAppend(roundBox, uiControl(roundGrid), 1);
+
+    uiGroupSetChild(roundGroup, uiControl(roundBox));
     uiGroupSetMargined(roundGroup, 1);
     return roundGroup;
 }

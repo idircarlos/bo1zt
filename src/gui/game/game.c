@@ -7,7 +7,6 @@ static Controller *controller;
 // Parent Window instance
 static uiWindow *parent;
 
-
 static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;

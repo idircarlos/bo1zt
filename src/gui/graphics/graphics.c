@@ -14,9 +14,9 @@ static uiSpinbox *fpsSpin = NULL;
 static uiLabel *fovLabel = NULL;
 static uiLabel *fovScaleLabel = NULL;
 static uiLabel *fpsCapLabel = NULL;
-static uiSeparator *separator = NULL;
-static uiButton *unlimitFpsButton = NULL;
 static uiButton *customizeUiButton = NULL;
+static uiCheckbox *makeBorderlessCheckbox = NULL;
+static uiCheckbox *unlimitFpsCheckbox = NULL;
 static uiCheckbox *disableHudCheckbox = NULL;
 static uiCheckbox *fogCheckbox = NULL;
 static uiCheckbox *fullbrightCheckbox = NULL;
@@ -38,15 +38,14 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     fovScaleSpin = uiNewSpinbox(0, 100);
     fpsSpin = uiNewSpinbox(60, 1000);
 
-    separator = uiNewHorizontalSeparator();
-
-    unlimitFpsButton = uiNewButton("Unlimit FPS");
-    customizeUiButton = uiNewButton("Customize UI");
-
+    unlimitFpsCheckbox = uiNewCheckbox(" Unlimit FPS");
+    makeBorderlessCheckbox = uiNewCheckbox(" Make Borderless");
     disableHudCheckbox = uiNewCheckbox(" Disable HUD");
     fogCheckbox = uiNewCheckbox(" Fog");
     fullbrightCheckbox = uiNewCheckbox(" Fullbright");
     colorizedCheckbox = uiNewCheckbox(" Colorized");
+
+    customizeUiButton = uiNewButton("Customize UI");
 
     uiGrid *graphicsGrid = uiNewGrid();
     uiGridSetPadded(graphicsGrid, 1);
@@ -56,12 +55,13 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     uiGridAppend(graphicsGrid, uiControl(fovScaleSpin), 1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
     uiGridAppend(graphicsGrid, uiControl(fpsCapLabel), 0, 2, 1, 1, 0, uiAlignFill, 0, uiAlignCenter);
     uiGridAppend(graphicsGrid, uiControl(fpsSpin), 1, 2, 1, 1, 0, uiAlignFill, 0, uiAlignCenter);
-    uiGridAppend(graphicsGrid, uiControl(disableHudCheckbox), 0, 3, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
-    uiGridAppend(graphicsGrid, uiControl(fogCheckbox), 1, 3, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
-    uiGridAppend(graphicsGrid, uiControl(fullbrightCheckbox), 0, 4, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
-    uiGridAppend(graphicsGrid, uiControl(colorizedCheckbox), 1, 4, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
-    uiGridAppend(graphicsGrid, uiControl(unlimitFpsButton), 0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(graphicsGrid, uiControl(customizeUiButton), 1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(graphicsGrid, uiControl(makeBorderlessCheckbox), 0, 3, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(graphicsGrid, uiControl(unlimitFpsCheckbox), 1, 3, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(graphicsGrid, uiControl(disableHudCheckbox), 0, 4, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(graphicsGrid, uiControl(fogCheckbox), 1, 4, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(graphicsGrid, uiControl(fullbrightCheckbox), 0, 5, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(graphicsGrid, uiControl(colorizedCheckbox), 1, 5, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(graphicsGrid, uiControl(customizeUiButton), 0, 6, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     uiBoxAppend(graphicsBox, uiControl(graphicsGrid), 1);
 
