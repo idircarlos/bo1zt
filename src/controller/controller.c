@@ -4,7 +4,7 @@
 #include "../gui/gui.h"
 #include "../logger/logger.h"
 #include "../state/state.h"
-#include "../gui/cheats/cheats.h"
+#include "../gui/hacks/hacks.h"
 #include "../gui/graphics/graphics.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -103,7 +103,7 @@ void controllerDestroy(Controller *controller) {
 
 bool controllerIsCheatCheckboxChecked(Controller *controller, CheatName cheat) {
     if (!controller || !controller->ph) return false;
-    return uiCheatsIsCheatChecked(cheat);
+    return uiHacksIsChecked(cheat);
 }
 
 int controllerUiGraphicsGetFpsCap(Controller *controller) {

@@ -1,4 +1,4 @@
-#include "cheats.h"
+#include "hacks.h"
 #include "../../logger/logger.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,10 +37,10 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
 static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
-    // --- Cheats Group ---
-    uiGroup *cheatGroup = uiNewGroup("Cheats");
-    uiBox *cheatsBox = uiNewVerticalBox();
-    uiBoxSetPadded(cheatsBox, 1);
+    // --- Hacks Group ---
+    uiGroup *hacksGroup = uiNewGroup("Hacks");
+    uiBox *hacksBox = uiNewVerticalBox();
+    uiBoxSetPadded(hacksBox, 1);
     
     infiniteAmoCheckbox = uiNewCheckbox(" Infinite Ammo");
     instantKillCheckbox = uiNewCheckbox(" Instant Kill");
@@ -69,39 +69,39 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     uiCheckboxOnToggled(thirdPersonCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_THIRD_PERSON);
 
     // Organizar los cheats en un grid 6x2
-    uiGrid *cheatsGrid = uiNewGrid();
-    uiGridSetPadded(cheatsGrid, 1);
-    uiGridAppend(cheatsGrid, uiControl(infiniteAmoCheckbox), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(instantKillCheckbox), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(godModeCheckbox), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(noClipCheckbox), 1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(invisibleCheckbox), 0, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(noRecoilCheckbox), 1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(boxNeverMovesCheckbox), 0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(thirdPersonCheckbox), 1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(smallCrosshairCheckbox), 0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(fastGameplayCheckbox), 1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(noShellshockCheckbox), 0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(cheatsGrid, uiControl(increaseKnifeRangeCheckbox), 1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGrid *hacksGrid = uiNewGrid();
+    uiGridSetPadded(hacksGrid, 1);
+    uiGridAppend(hacksGrid, uiControl(infiniteAmoCheckbox), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(hacksGrid, uiControl(instantKillCheckbox), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(hacksGrid, uiControl(godModeCheckbox), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(hacksGrid, uiControl(noClipCheckbox), 1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(hacksGrid, uiControl(invisibleCheckbox), 0, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(hacksGrid, uiControl(noRecoilCheckbox), 1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(hacksGrid, uiControl(boxNeverMovesCheckbox), 0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(hacksGrid, uiControl(thirdPersonCheckbox), 1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(hacksGrid, uiControl(smallCrosshairCheckbox), 0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(hacksGrid, uiControl(fastGameplayCheckbox), 1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(hacksGrid, uiControl(noShellshockCheckbox), 0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(hacksGrid, uiControl(increaseKnifeRangeCheckbox), 1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
-    uiBoxAppend(cheatsBox, uiControl(cheatsGrid), 1);
+    uiBoxAppend(hacksBox, uiControl(hacksGrid), 1);
     
-    uiGroupSetChild(cheatGroup, uiControl(cheatsBox));
-    uiGroupSetMargined(cheatGroup, 1);
-    return cheatGroup;
+    uiGroupSetChild(hacksGroup, uiControl(hacksBox));
+    uiGroupSetMargined(hacksGroup, 1);
+    return hacksGroup;
 }
 
 static void update() {
     // Nothing
 }
 
-UIControlGroup *uiCheatsBuildControlGroup() {
+UIControlGroup *uiHacksBuildControlGroup() {
     UIControlGroup *cg = guiControlGroupCreate(build, update);
     return cg;
 }
 
 // External API for Controller
-bool uiCheatsIsCheatChecked(CheatName cheat) {
+bool uiHacksIsChecked(CheatName cheat) {
     switch (cheat) {
         case CHEAT_NAME_GOD_MODE:
             return uiCheckboxChecked(godModeCheckbox);

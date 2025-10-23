@@ -8,7 +8,7 @@
 #include "round/round.h"
 #include "weapons/weapons.h"
 #include "teleport/teleport.h"
-#include "cheats/cheats.h"
+#include "hacks/hacks.h"
 #include "graphics/graphics.h"
 #include "game/game.h"
 
@@ -70,7 +70,7 @@ static void setupWindow() {
 static uiControl* buildWindowContent() {
     // Control Groups
     UIControlGroup *playerControlGroup = uiPlayerBuildControlGroup();
-    UIControlGroup *cheatsControlGroup = uiCheatsBuildControlGroup();
+    UIControlGroup *cheatsControlGroup = uiHacksBuildControlGroup();
     UIControlGroup *weaponsControlGroup = uiWeaponsBuildControlGroup();
     UIControlGroup *teleportControlGroup = uiTeleportBuildControlGroup();
     UIControlGroup *roundControlGroup = uiRoundBuildControlGroup();
