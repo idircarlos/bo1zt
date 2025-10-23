@@ -64,7 +64,7 @@ static void setupWindow() {
     int screenWidth, screenHeight;
     uiScreenGetResolution(&screenWidth, &screenHeight);
     uiWindowSetPosition(window, screenWidth / 2 - (WINDOW_WIDTH/2), screenHeight / 2 - (WINDOW_HEIGHT/2));
-    uiWindowSetResizeable(window, 0);
+    uiWindowSetResizeable(window, 1);
 }
 
 static uiControl* buildWindowContent() {

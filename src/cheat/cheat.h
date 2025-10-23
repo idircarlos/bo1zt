@@ -22,6 +22,12 @@ typedef enum {
     CHEAT_NAME_THIRD_PERSON,
     CHEAT_NAME_INFINITE_AMMO,
     CHEAT_NAME_INSTANT_KILL,
+    CHEAT_NAME_MAKE_BORDERLESS,
+    CHEAT_NAME_UNLIMIT_FPS,
+    CHEAT_NAME_DISABLE_HUD,
+    CHEAT_NAME_DISABLE_FOG,
+    CHEAT_NAME_FULLBRIGHT,
+    CHEAT_NAME_COLORIZED,
 } CheatName;
 
 typedef union {
@@ -53,15 +59,21 @@ typedef struct {
 } CheatAsm;
 
 typedef enum {
+    // Direct offset
     SIMPLE_CHEAT_NAME_CHANGE_NAME,
     SIMPLE_CHEAT_NAME_SET_HEALTH,
     SIMPLE_CHEAT_NAME_SET_POINTS,
     SIMPLE_CHEAT_NAME_SET_SPEED,
     SIMPLE_CHEAT_NAME_SET_KILLS,
     SIMPLE_CHEAT_NAME_SET_HEADSHOTS,
+    // Offset with pointer
+    SIMPLE_CHEAT_NAME_FOV,
+    SIMPLE_CHEAT_NAME_FOV_SCALE,
+    SIMPLE_CHEAT_NAME_FPS_CAP,
+    // Custom implementation. Not part of SIMPLE_CHEAT_LOOKUP
     SIMPLE_CHEAT_NAME_GIVE_WEAPON,
     SIMPLE_CHEAT_NAME_GIVE_AMMO,
-    SIMPLE_CHEAT_NAME_TELEPORT
+    SIMPLE_CHEAT_NAME_TELEPORT,
 } SimpleCheatName;
 
 typedef struct {
@@ -172,6 +184,10 @@ typedef struct {
 } WeaponCheat;
 
 typedef struct {
+    
+} GraphicsCheat;
+
+typedef struct {
     uintptr_t regionOffset;
     size_t regionSize;
     uint8_t pattern[ROUND_CHANGE_PATTERN_SIZE];
@@ -184,6 +200,7 @@ typedef struct {
     uintptr_t nResetsOffset;
 } GameCheat;
 
+// Cheats box
 extern Cheat CHEAT_GOD_MODE;
 extern Cheat CHEAT_INVISIBLE;
 extern Cheat CHEAT_NO_CLIP;
@@ -196,11 +213,11 @@ extern Cheat CHEAT_THIRD_PERSON;
 extern Cheat CHEAT_INFINITE_AMMO;
 extern Cheat CHEAT_SMALL_CROSSHAIR;
 extern Cheat CHEAT_INSTANT_KILL;
-
 extern CheatAsm CHEAT_ASM_INFINITE_AMMO;
 extern CheatAsm CHEAT_ASM_SMALL_CROSSHAIR;
 extern CheatAsm CHEAT_ASM_INSTANT_KILL;
 
+// Player box
 extern SimpleCheat SIMPLE_CHEAT_CHANGE_NAME;
 extern SimpleCheat SIMPLE_CHEAT_SET_HEALTH;
 extern SimpleCheat SIMPLE_CHEAT_SET_POINTS;
@@ -208,10 +225,28 @@ extern SimpleCheat SIMPLE_CHEAT_SET_KILLS;
 extern SimpleCheat SIMPLE_CHEAT_SET_SPEED;
 extern SimpleCheat SIMPLE_CHEAT_SET_HEADSHOTS;
 
+// Teleport box
 extern TeleportCheat TELEPORT_CHEAT;
+
+// Weapons box
 extern WeaponCheat WEAPON_CHEAT;
+
+// Round Change box
 extern RoundCheat ROUND_CHEAT;
+
+// Game box
 extern GameCheat GAME_CHEAT;
+
+// Graphics box
+extern SimpleCheat SIMPLE_CHEAT_FOV;
+extern SimpleCheat SIMPLE_CHEAT_FOV_SCALE;
+extern SimpleCheat SIMPLE_CHEAT_FPS_CAP;
+extern Cheat CHEAT_MAKE_BORDERLESS; // Not a conventional cheat since it doesn't modify memory but creating it for consistency with rest of cheat checkboxes 
+extern Cheat CHEAT_UNLIMIT_FPS;
+extern Cheat CHEAT_DISABLE_HUD;
+extern Cheat CHEAT_DISABLE_FOG;
+extern Cheat CHEAT_FULLBRIGHT;
+extern Cheat CHEAT_COLORIZED;
 
 SimpleCheat cheatGetSimpleCheat(SimpleCheatName cheatName);
 const char *cheatGetWeaponName(WeaponName weapon);

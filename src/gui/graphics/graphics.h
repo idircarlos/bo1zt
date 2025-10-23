@@ -4,5 +4,6 @@
 #include "../gui.h"
 
 UIControlGroup *uiGraphicsBuildControlGroup();
+int uiGraphicsGetFpsCap();
 
 #endif // UI_GRAPHICS_H_

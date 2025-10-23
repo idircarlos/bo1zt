@@ -36,8 +36,6 @@ static void onPlayerButtonClick(uiButton *button, void *data) {
     void *value = NULL;
     int spinBoxValue;
 
-    LOG_INFO("val %x\n", (void*)(intptr_t)uiSpinboxValue(pointsSpin));
-
     // Maybe refactor this into an array of componentes and access by index using SimpleCheatName to avoid switch-case 
     switch(simpleCheatName) {
         case SIMPLE_CHEAT_NAME_SET_HEALTH:

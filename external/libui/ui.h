@@ -4096,6 +4096,20 @@ _UI_EXTERN void uiEnableRadioButton(uiRadioButtons *r, int index);
  */
 _UI_EXTERN void uiDisableRadioButton(uiRadioButtons *r, int index);
 
+/**
+ * Enable a specific spinbox
+ *
+ * @param r uiSpinbox instace.
+ */
+_UI_EXTERN void uiEnableSpinbox(uiSpinbox *s);
+
+/**
+ * Disable a specific spinbox
+ *
+ * @param r uiSpinbox instace.
+ */
+_UI_EXTERN void uiDisableSpinbox(uiSpinbox *s);
+
 #ifdef __cplusplus
 }
 #endif

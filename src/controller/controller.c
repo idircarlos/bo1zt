@@ -5,6 +5,7 @@
 #include "../logger/logger.h"
 #include "../state/state.h"
 #include "../gui/cheats/cheats.h"
+#include "../gui/graphics/graphics.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -103,6 +104,11 @@ void controllerDestroy(Controller *controller) {
 bool controllerIsCheatCheckboxChecked(Controller *controller, CheatName cheat) {
     if (!controller || !controller->ph) return false;
     return uiCheatsIsCheatChecked(cheat);
+}
+
+int controllerUiGraphicsGetFpsCap(Controller *controller) {
+    if (!controller || !controller->ph) return false;
+    return uiGraphicsGetFpsCap();
 }
 
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller) {

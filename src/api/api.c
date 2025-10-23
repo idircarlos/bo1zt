@@ -51,11 +51,33 @@ bool _apiSetInfiniteAmmo(ProcessHandle *ph, bool enabled);
 bool _apiGetInstantKill(Map *hooks);
 bool _apiSetInstantKill(ProcessHandle *ph, Map *hooks, bool enabled);
 
+bool _apiGetMakeBorderless(ProcessHandle *ph);
+bool _apiSetMakeBorderless(ProcessHandle *ph, bool enabled);
+
+bool _apiGetUnlimitFps(ProcessHandle *ph);
+bool _apiSetUnlimitFps(ProcessHandle *ph, Controller *controller, bool enabled);
+
+bool _apiGetDisableHud(ProcessHandle *ph);
+bool _apiSetDisableHud(ProcessHandle *ph, bool enabled);
+
+bool _apiGetDisableFog(ProcessHandle *ph);
+bool _apiSetDisableFog(ProcessHandle *ph, bool enabled);
+
+bool _apiGetFullbright(ProcessHandle *ph);
+bool _apiSetFullbright(ProcessHandle *ph, bool enabled);
+
+bool _apiGetColorized(ProcessHandle *ph);
+bool _apiSetColorized(ProcessHandle *ph, bool enabled);
+
 bool _apiChangeName(ProcessHandle *ph, char *name);
-bool _apiSetSpeed(ProcessHandle *ph, uint32_t *value);
+bool _apiSetSpeed(ProcessHandle *ph, uint32_t value);
 bool _apiGiveWeaponAmmo(ProcessHandle *ph, Weapon weapon);
-bool _apiTeleport(ProcessHandle *ph, TeleportCoords *value);
-bool _apiSetSimpleCheatIntValue(ProcessHandle *ph, SimpleCheatName simpleCheatName, uint32_t *value);
+bool _apiTeleport(ProcessHandle *ph, TeleportCoords value);
+bool _apiFov(ProcessHandle *ph, float value);
+bool _apiFovScale(ProcessHandle *ph, float value);
+bool _apiFpsCap(ProcessHandle *ph, uint32_t value);
+bool _apiSetSimpleCheatIntValue(ProcessHandle *ph, SimpleCheatName simpleCheatName, uint32_t value);
+
 
 
 // Hooks IDs (Hash for Hook Map)
@@ -109,6 +131,19 @@ bool apiIsCheatEnabled(Api *api, CheatName cheatName) {
             return _apiGetInfiniteAmmo(ph);
         case CHEAT_NAME_INSTANT_KILL:
             return _apiGetInstantKill(api->hooks);
+        case CHEAT_NAME_MAKE_BORDERLESS:
+            return _apiGetMakeBorderless(ph);
+        case CHEAT_NAME_UNLIMIT_FPS:
+            return _apiGetUnlimitFps(ph); // TODO: SAVE CURRENT FPS CAP BEFORE ACTIVATING STATE
+        case CHEAT_NAME_DISABLE_HUD:
+            return _apiGetDisableHud(ph);
+        case CHEAT_NAME_DISABLE_FOG:
+            return _apiGetDisableFog(ph);
+        case CHEAT_NAME_FULLBRIGHT:
+            return _apiGetFullbright(ph);
+        case CHEAT_NAME_COLORIZED:
+            return _apiGetColorized(ph);
+        
         default:
             LOG_WARN("Unkwown cheatName %d\n", cheatName);
             return false;
@@ -152,6 +187,18 @@ bool apiSetCheatEnabled(Api *api, CheatName cheatName, bool enabled) {
             return _apiSetInfiniteAmmo(ph, enabled);
         case CHEAT_NAME_INSTANT_KILL:
             return _apiSetInstantKill(ph, api->hooks, enabled);
+        case CHEAT_NAME_MAKE_BORDERLESS:
+            return _apiSetMakeBorderless(ph, enabled);
+        case CHEAT_NAME_UNLIMIT_FPS:
+            return _apiSetUnlimitFps(ph, api->controller, enabled); // TODO: SAVE CURRENT FPS CAP BEFORE ACTIVATING STATE
+        case CHEAT_NAME_DISABLE_HUD:
+            return _apiSetDisableHud(ph, enabled);
+        case CHEAT_NAME_DISABLE_FOG:
+            return _apiSetDisableFog(ph, enabled);
+        case CHEAT_NAME_FULLBRIGHT:
+            return _apiSetFullbright(ph, enabled);
+        case CHEAT_NAME_COLORIZED:
+            return _apiSetColorized(ph, enabled);
         default:
             LOG_WARN("Unknown cheatName %d\n", cheatName);
             return false;
@@ -176,14 +223,20 @@ bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value) {
         case SIMPLE_CHEAT_NAME_CHANGE_NAME:
             return _apiChangeName(ph, (char*)value);
         case SIMPLE_CHEAT_NAME_SET_SPEED:
-            return _apiSetSpeed(ph, (uint32_t*)value);
+            return _apiSetSpeed(ph, (uint32_t)(*(int*)value));
         case SIMPLE_CHEAT_NAME_TELEPORT:
-            return _apiTeleport(ph, (TeleportCoords*)value);
+            return _apiTeleport(ph, (TeleportCoords)(*(TeleportCoords*)value));
+        case SIMPLE_CHEAT_NAME_FOV:
+            return _apiFov(ph, (float)(*(int*)value));
+        case SIMPLE_CHEAT_NAME_FOV_SCALE:
+            return _apiFovScale(ph, (float)(*(int*)value));
+        case SIMPLE_CHEAT_NAME_FPS_CAP:
+            return _apiFpsCap(ph, (uint32_t)(*(int*)value));
         case SIMPLE_CHEAT_NAME_SET_HEALTH:
         case SIMPLE_CHEAT_NAME_SET_POINTS:
         case SIMPLE_CHEAT_NAME_SET_KILLS:
         case SIMPLE_CHEAT_NAME_SET_HEADSHOTS:
-            return _apiSetSimpleCheatIntValue(ph, simpleCheatName, (uint32_t*)value);
+            return _apiSetSimpleCheatIntValue(ph, simpleCheatName, (uint32_t)(*(int*)value));
         default:
             LOG_WARN("Unknown simpleCheatName %d\n", simpleCheatName);
             return false;
@@ -646,6 +699,134 @@ bool _apiSetInstantKill(ProcessHandle *ph, Map *hooks, bool enabled) {
     return enabled ? hookActivate(hook) : hookDeactivate(hook);
 }
 
+bool _apiGetMakeBorderless(ProcessHandle *ph) {
+    // TODO
+    return false;
+}
+
+bool _apiSetMakeBorderless(ProcessHandle *ph, bool enabled) {
+    // TODO
+    return false;
+}
+
+
+bool _apiGetUnlimitFps(ProcessHandle *ph) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_UNLIMIT_FPS.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Unlimit Fps address\n");
+        return false;
+    }
+    uint32_t value = 0;
+    success = memoryRead(ph, address1 + 0x18, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read Unlimit Fps value\n");
+        return false;
+    }
+    return value == CHEAT_UNLIMIT_FPS.on.u32;
+}
+
+bool _apiSetUnlimitFps(ProcessHandle *ph, Controller *controller, bool enabled) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_UNLIMIT_FPS.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Unlimit Fps address\n");
+        return false;
+    }
+    uint32_t value = enabled ? CHEAT_UNLIMIT_FPS.on.u32 : (uint32_t)controllerUiGraphicsGetFpsCap(controller);
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(value));
+}
+
+
+bool _apiGetDisableHud(ProcessHandle *ph) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_DISABLE_HUD.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Disable Hud address\n");
+        return false;
+    }
+    uint8_t value = 0;
+    success = memoryRead(ph, address1 + 0x18, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read Disable Hud value\n");
+        return false;
+    }
+    return value == CHEAT_DISABLE_HUD.on.byte;
+}
+
+bool _apiSetDisableHud(ProcessHandle *ph, bool enabled) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_DISABLE_HUD.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Disable Hud address\n");
+        return false;
+    }
+    LOG_INFO("Reading Disable HUD pointer %x and inside is %x\n", CHEAT_DISABLE_HUD.offset, address1);
+    uint8_t value = enabled ? CHEAT_DISABLE_HUD.on.byte : CHEAT_DISABLE_HUD.off.byte;
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(value));
+}
+
+
+bool _apiGetDisableFog(ProcessHandle *ph) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_DISABLE_FOG.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Disable Fog address\n");
+        return false;
+    }
+    uint8_t value = 0;
+    success = memoryRead(ph, address1 + 0x18, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read Disable Fog value\n");
+        return false;
+    }
+    return value == CHEAT_DISABLE_FOG.on.byte;
+}
+
+bool _apiSetDisableFog(ProcessHandle *ph, bool enabled) {
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, CHEAT_DISABLE_FOG.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Disable Fog address\n");
+        return false;
+    }
+    uint8_t value = enabled ? CHEAT_DISABLE_FOG.on.byte : CHEAT_DISABLE_FOG.off.byte;
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(value));
+}
+
+
+bool _apiGetFullbright(ProcessHandle *ph) {
+    uint32_t value = 0;
+    bool success = memoryRead(ph, CHEAT_FULLBRIGHT.offset, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read Fullbright value\n");
+        return false;
+    }
+    return value == CHEAT_FULLBRIGHT.on.u32;
+}
+
+bool _apiSetFullbright(ProcessHandle *ph, bool enabled) {
+    uint32_t value = enabled ? CHEAT_FULLBRIGHT.on.u32 : CHEAT_FULLBRIGHT.off.u32;
+    return memoryWrite(ph, CHEAT_FULLBRIGHT.offset, &value, sizeof(value));
+}
+
+
+bool _apiGetColorized(ProcessHandle *ph) {
+    uint32_t value = 0;
+    bool success = memoryRead(ph, CHEAT_COLORIZED.offset, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read Colorized value\n");
+        return false;
+    }
+    return value == CHEAT_COLORIZED.on.u32;
+}
+
+bool _apiSetColorized(ProcessHandle *ph, bool enabled) {
+    uint32_t value = enabled ? CHEAT_COLORIZED.on.u32 : CHEAT_COLORIZED.off.u32;
+    return memoryWrite(ph, CHEAT_COLORIZED.offset, &value, sizeof(value));
+}
+
+
 // Simple cheats
 
 bool _apiChangeName(ProcessHandle *ph, char *name) {
@@ -653,7 +834,7 @@ bool _apiChangeName(ProcessHandle *ph, char *name) {
     return memoryWrite(ph, cheat.offset, name, strlen(name) + 1);
 }
 
-bool _apiSetSpeed(ProcessHandle *ph, uint32_t *value) {
+bool _apiSetSpeed(ProcessHandle *ph, uint32_t value) {
     SimpleCheat cheat = SIMPLE_CHEAT_SET_SPEED;
     uint32_t address1 = 0;
     bool success = memoryRead(ph, cheat.offset, &address1, sizeof(address1));
@@ -661,8 +842,8 @@ bool _apiSetSpeed(ProcessHandle *ph, uint32_t *value) {
         printf("Failed to read Speed address\n");
         return false;
     }
-    LOG_INFO("Writting %d in %x\n", *value, cheat.offset);
-    return memoryWrite(ph, address1 + 0x18, value, sizeof(uint32_t));
+    LOG_INFO("Writting %d in %x\n", value, cheat.offset);
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(uint32_t));
 }
 
 bool _apiGiveWeaponAmmo(ProcessHandle *ph, Weapon weapon) {
@@ -671,14 +852,51 @@ bool _apiGiveWeaponAmmo(ProcessHandle *ph, Weapon weapon) {
            memoryWrite(ph, weapon.ammoOffset, &bullets, sizeof(bullets));
 }
 
-bool _apiTeleport(ProcessHandle *ph, TeleportCoords *value) {
-    return memoryWrite(ph, TELEPORT_CHEAT.xOffset, &(value->x), sizeof(value->x)) &&
-           memoryWrite(ph, TELEPORT_CHEAT.yOffset, &(value->y), sizeof(value->y)) &&
-           memoryWrite(ph, TELEPORT_CHEAT.zOffset, &(value->z), sizeof(value->z));
+bool _apiTeleport(ProcessHandle *ph, TeleportCoords value) {
+    return memoryWrite(ph, TELEPORT_CHEAT.xOffset, &(value.x), sizeof(value.x)) &&
+           memoryWrite(ph, TELEPORT_CHEAT.yOffset, &(value.y), sizeof(value.y)) &&
+           memoryWrite(ph, TELEPORT_CHEAT.zOffset, &(value.z), sizeof(value.z));
 }
 
-bool _apiSetSimpleCheatIntValue(ProcessHandle *ph, SimpleCheatName simpleCheatName, uint32_t *value) {
+bool _apiFov(ProcessHandle *ph, float value) {
+    SimpleCheat cheat = SIMPLE_CHEAT_FOV;
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, cheat.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Fov address\n");
+        return false;
+    }
+    LOG_INFO("Writting %f in %x\n", value, cheat.offset);
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(float));;
+}
+
+bool _apiFovScale(ProcessHandle *ph, float value) {
+    SimpleCheat cheat = SIMPLE_CHEAT_FOV_SCALE;
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, cheat.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Fov Scale address\n");
+        return false;
+    }
+    value = value/100; // FOV Scale goes from [0.20, 2.00]. Value is an float between [20.00, 200.00] so we need to divide by 100. This could be also done in UI module though. 
+    LOG_INFO("Writting %f in %x\n", value, cheat.offset);
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(float));
+}
+
+bool _apiFpsCap(ProcessHandle *ph, uint32_t value) {
+    SimpleCheat cheat = SIMPLE_CHEAT_FPS_CAP;
+    uint32_t address1 = 0;
+    bool success = memoryRead(ph, cheat.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Fps Cap address\n");
+        return false;
+    }
+    LOG_INFO("Writting %d in %x\n", value, cheat.offset);
+    return memoryWrite(ph, address1 + 0x18, &value, sizeof(uint32_t));
+}
+
+bool _apiSetSimpleCheatIntValue(ProcessHandle *ph, SimpleCheatName simpleCheatName, uint32_t value) {
     SimpleCheat cheat = cheatGetSimpleCheat(simpleCheatName);
-    LOG_INFO("Writting %x in %x\n", value, cheat.offset);
-    return memoryWrite(ph, cheat.offset, value, sizeof(uint32_t));
+    LOG_INFO("Writting %d in %x\n", value, cheat.offset);
+    return memoryWrite(ph, cheat.offset, &value, sizeof(uint32_t));
 }

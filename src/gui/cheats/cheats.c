@@ -100,6 +100,7 @@ UIControlGroup *uiCheatsBuildControlGroup() {
     return cg;
 }
 
+// External API for Controller
 bool uiCheatsIsCheatChecked(CheatName cheat) {
     switch (cheat) {
         case CHEAT_NAME_GOD_MODE:

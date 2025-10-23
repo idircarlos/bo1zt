@@ -214,3 +214,17 @@ uiSpinbox *uiNewSpinbox(int min, int max)
 
 	return s;
 }
+
+// Adding this ad-hox methods since the uiControlDisable(uiControl(<spinbox>)) only disables the main HWND and not the edit HWND, which makes the "grey" effect.
+void uiEnableSpinbox(uiSpinbox *s)
+{
+	EnableWindow(s->hwnd, TRUE);
+	EnableWindow(s->edit, TRUE);
+}
+
+
+void uiDisableSpinbox(uiSpinbox *s)
+{
+	EnableWindow(s->hwnd, FALSE);
+	EnableWindow(s->edit, FALSE);
+}
