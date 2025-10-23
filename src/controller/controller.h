@@ -1,13 +1,13 @@
 #ifndef CONTROLLER_H_
 #define CONTROLLER_H_
 
-#include "../memory/memory.h"
+#include "../process/process.h"
 #include "../cheat/cheat.h"
 
 typedef struct Controller Controller;
 
 Controller* controllerCreate();
-ProcessHandle* controllerGetProcessHandle(Controller *controller);
+Process* controllerGetProcessHandle(Controller *controller);
 bool controllerIsGameAttached(Controller *controller);
 bool controllerAttachGame(Controller *controller);
 bool controllerDetachGame(Controller *controller);

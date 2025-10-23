@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "gui/gui.h"
-#include "memory/memory.h"
+#include "process/process.h"
 #include "controller/controller.h"
 #include "logger/logger.h"
 #include "thread/thread.h"

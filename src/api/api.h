@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "../memory/memory.h"
+#include "../process/process.h"
 #include "../controller/controller.h"
 
 typedef struct Api Api;

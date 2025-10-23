@@ -1,5 +1,5 @@
 #include "controller.h"
-#include "../memory/memory.h"
+#include "../process/process.h"
 #include "../api/api.h"
 #include "../gui/gui.h"
 #include "../logger/logger.h"
@@ -12,7 +12,7 @@
 #define GAME_EXECUTABLE_NAME "BlackOps.exe"
 
 struct Controller {
-    ProcessHandle *ph;
+    Process *process;
     Api *api;
     State *state;
 };
@@ -20,35 +20,35 @@ struct Controller {
 Controller* controllerCreate() {
     Controller *controller = (Controller*)malloc(sizeof(Controller));
     if (!controller) return NULL;
-    controller->ph = NULL;
+    controller->process = NULL;
     controller->state = NULL;
     controller->api = NULL;
     controllerAttachGame(controller);
     return controller;
 }
 
-ProcessHandle* controllerGetProcessHandle(Controller *controller) {
+Process* controllerGetProcessHandle(Controller *controller) {
     if (!controller) return NULL;
-    return controller->ph;
+    return controller->process;
 }
 
 bool controllerIsGameRunning(Controller *controller) {
     (void)controller;
-    return memoryIsProcessRunning(GAME_EXECUTABLE_NAME);
+    return processIsRunning(GAME_EXECUTABLE_NAME);
 }
 
 bool controllerIsGameAttached(Controller *controller) {
-    return controller != NULL && controller->ph != NULL;
+    return controller != NULL && controller->process != NULL;
 }
 
 bool controllerAttachGame(Controller *controller) {
     if (!controller) return false;
-    if (controller->ph) {
+    if (controller->process) {
         LOG_WARN("Game is already attached. This souldn't happen. Omitting the operation\n");
         return true;
     }
-    if (!controller->ph) controller->ph = memoryOpenProcess(GAME_EXECUTABLE_NAME);
-    if (!controller->ph) return false;
+    if (!controller->process) controller->process = processOpen(GAME_EXECUTABLE_NAME);
+    if (!controller->process) return false;
     if (!controller->api) controller->api = apiCreate(controller);
     if (!controller->state) controller->state = stateCreate(0, 0);
     bool isZombiesActive = controllerIsZombiesGameActive(controller);
@@ -64,16 +64,16 @@ bool controllerDetachGame(Controller *controller) {
         return false;
     }
     LOG_INFO("Detaching game\n");
-    memoryCloseProcess(controller->ph);
+    processClose(controller->process);
     stateReset(controller->state);
-    controller->ph = NULL;
+    controller->process = NULL;
     return true;
 }
 
 void controllerWaitUntilGameCloses(Controller *controller) {
     if (!controller) return;
-    if (!controller->ph) return;
-    memoryWaitUntilProcessCloses(controller->ph);
+    if (!controller->process) return;
+    processWaitUntilCloses(controller->process);
 }
 
 bool controllerGetCheat(Controller *controller, CheatName cheat) {
@@ -93,61 +93,61 @@ bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, voi
 
 void controllerDestroy(Controller *controller) {
     if (controller) {
-        if (controller->ph) {
-            memoryCloseProcess(controller->ph);
-            controller->ph = NULL;
+        if (controller->process) {
+            processClose(controller->process);
+            controller->process = NULL;
         }
         free(controller);
     }
 }
 
 bool controllerIsCheatCheckboxChecked(Controller *controller, CheatName cheat) {
-    if (!controller || !controller->ph) return false;
+    if (!controller || !controller->process) return false;
     return uiHacksIsChecked(cheat);
 }
 
 int controllerUiGraphicsGetFpsCap(Controller *controller) {
-    if (!controller || !controller->ph) return false;
+    if (!controller || !controller->process) return false;
     return uiGraphicsGetFpsCap();
 }
 
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller) {
-    if (!controller || !controller->ph) return NULL;
+    if (!controller || !controller->process) return NULL;
     return apiGetPlayerCurrentCoords(controller->api);
 }
 
 WeaponName controllerGetPlayerCurrentWeapon(Controller *controller) {
-    if (!controller || !controller->ph) return WEAPON_UNKNOWNWEAPON;
+    if (!controller || !controller->process) return WEAPON_UNKNOWNWEAPON;
     return apiGetPlayerCurrentWeapon(controller->api);
 }
 
 WeaponName controllerGetPlayerWeapon(Controller *controller, int slot) {
-    if (!controller || !controller->ph) return WEAPON_UNKNOWNWEAPON;
+    if (!controller || !controller->process) return WEAPON_UNKNOWNWEAPON;
     return apiGetPlayerWeapon(controller->api, slot);
 }
 
 bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int slot) {
-    if (!controller || !controller->ph) return false;
+    if (!controller || !controller->process) return false;
     return apiSetPlayerWeapon(controller->api, weapon, slot);
 }
 
 bool controllerGivePlayerAmmo(Controller *controller) {
-    if (!controller || !controller->ph) return false;
+    if (!controller || !controller->process) return false;
     return apiGivePlayerAmmo(controller->api);
 }
 
 bool controllerSetRound(Controller *controller, int currentRound, int nextRound) {
-    if (!controller || !controller->ph) return false;
+    if (!controller || !controller->process) return false;
     return apiSetRound(controller->api, currentRound, nextRound);
 }
 
 bool controllerIsZombiesGameActive(Controller *controller) {
-    if (!controller || !controller->ph) return false;
+    if (!controller || !controller->process) return false;
     return apiIsZombiesGameRunning(controller->api);
 }
 
 int controllerGetGameResets(Controller *controller) {
-    if (!controller || !controller->ph) return false;
+    if (!controller || !controller->process) return false;
     return apiGetGameResets(controller->api);
 }
 

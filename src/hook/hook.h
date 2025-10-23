@@ -1,14 +1,14 @@
 #ifndef HOOK_H_
 #define HOOK_H_
 
-#include "../memory/memory.h"
+#include "../process/process.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
 
 typedef struct Hook Hook;
 
-Hook* hookCreate(ProcessHandle *ph, uintptr_t start, size_t size, uint8_t *shellCode, size_t shellCodeSize);
+Hook* hookCreate(Process *process, uintptr_t start, size_t size, uint8_t *shellCode, size_t shellCodeSize);
 void hookDestroy(Hook *hook);
 bool hookIsActivated(Hook *hook);
 bool hookActivate(Hook *hook);

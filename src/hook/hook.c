@@ -9,7 +9,7 @@ static const uint8_t JMP_INSTRUCTION = 0xE9; // JMP opcode
 static const uint8_t NOP_INSTRUCTION = 0x90; // NOP opcode
 
 struct Hook {
-    ProcessHandle *ph;
+    Process *process;
     // Hook entry point
     uintptr_t startAddress;
     uint8_t *originalBytes;
@@ -22,17 +22,17 @@ struct Hook {
     size_t shellCodeSize;
 };
 
-Hook* hookCreate(ProcessHandle *ph, uintptr_t startAddress, size_t size, uint8_t *shellCode, size_t shellCodeSize) {
+Hook* hookCreate(Process *process, uintptr_t startAddress, size_t size, uint8_t *shellCode, size_t shellCodeSize) {
     // Allocate a read-write-execute memory page in the target process
     uintptr_t pageAddress;
-    bool success = memoryAllocatePage(ph, shellCodeSize > MIN_PAGE_SIZE ? shellCodeSize : MIN_PAGE_SIZE, &pageAddress);
+    bool success = processAllocatePage(process, shellCodeSize > MIN_PAGE_SIZE ? shellCodeSize : MIN_PAGE_SIZE, &pageAddress);
     if (!success) {
         LOG_ERROR("Failed to allocate memory page in target process.\n");
         return NULL;
     }
 
     // Write the shellCode to the allocated page
-    success = memoryWrite(ph, pageAddress, shellCode, shellCodeSize);
+    success = processWrite(process, pageAddress, shellCode, shellCodeSize);
     if (!success) {
         LOG_ERROR("Failed to write shellCode to allocated memory page.\n");
         return NULL;
@@ -42,13 +42,13 @@ Hook* hookCreate(ProcessHandle *ph, uintptr_t startAddress, size_t size, uint8_t
 	uint32_t jmpBackAddress = (startAddress + size) - (pageAddress + shellCodeSize + 5);
 
     // Place the jmp instruction + address into the allocated page, which will jmp back to the hooked function
-    success = memoryWrite(ph, pageAddress + shellCodeSize, &JMP_INSTRUCTION, sizeof(JMP_INSTRUCTION)); // JMP opcode
+    success = processWrite(process, pageAddress + shellCodeSize, &JMP_INSTRUCTION, sizeof(JMP_INSTRUCTION)); // JMP opcode
     if (!success) {
         LOG_ERROR("Failed to write JMP opcode to allocated memory page.\n");
         return NULL;
     }
 
-    success = memoryWrite(ph, pageAddress + shellCodeSize + 1, &jmpBackAddress, sizeof(jmpBackAddress)); // JMP address
+    success = processWrite(process, pageAddress + shellCodeSize + 1, &jmpBackAddress, sizeof(jmpBackAddress)); // JMP address
     if (!success) {
         LOG_ERROR("Failed to write JMP address to allocated memory page.\n");
         return NULL;
@@ -61,7 +61,7 @@ Hook* hookCreate(ProcessHandle *ph, uintptr_t startAddress, size_t size, uint8_t
         return NULL;
     }
 
-    success = memoryRead(ph, startAddress, originalBytes, size);
+    success = processRead(process, startAddress, originalBytes, size);
     if (!success) {
         LOG_ERROR("Failed to read original bytes from target process.\n");
         free(originalBytes);
@@ -76,7 +76,7 @@ Hook* hookCreate(ProcessHandle *ph, uintptr_t startAddress, size_t size, uint8_t
         LOG_ERROR("Failed to allocate memory for Hook\n");
         return NULL;
     }
-    hook->ph = ph;
+    hook->process = process;
     hook->startAddress = startAddress;
     hook->originalBytes = originalBytes;
     hook->originalBytesSize = size;
@@ -108,7 +108,7 @@ bool hookIsActivated(Hook *hook) {
         return false;
     }
 
-    if (!memoryRead(hook->ph, hook->startAddress, current, hook->originalBytesSize)) {
+    if (!processRead(hook->process, hook->startAddress, current, hook->originalBytesSize)) {
         LOG_ERROR("Failed to read memory.\n");
         free(current);
         return false;
@@ -149,7 +149,7 @@ bool hookIsActivated(Hook *hook) {
 bool hookActivate(Hook *hook) {
     // Change memory protection to allow writing
     uint32_t oldProtect = 0;
-    bool success = memoryVirtualProtect(hook->ph, hook->startAddress, hook->originalBytesSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+    bool success = processVirtualProtect(hook->process, hook->startAddress, hook->originalBytesSize, PAGE_EXECUTE_READWRITE, &oldProtect);
     if (!success) {
         LOG_ERROR("Failed to change memory protection in target process.\n");
         return NULL;
@@ -159,26 +159,26 @@ bool hookActivate(Hook *hook) {
     // because if the hook size is not equal with the size of the jmp + address we will have left over bytes.
     if (hook->originalBytesSize > 5) {
 		for(uint32_t idx = 0; idx < hook->originalBytesSize; idx++) {
-			memoryWrite(hook->ph, hook->startAddress + idx, &NOP_INSTRUCTION, 1); // NOP opcode
+			processWrite(hook->process, hook->startAddress + idx, &NOP_INSTRUCTION, 1); // NOP opcode
         }
 	}
 
     // Write the JMP instruction to the start address
-    success = memoryWrite(hook->ph, hook->startAddress, &JMP_INSTRUCTION, sizeof(JMP_INSTRUCTION)); // JMP opcode
+    success = processWrite(hook->process, hook->startAddress, &JMP_INSTRUCTION, sizeof(JMP_INSTRUCTION)); // JMP opcode
     if (!success) {
         LOG_ERROR("Failed to write JMP opcode to target process.\n");
         return NULL;
     }
 
     // Write the jump address after the jmp instruction in the hooked function
-    success = memoryWrite(hook->ph, hook->startAddress + 1, &hook->jmpToHook, sizeof(hook->jmpToHook)); // JMP address
+    success = processWrite(hook->process, hook->startAddress + 1, &hook->jmpToHook, sizeof(hook->jmpToHook)); // JMP address
     if (!success) {
         LOG_ERROR("Failed to write JMP address to target process.\n");
         return NULL;
     }
 
     // Restore the original memory protection
-    success = memoryVirtualProtect(hook->ph, hook->startAddress, hook->originalBytesSize, oldProtect, &oldProtect);
+    success = processVirtualProtect(hook->process, hook->startAddress, hook->originalBytesSize, oldProtect, &oldProtect);
     if (!success) {
         LOG_ERROR("Failed to restore memory protection in target process.\n");
         return NULL;
@@ -189,21 +189,21 @@ bool hookActivate(Hook *hook) {
 bool hookDeactivate(Hook *hook) {
     // Change memory protection to allow writing
     uint32_t oldProtect = 0;
-    bool success = memoryVirtualProtect(hook->ph, hook->startAddress, hook->originalBytesSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+    bool success = processVirtualProtect(hook->process, hook->startAddress, hook->originalBytesSize, PAGE_EXECUTE_READWRITE, &oldProtect);
     if (!success) {
         LOG_ERROR("Failed to change memory protection in target process.\n");
         return NULL;
     }
 
     // Write the original bytes
-    success = memoryWrite(hook->ph, hook->startAddress, hook->originalBytes, hook->originalBytesSize);
+    success = processWrite(hook->process, hook->startAddress, hook->originalBytes, hook->originalBytesSize);
     if (!success) {
         LOG_ERROR("Failed to write original bytes to target process.\n");
         return NULL;
     }
 
     // Restore the original memory protection
-    success = memoryVirtualProtect(hook->ph, hook->startAddress, hook->originalBytesSize, oldProtect, &oldProtect);
+    success = processVirtualProtect(hook->process, hook->startAddress, hook->originalBytesSize, oldProtect, &oldProtect);
     if (!success) {
         LOG_ERROR("Failed to restore memory protection in target process.\n");
         return NULL;

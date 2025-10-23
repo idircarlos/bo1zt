@@ -1,18 +1,18 @@
-#include "memory.h"
+#include "process.h"
 #include "../logger/logger.h"
 #include <windows.h>
 #include <tlhelp32.h>
 #include <string.h>
 #include <stdlib.h>
 
-struct ProcessHandle {
+struct Process {
     HANDLE handle;
     DWORD pid;
 };
 
-ProcessHandle *memoryOpenProcess(const char *executableName) {
+Process *processOpen(const char *executableName) {
     HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    ProcessHandle *out = NULL;
+    Process *out = NULL;
     if (snap == INVALID_HANDLE_VALUE) return out;
 
     PROCESSENTRY32 pe;
@@ -20,7 +20,7 @@ ProcessHandle *memoryOpenProcess(const char *executableName) {
     if (Process32First(snap, &pe)) {
         do {
             if (_stricmp(pe.szExeFile, executableName) == 0) {
-                out = (ProcessHandle*)malloc(sizeof(ProcessHandle));
+                out = (Process*)malloc(sizeof(Process));
                 out->pid = pe.th32ProcessID;
                 out->handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pe.th32ProcessID);
                 break;
@@ -31,7 +31,7 @@ ProcessHandle *memoryOpenProcess(const char *executableName) {
     return out;
 }
 
-bool memoryIsProcessRunning(const char *executableName) {
+bool processIsRunning(const char *executableName) {
     HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (snap == INVALID_HANDLE_VALUE) return false;
 
@@ -50,50 +50,50 @@ bool memoryIsProcessRunning(const char *executableName) {
     return found;
 }
 
-void memoryWaitUntilProcessCloses(ProcessHandle *ph) {
-    WaitForSingleObject(ph->handle, INFINITE);
+void processWaitUntilCloses(Process *process) {
+    WaitForSingleObject(process->handle, INFINITE);
 }
 
-void memoryCloseProcess(ProcessHandle *ph) {
-    if (ph->handle) {
-        CloseHandle(ph->handle);
-        ph->handle = NULL;
-        ph->pid = 0;
+void processClose(Process *process) {
+    if (process->handle) {
+        CloseHandle(process->handle);
+        process->handle = NULL;
+        process->pid = 0;
     }
-    free(ph);
+    free(process);
 }
 
-bool memoryRead(ProcessHandle *ph, uint32_t address, void *buffer, size_t size) {
+bool processRead(Process *process, uint32_t address, void *buffer, size_t size) {
     SIZE_T bytesRead;
-    return ReadProcessMemory(ph->handle, (LPCVOID)(uintptr_t)address, buffer, size, &bytesRead) && bytesRead == size;
+    return ReadProcessMemory(process->handle, (LPCVOID)(uintptr_t)address, buffer, size, &bytesRead) && bytesRead == size;
 }
 
-bool memoryWrite(ProcessHandle *ph, uint32_t address, const void *buffer, size_t size) {
+bool processWrite(Process *process, uint32_t address, const void *buffer, size_t size) {
     SIZE_T bytesWritten;
-    return WriteProcessMemory(ph->handle, (LPVOID)(uintptr_t)address, buffer, size, &bytesWritten) && bytesWritten == size;
+    return WriteProcessMemory(process->handle, (LPVOID)(uintptr_t)address, buffer, size, &bytesWritten) && bytesWritten == size;
 }
 
-bool memoryVirtualProtect(ProcessHandle *ph, uint32_t address, size_t size, uint32_t protect, uint32_t *oldProtect) {
-    return VirtualProtectEx(ph->handle, (LPVOID)(uintptr_t)address, size, protect, (PDWORD)oldProtect);
+bool processVirtualProtect(Process *process, uint32_t address, size_t size, uint32_t protect, uint32_t *oldProtect) {
+    return VirtualProtectEx(process->handle, (LPVOID)(uintptr_t)address, size, protect, (PDWORD)oldProtect);
 }
 
-bool memoryAllocatePage(ProcessHandle *ph, size_t size, uintptr_t *address) {
-    *address = (uintptr_t)VirtualAllocEx(ph->handle, NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+bool processAllocatePage(Process *process, size_t size, uintptr_t *address) {
+    *address = (uintptr_t)VirtualAllocEx(process->handle, NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     return address != NULL;
 }
 
-bool memoryFindPattern(ProcessHandle *ph, uintptr_t startAddress, size_t regionSize, const uint8_t *pattern, size_t patternSize, uintptr_t *outAddress) {
-    if (!ph || !pattern || patternSize == 0 || regionSize == 0 || !outAddress)
+bool processFindPattern(Process *process, uintptr_t startAddress, size_t regionSize, const uint8_t *pattern, size_t patternSize, uintptr_t *outAddress) {
+    if (!process || !pattern || patternSize == 0 || regionSize == 0 || !outAddress)
         return false;
 
     uint8_t *buffer = (uint8_t*)malloc(regionSize);
     if (!buffer) {
-        LOG_ERROR("memoryFindPattern: sin memoria (regionSize=%zu)", regionSize);
+        LOG_ERROR("processFindPattern: sin memoria (regionSize=%zu)", regionSize);
         return false;
     }
 
-    if (!memoryRead(ph, (uint32_t)startAddress, buffer, regionSize)) {
-        LOG_ERROR("memoryFindPattern: no se pudo leer la memoria en 0x%08X", (unsigned)startAddress);
+    if (!processRead(process, (uint32_t)startAddress, buffer, regionSize)) {
+        LOG_ERROR("processFindPattern: no se pudo leer la memoria en 0x%08X", (unsigned)startAddress);
         free(buffer);
         return false;
     }
