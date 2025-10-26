@@ -184,10 +184,6 @@ typedef struct {
 } WeaponCheat;
 
 typedef struct {
-    
-} GraphicsCheat;
-
-typedef struct {
     uintptr_t regionOffset;
     size_t regionSize;
     uint8_t pattern[ROUND_CHANGE_PATTERN_SIZE];
@@ -196,7 +192,7 @@ typedef struct {
 
 typedef struct {
     // Read-only. We only want to read from these addresses
-    uintptr_t isZombiesGameActiveOffset;   // 1 if there 
+    uintptr_t isZombiesGameActiveOffset;
     uintptr_t nResetsOffset;
 } GameCheat;
 

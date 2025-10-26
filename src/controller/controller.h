@@ -7,12 +7,14 @@
 typedef struct Controller Controller;
 
 Controller* controllerCreate();
-Process* controllerGetProcessHandle(Controller *controller);
+Process* controllerGetProcess(Controller *controller);
 bool controllerIsGameAttached(Controller *controller);
 bool controllerAttachGame(Controller *controller);
 bool controllerDetachGame(Controller *controller);
 bool controllerIsGameRunning(Controller *controller);
 void controllerWaitUntilGameCloses(Controller *controller); // This method should be called from a different thread to not block the main thread (UI)
+bool controllerIsGameWindowAttached(Controller *controller);
+bool controllerTryAttachGameWindow(Controller *controller);
 bool controllerGetCheat(Controller *controller, CheatName cheat);
 bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled);
 bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, void *value);

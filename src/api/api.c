@@ -100,7 +100,7 @@ bool apiIsCheatEnabled(Api *api, CheatName cheatName) {
         return false;
     }
     
-    Process *process = controllerGetProcessHandle(api->controller);
+    Process *process = controllerGetProcess(api->controller);
     if (!process) {
         LOG_ERROR("Process is null\n");
         return false;
@@ -156,7 +156,7 @@ bool apiSetCheatEnabled(Api *api, CheatName cheatName, bool enabled) {
         return false;
     }
     
-    Process *process = controllerGetProcessHandle(api->controller);
+    Process *process = controllerGetProcess(api->controller);
     if (!process) {
         LOG_ERROR("Process is null\n");
         return false;
@@ -211,7 +211,7 @@ bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value) {
         return false;
     }
     
-    Process *process = controllerGetProcessHandle(api->controller);
+    Process *process = controllerGetProcess(api->controller);
     if (!process) {
         LOG_ERROR("Process is null\n");
         return false;
@@ -249,7 +249,7 @@ TeleportCoords *apiGetPlayerCurrentCoords(Api *api) {
         return NULL;
     }
     
-    Process *process = controllerGetProcessHandle(api->controller);
+    Process *process = controllerGetProcess(api->controller);
     if (!process) {
         LOG_ERROR("Process is null\n");
         return NULL;
@@ -269,7 +269,7 @@ WeaponName apiGetPlayerCurrentWeapon(Api *api) {
         return WEAPON_UNKNOWNWEAPON;
     }
     
-    Process *process = controllerGetProcessHandle(api->controller);
+    Process *process = controllerGetProcess(api->controller);
     if (!process) {
         LOG_ERROR("Process is null\n");
         return WEAPON_UNKNOWNWEAPON;
@@ -290,7 +290,7 @@ WeaponName apiGetPlayerWeapon(Api *api, int slot) {
         return WEAPON_UNKNOWNWEAPON;
     }
     
-    Process *process = controllerGetProcessHandle(api->controller);
+    Process *process = controllerGetProcess(api->controller);
     if (!process) {
         LOG_ERROR("Process is null\n");
         return WEAPON_UNKNOWNWEAPON;
@@ -316,7 +316,7 @@ bool apiSetPlayerWeapon(Api *api, WeaponName weapon, int slot) {
         return false;
     }
     
-    Process *process = controllerGetProcessHandle(api->controller);
+    Process *process = controllerGetProcess(api->controller);
     if (!process) {
         LOG_ERROR("Process is null\n");
         return false;
@@ -337,7 +337,7 @@ bool apiGivePlayerAmmo(Api *api) {
         return false;
     }
     
-    Process *process = controllerGetProcessHandle(api->controller);
+    Process *process = controllerGetProcess(api->controller);
     if (!process) {
         LOG_ERROR("Process is null\n");
         return false;
@@ -354,7 +354,7 @@ bool apiSetRound(Api *api, int currentRound, int nextRound) {
         return false;
     }
     
-    Process *process = controllerGetProcessHandle(api->controller);
+    Process *process = controllerGetProcess(api->controller);
     if (!process) {
         LOG_ERROR("Process is null\n");
         return false;
@@ -384,7 +384,7 @@ bool apiIsZombiesGameRunning(Api *api) {
         return false;
     }
     
-    Process *process = controllerGetProcessHandle(api->controller);
+    Process *process = controllerGetProcess(api->controller);
     if (!process) {
         LOG_ERROR("Process is null\n");
         return false;
@@ -404,7 +404,7 @@ int apiGetGameResets(Api *api) {
         return 0;
     }
     
-    Process *process = controllerGetProcessHandle(api->controller);
+    Process *process = controllerGetProcess(api->controller);
     if (!process) {
         LOG_ERROR("Process is null\n");
         return 0;
@@ -700,13 +700,11 @@ bool _apiSetInstantKill(Process *process, Map *hooks, bool enabled) {
 }
 
 bool _apiGetMakeBorderless(Process *process) {
-    // TODO
-    return false;
+    return processIsBorderless(process);
 }
 
 bool _apiSetMakeBorderless(Process *process, bool enabled) {
-    // TODO
-    return false;
+    return processMakeBorderless(process, enabled);
 }
 
 

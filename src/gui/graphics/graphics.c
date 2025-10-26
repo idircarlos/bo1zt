@@ -82,6 +82,7 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     uiSpinboxSetValue(fovScaleSpin, 100);
     uiSpinboxSetValue(fpsCapSpin, 165);
 
+    uiCheckboxOnToggled(makeBorderlessCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_MAKE_BORDERLESS);
     uiCheckboxOnToggled(unlimitFpsCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_UNLIMIT_FPS);
     uiCheckboxOnToggled(disableHudCheckbox, onCheckboxToggled, (void*) CHEAT_NAME_DISABLE_HUD);
     uiCheckboxOnToggled(fogCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_DISABLE_FOG);

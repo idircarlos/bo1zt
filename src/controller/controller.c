@@ -10,6 +10,7 @@
 #include <stdio.h>
 
 #define GAME_EXECUTABLE_NAME "BlackOps.exe"
+#define GAME_WINDOW_NAME_PREFIX "Call of Duty"
 
 struct Controller {
     Process *process;
@@ -27,7 +28,7 @@ Controller* controllerCreate() {
     return controller;
 }
 
-Process* controllerGetProcessHandle(Controller *controller) {
+Process* controllerGetProcess(Controller *controller) {
     if (!controller) return NULL;
     return controller->process;
 }
@@ -74,6 +75,18 @@ void controllerWaitUntilGameCloses(Controller *controller) {
     if (!controller) return;
     if (!controller->process) return;
     processWaitUntilCloses(controller->process);
+}
+
+bool controllerIsGameWindowAttached(Controller *controller) {
+    if (!controller) return false;
+    if (!controller->process) return false;
+    return processIsWindowAttached(controller->process);
+}
+
+bool controllerTryAttachGameWindow(Controller *controller) {
+    if (!controller) return false;
+    if (!controller->process) return false;
+    return processTryAttachWindow(controller->process, GAME_WINDOW_NAME_PREFIX);
 }
 
 bool controllerGetCheat(Controller *controller, CheatName cheat) {

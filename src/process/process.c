@@ -5,30 +5,45 @@
 #include <string.h>
 #include <stdlib.h>
 
+typedef struct {
+    HWND hwnd;
+    char *windowTitle;
+    LONG_PTR originalStyle;
+    LONG_PTR originalExStyle;
+    bool hasSavedStyle;
+} WindowInfo;
+
 struct Process {
     HANDLE handle;
     DWORD pid;
+    WindowInfo windowInfo;
 };
+
+static BOOL CALLBACK _EnumWindowsProc(HWND hWnd, LPARAM lParam);
+static bool _tryMakeBorderless(Process *process);
+static bool _tryMakeNonBorderless(Process *process);
 
 Process *processOpen(const char *executableName) {
     HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    Process *out = NULL;
-    if (snap == INVALID_HANDLE_VALUE) return out;
+    Process *process = NULL;
+    if (snap == INVALID_HANDLE_VALUE) return process;
 
     PROCESSENTRY32 pe;
     pe.dwSize = sizeof(pe);
     if (Process32First(snap, &pe)) {
         do {
             if (_stricmp(pe.szExeFile, executableName) == 0) {
-                out = (Process*)malloc(sizeof(Process));
-                out->pid = pe.th32ProcessID;
-                out->handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pe.th32ProcessID);
+                process = (Process*)malloc(sizeof(Process));
+                process->pid = pe.th32ProcessID;
+                process->handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pe.th32ProcessID);
+                WindowInfo windowInfo = { .hwnd = NULL, .windowTitle = NULL, .originalStyle = 0, .originalExStyle = 0, .hasSavedStyle = false };
+                process->windowInfo = windowInfo;
                 break;
             }
         } while (Process32Next(snap, &pe));
     }
     CloseHandle(snap);
-    return out;
+    return process;
 }
 
 bool processIsRunning(const char *executableName) {
@@ -50,6 +65,43 @@ bool processIsRunning(const char *executableName) {
     return found;
 }
 
+bool processIsWindowAttached(Process *process) {
+    return process->windowInfo.hwnd != NULL;
+}
+
+bool processTryAttachWindow(Process *process, const char *windowTitle) {
+    process->windowInfo.windowTitle = (char*)malloc(sizeof(char)*(strlen(windowTitle) + 1));
+    strcpy(process->windowInfo.windowTitle, windowTitle);
+    EnumWindows(_EnumWindowsProc, (LPARAM)process);
+    return process->windowInfo.hwnd != NULL;
+}
+
+bool processIsBorderless(Process *process) {
+    HWND hwnd = process->windowInfo.hwnd;
+    if (!IsWindow(hwnd)) return false;
+
+    LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    LONG_PTR exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+
+    bool hasBorderFlags = (style & (WS_CAPTION | WS_THICKFRAME)) != 0;
+    bool hasExBorderFlags = (exStyle & (WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE)) != 0;
+
+    return !hasBorderFlags && !hasExBorderFlags;
+}
+
+bool processMakeBorderless(Process *process, bool enabled) {
+    HWND hwnd = process->windowInfo.hwnd;
+    if (hwnd == NULL) {
+        LOG_ERROR("Couldn't find window for pid %u\n", process->pid);
+        return false;
+    }
+
+    if (enabled) {
+        return _tryMakeBorderless(process);
+    }
+    return _tryMakeNonBorderless(process);
+}
+
 void processWaitUntilCloses(Process *process) {
     WaitForSingleObject(process->handle, INFINITE);
 }
@@ -57,8 +109,10 @@ void processWaitUntilCloses(Process *process) {
 void processClose(Process *process) {
     if (process->handle) {
         CloseHandle(process->handle);
+        CloseHandle(process->windowInfo.hwnd);
         process->handle = NULL;
         process->pid = 0;
+        process->windowInfo.hwnd = NULL;
     }
     free(process);
 }
@@ -115,4 +169,84 @@ bool processFindPattern(Process *process, uintptr_t startAddress, size_t regionS
 
     free(buffer);
     return false;
+}
+
+static BOOL CALLBACK _EnumWindowsProc(HWND hWnd, LPARAM lParam) {
+    Process *process = (Process*)lParam;
+    DWORD windowPid = 0;
+    GetWindowThreadProcessId(hWnd, &windowPid);
+
+    // Find main window visible and without owner
+    if (windowPid == process->pid) {
+        if (IsWindowVisible(hWnd) && GetWindow(hWnd, GW_OWNER) == NULL) {
+            char title[256];
+            int length = GetWindowTextA(hWnd, title, sizeof(title));
+            if (length == 0) {
+                LOG_ERROR("Couldn't retrieve the process window title");
+                return TRUE;
+            }
+            // We need to ensure that we attach the Main Game Window and not any other like Warnings for not exiting the game correctly. Only check for the firsts chars.
+            // See: https://www.reddit.com/r/Warzone/comments/1lxoef1/accidentally_booted_game_into_safe_mode_help/?tl=es-419
+            if (strncmp(title, process->windowInfo.windowTitle, strlen(process->windowInfo.windowTitle)) == 0) {
+                process->windowInfo.hwnd = hWnd;
+                return FALSE; // We found the window, stop enumeration
+            }
+        }
+    }
+    return TRUE; // Continue
+}
+
+static bool _tryMakeBorderless(Process *process) {
+    HWND hwnd = process->windowInfo.hwnd;
+    if (!IsWindow(hwnd)) {
+        LOG_ERROR("MakeWindowBorderless: hwnd no válido\n");
+        return false;
+    }
+
+    // Save window styles to restore non-borderless mode
+    if (!process->windowInfo.hasSavedStyle) {
+        process->windowInfo.originalStyle = GetWindowLongPtr(hwnd, GWL_STYLE);
+        process->windowInfo.originalExStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+        process->windowInfo.hasSavedStyle = true;
+    }
+
+    // Remove window styles to get the borderless appearnce
+    LONG_PTR style = process->windowInfo.originalStyle;
+    style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZE | WS_MAXIMIZE | WS_SYSMENU);
+    SetWindowLongPtr(hwnd, GWL_STYLE, style);
+
+    LONG_PTR exStyle = process->windowInfo.originalExStyle;
+    exStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
+    SetWindowLongPtr(hwnd, GWL_EXSTYLE, exStyle);
+
+    // Get monitor information
+    MONITORINFO mi = { };
+    mi.cbSize = sizeof(mi);
+    HMONITOR hMon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    GetMonitorInfo(hMon, &mi);
+    RECT r = mi.rcMonitor;
+
+    // Expand the window to fit the entire monitor
+    return SetWindowPos(hwnd, HWND_TOP,
+                        r.left, r.top,
+                        r.right - r.left,
+                        r.bottom - r.top,
+                        SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+}
+
+static bool _tryMakeNonBorderless(Process *process) {
+    HWND hwnd = process->windowInfo.hwnd;
+    if (!IsWindow(hwnd)) return false;
+
+    if (!process->windowInfo.hasSavedStyle) {
+        LOG_WARN("There are no saved window styles\n");
+        return false;
+    }
+
+    // Restore saved window styles for non-borderless
+    SetWindowLongPtr(hwnd, GWL_STYLE, process->windowInfo.originalStyle);
+    SetWindowLongPtr(hwnd, GWL_EXSTYLE, process->windowInfo.originalExStyle);
+
+    return SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
+                                SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 }

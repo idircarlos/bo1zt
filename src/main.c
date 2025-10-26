@@ -8,17 +8,32 @@
 
 static Controller *controller = NULL;
 
-int processRunningThread(void *data) {
+int lookForGameWindow(void *data) {
     (void)data;
     while (true) {
         while(!controllerIsGameRunning(controller)) {
-            LOG_INFO("Waiting for game running...\n");
-            threadSleep(3000);
+            threadSleep(500);
+        }
+        if (!controllerIsGameWindowAttached(controller) && controllerTryAttachGameWindow(controller)) {
+            LOG_INFO("Window attached!\n");
+            continue;
+        }
+        threadSleep(500);
+    }
+    return 0;
+}
+
+int processRunningThread(void *data) {
+    (void)data;
+    while (true) {
+        LOG_INFO("Waiting for game starts...\n");
+        while(!controllerIsGameRunning(controller)) {
+            threadSleep(500);
         }
         if (!controllerIsGameAttached(controller)) {
             controllerAttachGame(controller);
         }
-        LOG_INFO("Game attached! Waiting until game is closed...\n");
+        LOG_INFO("Game attached!\n");
         controllerWaitUntilGameCloses(controller);
         LOG_INFO("Game has been closed\n");
         controllerDetachGame(controller);
@@ -30,12 +45,14 @@ int refreshWindowThread(void *data) {
     (void)data;
     while (true) {
         while(!controllerIsGameRunning(controller)) {
-            threadSleep(3000);
+            threadSleep(500);
         }
         guiUpdate();
-        threadSleep(1000);
+        threadSleep(500);
     }
+    return 0;
 }
+
 
 int main(void) {
     loggerInit(NULL);
@@ -43,6 +60,7 @@ int main(void) {
     threadCreate(processRunningThread, NULL);
     guiInit(controller);
     threadCreate(refreshWindowThread, NULL);
+    threadCreate(lookForGameWindow, NULL);
     guiRun();
     guiCleanup();
     
