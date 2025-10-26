@@ -5,6 +5,15 @@
 A simple trainer for *Black Ops 1 Zombies* written in C.
 This tool is being created just for fun while learning reverse engineering fundamentals. This tool is still under development. Main features available:
 
+Player:
+- [x] Change name
+- [x] Set Health
+- [x] Set Points
+- [x] Set Speed
+- [x] Set Kills
+- [x] Set Headshots
+
+Hacks:
 - [x] God Mode
 - [x] No Clip
 - [x] Invisible
@@ -16,7 +25,26 @@ This tool is being created just for fun while learning reverse engineering funda
 - [x] Third Person
 - [x] No Shellshock
 - [x] Increase Knife Rangee
-- [x] Small Crosshair 
+- [x] Small Crosshair
+
+Graphics:
+- [x] Set FOV
+- [x] Set FOV Scale
+- [x] Set FPS Cap or Unlimit FPS
+- [x] Make Borderless
+- [x] Disable HUD
+- [x] Disable FOG
+- [x] Fullbright mode
+- [x] Colorized mode
+- [] Customize UI
+
+Misc:
+- [x] Give any weapon in any slot
+- [] Give ammo
+- [x] Teleport to any location. They can be saved and loaded.
+- [x] Change to any round
+- [] Game info
+- [] TIM Compatibility
 
 And a lot more stuff not yet scoped.
 
