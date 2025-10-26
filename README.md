@@ -36,15 +36,15 @@ Graphics:
 - [x] Disable FOG
 - [x] Fullbright mode
 - [x] Colorized mode
-- [] Customize UI
+- [ ] Customize UI
 
 Misc:
 - [x] Give any weapon in any slot
-- [] Give ammo
+- [ ] Give ammo
 - [x] Teleport to any location. They can be saved and loaded.
 - [x] Change to any round
-- [] Game info
-- [] TIM Compatibility
+- [ ] Game info
+- [ ] TIM Compatibility
 
 And a lot more stuff not yet scoped.
 
