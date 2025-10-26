@@ -106,12 +106,13 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     // Fila 2
     uiGridAppend(playerGrid, uiControl(pointsBtn),    0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(pointsSpin),   1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(killsBtn),     0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(killsSpin),    1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(speedBtn),     0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(speedSpin),    1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    
 
     // Fila 3
-    uiGridAppend(playerGrid, uiControl(speedBtn),     0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(playerGrid, uiControl(speedSpin),    1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(killsBtn),     0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(playerGrid, uiControl(killsSpin),    1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(headshotsBtn), 0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(headshotsSpin),1, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
