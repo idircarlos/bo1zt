@@ -8,21 +8,6 @@
 
 static Controller *controller = NULL;
 
-int lookForGameWindow(void *data) {
-    (void)data;
-    while (true) {
-        while(!controllerIsGameRunning(controller)) {
-            threadSleep(500);
-        }
-        if (!controllerIsGameWindowAttached(controller) && controllerTryAttachGameWindow(controller)) {
-            LOG_INFO("Window attached!\n");
-            continue;
-        }
-        threadSleep(500);
-    }
-    return 0;
-}
-
 int processRunningThread(void *data) {
     (void)data;
     while (true) {
@@ -33,7 +18,12 @@ int processRunningThread(void *data) {
         if (!controllerIsGameAttached(controller)) {
             controllerAttachGame(controller);
         }
-        LOG_INFO("Game attached!\n");
+        LOG_INFO("Game attached! Looking for Game Window\n");
+        while (!controllerIsGameWindowAttached(controller)) {
+            controllerTryAttachGameWindow(controller);
+            threadSleep(200);
+        }
+        LOG_INFO("Window attached!\n");
         controllerWaitUntilGameCloses(controller);
         LOG_INFO("Game has been closed\n");
         controllerDetachGame(controller);
@@ -60,7 +50,6 @@ int main(void) {
     threadCreate(processRunningThread, NULL);
     guiInit(controller);
     threadCreate(refreshWindowThread, NULL);
-    threadCreate(lookForGameWindow, NULL);
     guiRun();
     guiCleanup();
     
