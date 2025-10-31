@@ -44,7 +44,12 @@ Misc:
 - [x] Teleport to any location. They can be saved and loaded.
 - [x] Change to any round
 - [ ] Game info
+- [ ] Fix Movement Speed PC Issue
+- [ ] Show FPS
 - [ ] TIM Compatibility
+- [ ] Setup Camos
+- [ ] Add Floating Widgets
+- [ ] Open/Close Game
 
 And a lot more stuff not yet scoped.
 

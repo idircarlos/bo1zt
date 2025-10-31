@@ -52,7 +52,6 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
         }
     } 
     uiComboboxSetSelected(weaponsCombo, 2);
-    uiComboboxNumItems(weaponsCombo);
 
     // Botones de armas
     giveWeaponBtn = uiNewButton("Give Weapon");

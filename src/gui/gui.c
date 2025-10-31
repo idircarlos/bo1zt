@@ -12,8 +12,8 @@
 #include "graphics/graphics.h"
 #include "game/game.h"
 
-#define WINDOW_WIDTH 300
-#define WINDOW_HEIGHT 400
+#define WINDOW_WIDTH 100
+#define WINDOW_HEIGHT 540
 #define UI_CONTROL_GROUP_SIZE 7
 
 struct UIControlGroup {
@@ -87,53 +87,36 @@ static uiControl* buildWindowContent() {
     controlGroups[6] = gameControlGroup;
     
     // UI Groups
-uiGroup *playerGroup   = playerControlGroup->build(controller, window);
-uiGroup *roundGroup    = roundControlGroup->build(controller, window);
-uiGroup *weaponsGroup  = weaponsControlGroup->build(controller, window);
-uiGroup *teleportGroup = teleportControlGroup->build(controller, window);
-uiGroup *cheatGroup    = cheatsControlGroup->build(controller, window);
-uiGroup *graphicsGroup = graphicsControlGroup->build(controller, window);
-uiGroup *gameGroup     = gameControlGroup->build(controller, window);
+    uiGroup *playerGroup = playerControlGroup->build(controller, window);
+    uiGroup *roundGroup = roundControlGroup->build(controller, window);
+    uiGroup *weaponsGroup = weaponsControlGroup->build(controller, window);
+    uiGroup *teleportGroup = teleportControlGroup->build(controller, window);
+    uiGroup *cheatGroup = cheatsControlGroup->build(controller, window);
+    uiGroup *graphicsGroup = graphicsControlGroup->build(controller, window);
+    uiGroup *gameGroup = gameControlGroup->build(controller, window);
 
-// --- Subgrids columna izquierda ---
-uiGrid *topLeftGrid = uiNewGrid();
-uiGridSetPadded(topLeftGrid, 1);
-uiGridAppend(topLeftGrid, uiControl(playerGroup), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-uiGridAppend(topLeftGrid, uiControl(cheatGroup),  1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    
+    // --- VBox para Weapons + Teleport ---
+    uiBox *twVBox = uiNewVerticalBox();
+    uiBoxSetPadded(twVBox, 1);
+    uiBoxAppend(twVBox, uiControl(weaponsGroup), 1);
+    uiBoxAppend(twVBox, uiControl(teleportGroup), 1); 
 
-uiGrid *bottomLeftGrid = uiNewGrid();
-uiGridSetPadded(bottomLeftGrid, 1);
-uiGridAppend(bottomLeftGrid, uiControl(graphicsGroup), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-uiGridAppend(bottomLeftGrid, uiControl(roundGroup),    1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    // --- Main Grid ---
+    uiGrid *mainGrid = uiNewGrid();
+    uiGridSetPadded(mainGrid, 1);
 
-// --- Subgrid columna derecha ---
-uiGrid *gameGrid = uiNewGrid();
-uiGridSetPadded(gameGrid, 1);
+    // Fila 0
+    uiGridAppend(mainGrid, uiControl(playerGroup), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, uiControl(cheatGroup),  1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, uiControl(gameGroup),   2, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
-// Game arriba (columna 0 y 1 para igualar ancho)
-uiGridAppend(gameGrid, uiControl(gameGroup), 0, 0, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    // Fila 1
+    uiGridAppend(mainGrid, uiControl(graphicsGroup), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, uiControl(roundGroup),    1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, uiControl(twVBox),        2, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
-// Weapons + Teleport apilados debajo
-uiGrid *wtGrid = uiNewGrid();
-uiGridSetPadded(wtGrid, 1);
-uiGridAppend(wtGrid, uiControl(weaponsGroup),  0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-uiGridAppend(wtGrid, uiControl(teleportGroup), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-
-// Coloca W/T debajo de Game y expande al mismo ancho que Game
-uiGridAppend(gameGrid, uiControl(wtGrid), 0, 1, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-
-// --- Main grid ---
-uiGrid *mainGrid = uiNewGrid();
-uiGridSetPadded(mainGrid, 1);
-
-// Columna izquierda
-uiGridAppend(mainGrid, uiControl(topLeftGrid),    0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-uiGridAppend(mainGrid, uiControl(bottomLeftGrid), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-
-// Columna derecha: eliminar hueco a la derecha
-uiGridAppend(mainGrid, uiControl(gameGrid), 1, 0, 1, 2, 1, uiAlignFill, 1, 0);  // <-- CAMBIO AQUÍ
-
-return uiControl(mainGrid);
+    return uiControl(mainGrid);
 }
 
 UIControlGroup *guiControlGroupCreate(uiGroup *(*build)(Controller *, uiWindow *), void (*update)()) {

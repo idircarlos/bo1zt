@@ -67,46 +67,37 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     parent = parentInstance;
     // --- Teleport Group ---
     uiGroup *teleportGroup = uiNewGroup("Teleport");
-    uiBox *teleportHBox = uiNewHorizontalBox();
-    uiBoxSetPadded(teleportHBox, 1);
+    uiBox *teleportBox = uiNewVerticalBox();
+    uiBoxSetPadded(teleportBox, 1);
 
-    // --- Grid de coordenadas (3x2: labels + spinboxes)
-    uiBox *coordsVBox = uiNewVerticalBox();
-    uiBoxSetPadded(coordsVBox, 1);
+    uiGrid *teleportGrid = uiNewGrid();
+    uiGridSetPadded(teleportGrid, 1);
 
     xSpin = uiNewSpinbox(-500000, 500000);
     ySpin = uiNewSpinbox(-500000, 500000);
     zSpin = uiNewSpinbox(-500000, 500000);
 
-    // Añadir etiquetas y spinboxes en el grid (3 filas, 2 columnas)
-    uiBoxAppend(coordsVBox, uiControl(xSpin), 1);
-    uiBoxAppend(coordsVBox, uiControl(ySpin), 1);
-    uiBoxAppend(coordsVBox, uiControl(zSpin), 1);
 
     // --- Botón Go (a la derecha del grid)
     goBtn = uiNewButton("Go");
     uiButtonOnClicked(goBtn, onTeleportGoButtonClick, NULL);
-
-    // --- VBox con botones Load y Save (a la derecha del botón Go)
-    uiBox *saveLoadVBox = uiNewVerticalBox();
-    uiBoxSetPadded(saveLoadVBox, 1);
     uiButton *loadBtn = uiNewButton("Load Position");
     uiButton *saveBtn = uiNewButton("Save Position");
-    uiBoxAppend(saveLoadVBox, uiControl(loadBtn), 1);
-    uiBoxAppend(saveLoadVBox, uiControl(saveBtn), 1);
-
     uiButtonOnClicked(saveBtn, onTeleportSaveButtonClick, NULL);
     uiButtonOnClicked(loadBtn, onTeleportLoadButtonClick, NULL);
     
-
-    // --- Añadir todo al box principal (coordsVBox + Go + VBox derecha)
-    uiBoxAppend(teleportHBox, uiControl(saveLoadVBox), 1);
-    uiBoxAppend(teleportHBox, uiControl(coordsVBox), 1);
-    uiBoxAppend(teleportHBox, uiControl(goBtn), 1);
     
+    uiGridAppend(teleportGrid, uiControl(xSpin),        0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(teleportGrid, uiControl(ySpin),        0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(teleportGrid, uiControl(zSpin),        0, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(teleportGrid, uiControl(loadBtn),      1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(teleportGrid, uiControl(saveBtn),      1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(teleportGrid, uiControl(goBtn),        1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+
+    uiBoxAppend(teleportBox, uiControl(teleportGrid), 1);
 
     // --- Añadir al grupo ---
-    uiGroupSetChild(teleportGroup, uiControl(teleportHBox));
+    uiGroupSetChild(teleportGroup, uiControl(teleportBox));
     uiGroupSetMargined(teleportGroup, 1);
     return teleportGroup;
 }
