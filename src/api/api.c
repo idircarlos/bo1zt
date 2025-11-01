@@ -79,6 +79,7 @@ bool _apiChangeName(Process *process, char *name);
 bool _apiSetSpeed(Process *process, uint32_t value);
 bool _apiGiveWeaponAmmo(Process *process, Weapon weapon);
 bool _apiTeleport(Process *process, TeleportCoords value);
+bool _apiChangeHostname(Process *process, char *hostname);
 bool _apiFov(Process *process, float value);
 bool _apiFovScale(Process *process, float value);
 bool _apiFpsCap(Process *process, uint32_t value);
@@ -240,6 +241,8 @@ bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value) {
             return _apiSetSpeed(process, (uint32_t)(*(int*)value));
         case SIMPLE_CHEAT_NAME_TELEPORT:
             return _apiTeleport(process, (TeleportCoords)(*(TeleportCoords*)value));
+        case SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME:
+            return _apiChangeHostname(process, (char*)value);
         case SIMPLE_CHEAT_NAME_FOV:
             return _apiFov(process, (float)(*(int*)value));
         case SIMPLE_CHEAT_NAME_FOV_SCALE:
@@ -431,6 +434,7 @@ int apiGetGameResets(Api *api) {
     }
     // We substract one since this value are the total number of games. Usually, resets refers to the number of retries, where the first try isn't a retry at all.
     // If there are no games played so far, we keep the 0.
+    
     resets = resets == 0 ? resets : resets - 1;
     return (int)resets; 
 }
@@ -942,6 +946,11 @@ bool _apiTeleport(Process *process, TeleportCoords value) {
     return processWrite(process, TELEPORT_CHEAT.xOffset, &(value.x), sizeof(value.x)) &&
            processWrite(process, TELEPORT_CHEAT.yOffset, &(value.y), sizeof(value.y)) &&
            processWrite(process, TELEPORT_CHEAT.zOffset, &(value.z), sizeof(value.z));
+}
+
+bool _apiChangeHostname(Process *process, char *hostname) {
+    SimpleCheat cheat = SIMPLE_CHEAT_CHANGE_HOSTNAME;
+    return processWrite(process, cheat.offset, hostname, strlen(hostname) + 1);
 }
 
 bool _apiFov(Process *process, float value) {

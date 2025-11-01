@@ -5,5 +5,6 @@
 
 UIControlGroup *uiGameBuildControlGroup();
 bool uiGameIsChecked(CheatName cheat);
+char *uiGameGetHostname();
 
 #endif // UI_GAME_H_

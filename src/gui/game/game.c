@@ -4,12 +4,14 @@
 #include <string.h>
 #include <ui.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static const char *RUNNING_TEXT = "Running";
 static const char *NOT_RUNNING_TEXT = "Not running";
 
 static bool cachedGameAttached = false;
 static bool cachedTimRunning = false;
+static bool cachedResets = 0;
 
 // Controller instance
 static Controller *controller;
@@ -38,7 +40,7 @@ static uiLabel *resetsNumLabel = NULL;
 static uiLabel *timLabel = NULL;
 static uiCheckbox *patchMovementCheckbox = NULL;
 static uiCheckbox *showFpsCheckbox = NULL;
-static uiButton *hostnameButton = NULL;
+static uiLabel *hostnameLabel = NULL;
 static uiEntry *hostnameEntry = NULL;
 static uiButton *camosButton = NULL;
 static uiButton *widgetsButton = NULL;
@@ -167,16 +169,16 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     uiGrid *grid = uiNewGrid();
     uiGridSetPadded(grid, 1);
 
-    statusLabel = uiNewLabel("Status:");
+    statusLabel = uiNewLabel("Status");
     statusArea = uiNewArea(&statusHandler);
-    timLabel = uiNewLabel("TIM:");
+    timLabel = uiNewLabel("TIM");
     timArea = uiNewArea(&timHandler);
-    resetsLabel = uiNewLabel("Resets:");
+    resetsLabel = uiNewLabel("Resets");
     resetsNumLabel = uiNewLabel("0");
+    hostnameLabel = uiNewLabel("Hostname");
+    hostnameEntry = uiNewEntry();
     patchMovementCheckbox = uiNewCheckbox(" Fix Movement Speed");
     showFpsCheckbox = uiNewCheckbox(" Show FPS");
-    hostnameButton = uiNewButton("Set Hostname");
-    hostnameEntry = uiNewEntry();
     camosButton = uiNewButton("Setup Camos");
     widgetsButton = uiNewButton("Add Widgets");
     launchButton = uiNewButton("Launch Game");
@@ -191,10 +193,10 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     uiGridAppend(grid, uiControl(timArea),                  1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(resetsLabel),              0, 2, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(resetsNumLabel),           1, 2, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(patchMovementCheckbox),    0, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(showFpsCheckbox),          1, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(hostnameButton),           0, 4, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(hostnameEntry),            1, 4, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(hostnameLabel),            0, 3, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(grid, uiControl(hostnameEntry),            1, 3, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(patchMovementCheckbox),    0, 4, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(showFpsCheckbox),          1, 4, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(camosButton),              0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(widgetsButton),            1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(launchButton),             0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
@@ -222,6 +224,20 @@ static void update() {
         timCurrentText = timRunning ? timRunningText : timNotRunningText;
         uiAreaQueueRedrawAll(timArea);
         cachedTimRunning = timRunning;
+        if (timRunning) {
+            uiControlDisable(uiControl(hostnameLabel));
+            uiControlDisable(uiControl(hostnameEntry));
+        } else {
+            uiControlEnable(uiControl(hostnameLabel));
+            uiControlEnable(uiControl(hostnameEntry));
+        }
+    }
+    int resets = stateGetGameResets(state);
+    if (resets != cachedResets) {
+        char resetsStr[8];
+        sprintf(resetsStr, "%d", resets);
+        uiLabelSetText(resetsNumLabel, resetsStr);
+        cachedResets = resets;
     }
 }
 
@@ -236,6 +252,10 @@ bool uiGameIsChecked(CheatName cheat) {
             fprintf(stderr, "Unknown cheat %d\n", cheat);
             return false;
     }
+}
+
+char *uiGameGetHostname() {
+    return uiEntryText(hostnameEntry);
 }
 
 UIControlGroup *uiGameBuildControlGroup() {

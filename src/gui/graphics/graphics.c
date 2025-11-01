@@ -2,6 +2,8 @@
 #include "../../logger/logger.h"
 #include <stdio.h>
 
+static bool cachedTimRunning = false;
+
 // Controller instance
 static Controller *controller;
 
@@ -72,7 +74,7 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     unlimitFpsCheckbox = uiNewCheckbox(" Unlimit FPS");
     makeBorderlessCheckbox = uiNewCheckbox(" Make Borderless");
     disableHudCheckbox = uiNewCheckbox(" Disable HUD");
-    fogCheckbox = uiNewCheckbox(" Fog");
+    fogCheckbox = uiNewCheckbox(" Disable Fog");
     fullbrightCheckbox = uiNewCheckbox(" Fullbright");
     colorizedCheckbox = uiNewCheckbox(" Colorized");
 
@@ -117,7 +119,28 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
 }
 
 static void update() {
-    // Nothing
+    State *state = controllerGetState(controller);
+    bool timRunning = stateIsTimRunning(state);
+    if (timRunning != cachedTimRunning) {
+        if (timRunning) {
+            uiDisableSpinbox(fovSpin);
+            uiDisableSpinbox(fovScaleSpin);
+            uiDisableSpinbox(fpsCapSpin);
+            uiControlDisable(uiControl(fovLabel));
+            uiControlDisable(uiControl(fovScaleLabel));
+            uiControlDisable(uiControl(fpsCapLabel));
+            uiControlDisable(uiControl(unlimitFpsCheckbox));
+        } else {
+            uiEnableSpinbox(fovSpin);
+            uiEnableSpinbox(fovScaleSpin);
+            uiEnableSpinbox(fpsCapSpin);
+            uiControlEnable(uiControl(fovLabel));
+            uiControlEnable(uiControl(fovScaleLabel));
+            uiControlEnable(uiControl(fpsCapLabel));
+            uiControlEnable(uiControl(unlimitFpsCheckbox));
+        }
+        cachedTimRunning = timRunning;
+    }
 }
 
 UIControlGroup *uiGraphicsBuildControlGroup() {
