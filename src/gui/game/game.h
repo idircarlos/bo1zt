@@ -4,5 +4,6 @@
 #include "../gui.h"
 
 UIControlGroup *uiGameBuildControlGroup();
+bool uiGameIsChecked(CheatName cheat);
 
 #endif // UI_GAME_H_

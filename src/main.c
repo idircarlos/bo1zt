@@ -31,7 +31,7 @@ int processRunningThread(void *data) {
     return 0;
 }
 
-int refreshWindowThread(void *data) {
+int updateGuiThread(void *data) {
     (void)data;
     while (true) {
         while(!controllerIsGameRunning(controller)) {
@@ -43,13 +43,25 @@ int refreshWindowThread(void *data) {
     return 0;
 }
 
+int updateGameThread(void *data) {
+    (void)data;
+    while (true) {
+        while(!controllerIsGameRunning(controller)) {
+            threadSleep(500);
+        }
+        controllerUpdateTrainerConfig(controller);
+        threadSleep(100);
+    }
+}
+
 
 int main(void) {
     loggerInit(NULL);
     controller = controllerCreate();
     threadCreate(processRunningThread, NULL);
     guiInit(controller);
-    threadCreate(refreshWindowThread, NULL);
+    threadCreate(updateGuiThread, NULL);
+    threadCreate(updateGameThread, NULL);
     guiRun();
     guiCleanup();
     

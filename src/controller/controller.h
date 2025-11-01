@@ -28,6 +28,7 @@ bool controllerGivePlayerAmmo(Controller *controller);
 bool controllerSetRound(Controller *controller, int currentRound, int nextRound);
 bool controllerIsZombiesGameActive(Controller *controller);
 int controllerGetGameResets(Controller *controller);
+void controllerUpdateTrainerConfig(Controller *controller);
 void controllerDestroy(Controller *controller);
 
 #endif // CONTROLLER_H_

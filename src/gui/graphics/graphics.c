@@ -36,13 +36,13 @@ static void onSpinboxChange(uiSpinbox *spin, void *data) {
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
-    bool success = controllerSetCheat(controller, cheatName, enabled);
+    bool success = controllerIsGameRunning(controller) ? controllerSetCheat(controller, cheatName, enabled) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
     if (!success) {
-        fprintf(stderr, "Failed to set graphics cheat %d to %d\n", cheatName, enabled);
+        fprintf(stderr, "Failed to set Graphics cheat %d to %d\n", cheatName, enabled);
         uiCheckboxSetChecked(checkbox, !enabled); // Revert checkbox state
     }
     // If "Unlimit FPS" checkbox is toggled, enable/disable FPS Cap Spinbox
-    if (cheatName == CHEAT_NAME_UNLIMIT_FPS) {
+    if (cheatName == CHEAT_NAME_UNLIMIT_FPS && success) {
         if (enabled) {
             uiControlDisable(uiControl(fpsCapLabel));
             uiDisableSpinbox(fpsCapSpin);
@@ -126,6 +126,34 @@ UIControlGroup *uiGraphicsBuildControlGroup() {
 }
 
 // External API for Controller
+bool uiGraphicsIsChecked(CheatName cheat) {
+    switch (cheat) {
+        case CHEAT_NAME_MAKE_BORDERLESS:
+            return uiCheckboxChecked(makeBorderlessCheckbox);
+        case CHEAT_NAME_UNLIMIT_FPS:
+            return uiCheckboxChecked(unlimitFpsCheckbox);
+        case CHEAT_NAME_DISABLE_HUD:
+            return uiCheckboxChecked(disableHudCheckbox);
+        case CHEAT_NAME_DISABLE_FOG:
+            return uiCheckboxChecked(fogCheckbox);
+        case CHEAT_NAME_FULLBRIGHT:
+            return uiCheckboxChecked(fullbrightCheckbox);
+        case CHEAT_NAME_COLORIZED:
+            return uiCheckboxChecked(colorizedCheckbox);
+        default:
+            fprintf(stderr, "Unknown cheat %d\n", cheat);
+            return false;
+    }
+}
+
+int uiGraphicsGetFov() {
+    return uiSpinboxValue(fovSpin);
+}
+
+int uiGraphicsGetFovScale() {
+    return uiSpinboxValue(fovScaleSpin);
+}
+
 int uiGraphicsGetFpsCap() {
     return uiSpinboxValue(fpsCapSpin);
 }

@@ -213,6 +213,19 @@ static void update() {
     // Nothing for now
 }
 
+// External API for Controller
+bool uiGameIsChecked(CheatName cheat) {
+    switch (cheat) {
+        case CHEAT_NAME_FIX_MOVEMENT_SPEED:
+            return uiCheckboxChecked(patchMovementCheckbox);
+        case CHEAT_NAME_SHOW_FPS:
+            return uiCheckboxChecked(showFpsCheckbox);
+        default:
+            fprintf(stderr, "Unknown cheat %d\n", cheat);
+            return false;
+    }
+}
+
 UIControlGroup *uiGameBuildControlGroup() {
     UIControlGroup *cg = guiControlGroupCreate(build, update);
     return cg;

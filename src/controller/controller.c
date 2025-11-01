@@ -6,6 +6,7 @@
 #include "../state/state.h"
 #include "../gui/hacks/hacks.h"
 #include "../gui/graphics/graphics.h"
+#include "../gui/game/game.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -164,3 +165,35 @@ int controllerGetGameResets(Controller *controller) {
     return apiGetGameResets(controller->api);
 }
 
+void controllerUpdateTrainerConfig(Controller *controller) {
+    // --- Graphics Config ---
+    int fov = uiGraphicsGetFov();
+    int fovScale = uiGraphicsGetFovScale();
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FOV, &fov);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FOV_SCALE, &fovScale);
+    bool unlimitFps = uiGraphicsIsChecked(CHEAT_NAME_UNLIMIT_FPS);
+    if (!unlimitFps) {
+        int fpsCap = uiGraphicsGetFpsCap();
+        controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FPS_CAP, &fpsCap);
+    }
+    bool disableHud = uiGraphicsIsChecked(CHEAT_NAME_DISABLE_HUD);
+    bool disableFog = uiGraphicsIsChecked(CHEAT_NAME_DISABLE_FOG);
+    bool fullbright = uiGraphicsIsChecked(CHEAT_NAME_FULLBRIGHT);
+    bool colorized = uiGraphicsIsChecked(CHEAT_NAME_COLORIZED);
+    controllerSetCheat(controller, CHEAT_NAME_DISABLE_HUD, disableHud);
+    controllerSetCheat(controller, CHEAT_NAME_DISABLE_FOG, disableFog);
+    controllerSetCheat(controller, CHEAT_NAME_COLORIZED, colorized);
+    controllerSetCheat(controller, CHEAT_NAME_FULLBRIGHT, fullbright);
+    // Only make borderless once
+    bool makeBorderless = uiGraphicsIsChecked(CHEAT_NAME_MAKE_BORDERLESS);
+    if (controllerIsGameWindowAttached(controller) && !processIsBorderless(controller->process) && makeBorderless) {
+        controllerSetCheat(controller, CHEAT_NAME_MAKE_BORDERLESS, makeBorderless);
+    }
+
+    // --- Game Config ---
+    bool fixMovementSpeed = uiGameIsChecked(CHEAT_NAME_FIX_MOVEMENT_SPEED);
+    bool showFps = uiGameIsChecked(CHEAT_NAME_SHOW_FPS);
+    controllerSetCheat(controller, CHEAT_NAME_FIX_MOVEMENT_SPEED, fixMovementSpeed);
+    controllerSetCheat(controller, CHEAT_NAME_SHOW_FPS, showFps);
+    
+}
