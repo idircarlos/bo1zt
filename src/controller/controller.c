@@ -183,15 +183,19 @@ void controllerUpdateState(Controller *controller) {
 void controllerUpdateTrainerConfig(Controller *controller) {
     if (!controllerIsGameAttached(controller)) return;
     // --- Graphics Config ---
-    int fov = uiGraphicsGetFov();
-    int fovScale = uiGraphicsGetFovScale();
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FOV, &fov);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FOV_SCALE, &fovScale);
-    bool unlimitFps = uiGraphicsIsChecked(CHEAT_NAME_UNLIMIT_FPS);
-    if (!unlimitFps) {
-        int fpsCap = uiGraphicsGetFpsCap();
-        controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FPS_CAP, &fpsCap);
+    // Only update these cheats if TIM is NOT running. Fight is over... He is stronger...
+    if (!controllerIsTimRunning(controller)) {
+        int fov = uiGraphicsGetFov();
+        int fovScale = uiGraphicsGetFovScale();
+        controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FOV, &fov);
+        controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FOV_SCALE, &fovScale);
+        bool unlimitFps = uiGraphicsIsChecked(CHEAT_NAME_UNLIMIT_FPS);
+        if (!unlimitFps) {
+            int fpsCap = uiGraphicsGetFpsCap();
+            controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FPS_CAP, &fpsCap);
+        }
     }
+    
     bool disableHud = uiGraphicsIsChecked(CHEAT_NAME_DISABLE_HUD);
     bool disableFog = uiGraphicsIsChecked(CHEAT_NAME_DISABLE_FOG);
     bool fullbright = uiGraphicsIsChecked(CHEAT_NAME_FULLBRIGHT);
@@ -211,5 +215,4 @@ void controllerUpdateTrainerConfig(Controller *controller) {
     bool showFps = uiGameIsChecked(CHEAT_NAME_SHOW_FPS);
     controllerSetCheat(controller, CHEAT_NAME_FIX_MOVEMENT_SPEED, fixMovementSpeed);
     controllerSetCheat(controller, CHEAT_NAME_SHOW_FPS, showFps);
-    
 }
