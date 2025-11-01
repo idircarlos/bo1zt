@@ -231,7 +231,7 @@ bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value) {
         return false;
     }
 
-    LOG_INFO("Setting Simple Cheat %d with value %x\n", simpleCheatName, value);
+    LOG_DEBUG("Setting Simple Cheat %d with value %x\n", simpleCheatName, value);
 
     switch(simpleCheatName) {
         case SIMPLE_CHEAT_NAME_CHANGE_NAME:
@@ -388,7 +388,7 @@ bool apiSetRound(Api *api, int currentRound, int nextRound) {
         printf("Failed to write Next Round value\n");
         return false;
     }
-    LOG_INFO("Next round successfully changed. Finish the current round %d and next round will be %d\n", currentRound, nextRound);
+    LOG_DEBUG("Next round successfully changed. Finish the current round %d and next round will be %d\n", currentRound, nextRound);
     return true;
 }
 
@@ -686,7 +686,7 @@ bool _apiSetSmallCrosshair(Process *process, bool enabled) {
     }
     uint32_t address1 = 0;
     success = processRead(process, CHEAT_SMALL_CROSSHAIR.offset, &address1, sizeof(address1));
-    LOG_INFO("address1 %x\n", address1);
+    LOG_DEBUG("address1 %x\n", address1);
     if (!success) {
         printf("Failed to read Small Crosshair address\n");
         return false;
@@ -773,7 +773,7 @@ bool _apiSetDisableHud(Process *process, bool enabled) {
         printf("Failed to read Disable Hud address\n");
         return false;
     }
-    LOG_INFO("Reading Disable HUD pointer %x and inside is %x\n", CHEAT_DISABLE_HUD.offset, address1);
+    LOG_DEBUG("Reading Disable HUD pointer %x and inside is %x\n", CHEAT_DISABLE_HUD.offset, address1);
     uint8_t value = enabled ? CHEAT_DISABLE_HUD.on.byte : CHEAT_DISABLE_HUD.off.byte;
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
@@ -928,7 +928,7 @@ bool _apiSetSpeed(Process *process, uint32_t value) {
         printf("Failed to read Speed address\n");
         return false;
     }
-    LOG_INFO("Writting %d in %x\n", value, cheat.offset);
+    LOG_DEBUG("Writting %d in %x\n", value, cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(uint32_t));
 }
 
@@ -952,7 +952,7 @@ bool _apiFov(Process *process, float value) {
         printf("Failed to read Fov address\n");
         return false;
     }
-    LOG_INFO("Writting %f in %x\n", value, cheat.offset);
+    LOG_DEBUG("Writting %f in %x\n", value, cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(float));;
 }
 
@@ -965,7 +965,7 @@ bool _apiFovScale(Process *process, float value) {
         return false;
     }
     value = value/100; // FOV Scale goes from [0.20, 2.00]. Value is an float between [20.00, 200.00] so we need to divide by 100. This could be also done in UI module though. 
-    LOG_INFO("Writting %f in %x\n", value, cheat.offset);
+    LOG_DEBUG("Writting %f in %x\n", value, cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(float));
 }
 
@@ -977,12 +977,12 @@ bool _apiFpsCap(Process *process, uint32_t value) {
         printf("Failed to read Fps Cap address\n");
         return false;
     }
-    LOG_INFO("Writting %d in %x\n", value, cheat.offset);
+    LOG_DEBUG("Writting %d in %x\n", value, cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(uint32_t));
 }
 
 bool _apiSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheatName, uint32_t value) {
     SimpleCheat cheat = cheatGetSimpleCheat(simpleCheatName);
-    LOG_INFO("Writting %d in %x\n", value, cheat.offset);
+    LOG_DEBUG("Writting %d in %x\n", value, cheat.offset);
     return processWrite(process, cheat.offset, &value, sizeof(uint32_t));
 }
