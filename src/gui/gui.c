@@ -16,13 +16,8 @@
 #define WINDOW_HEIGHT 540
 #define UI_CONTROL_GROUP_SIZE 7
 
-struct UIControlGroup {
-    uiGroup *(*build)(Controller *, uiWindow *);
-    void (*update)();
-};
 
 // UIControlGroup
-
 static UIControlGroup *controlGroups[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
 // Controller instance
@@ -87,39 +82,39 @@ static uiControl* buildWindowContent() {
     controlGroups[6] = gameControlGroup;
     
     // UI Groups
-    uiGroup *playerGroup = playerControlGroup->build(controller, window);
-    uiGroup *roundGroup = roundControlGroup->build(controller, window);
-    uiGroup *weaponsGroup = weaponsControlGroup->build(controller, window);
-    uiGroup *teleportGroup = teleportControlGroup->build(controller, window);
-    uiGroup *cheatGroup = cheatsControlGroup->build(controller, window);
-    uiGroup *graphicsGroup = graphicsControlGroup->build(controller, window);
-    uiGroup *gameGroup = gameControlGroup->build(controller, window);
+    uiControl *playerGroup = playerControlGroup->build(controller, window);
+    uiControl *roundGroup = roundControlGroup->build(controller, window);
+    uiControl *weaponsGroup = weaponsControlGroup->build(controller, window);
+    uiControl *teleportGroup = teleportControlGroup->build(controller, window);
+    uiControl *cheatGroup = cheatsControlGroup->build(controller, window);
+    uiControl *graphicsGroup = graphicsControlGroup->build(controller, window);
+    uiControl *gameGroup = gameControlGroup->build(controller, window);
 
     
     // --- VBox para Weapons + Teleport ---
     uiBox *twVBox = uiNewVerticalBox();
     uiBoxSetPadded(twVBox, 1);
-    uiBoxAppend(twVBox, uiControl(weaponsGroup), 1);
-    uiBoxAppend(twVBox, uiControl(teleportGroup), 1); 
+    uiBoxAppend(twVBox, weaponsGroup, 1);
+    uiBoxAppend(twVBox, teleportGroup, 1); 
 
     // --- Main Grid ---
     uiGrid *mainGrid = uiNewGrid();
     uiGridSetPadded(mainGrid, 1);
 
     // Fila 0
-    uiGridAppend(mainGrid, uiControl(playerGroup), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(mainGrid, uiControl(cheatGroup),  1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(mainGrid, uiControl(gameGroup),   2, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, playerGroup, 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, cheatGroup,  1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, gameGroup,   2, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     // Fila 1
-    uiGridAppend(mainGrid, uiControl(graphicsGroup), 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(mainGrid, uiControl(roundGroup),    1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, graphicsGroup, 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, roundGroup,    1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(mainGrid, uiControl(twVBox),        2, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     return uiControl(mainGrid);
 }
 
-UIControlGroup *guiControlGroupCreate(uiGroup *(*build)(Controller *, uiWindow *), void (*update)()) {
+UIControlGroup *guiControlGroupCreate(uiControl *(*build)(Controller *, uiWindow *), void (*update)()) {
     UIControlGroup *cg = (UIControlGroup*)malloc(sizeof(UIControlGroup));
     if (!cg) {
         LOG_ERROR("Couldn't allocate memory for UIControlGroup\n");

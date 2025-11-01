@@ -20,7 +20,7 @@ static void onChangeRoundButtonClicked(uiButton *button, void *data) {
     controllerSetRound(controller, currentRound, nextRound);
 }
 
-static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) {
+static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
     // --- Round Changer Group ---
@@ -53,7 +53,7 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
 
     uiGroupSetChild(roundGroup, uiControl(roundBox));
     uiGroupSetMargined(roundGroup, 1);
-    return roundGroup;
+    return uiControl(roundGroup);
 }
 
 static void update() {

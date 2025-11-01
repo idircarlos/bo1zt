@@ -34,7 +34,7 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     }
 }
 
-static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) {
+static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
     // --- Hacks Group ---
@@ -88,7 +88,7 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     
     uiGroupSetChild(hacksGroup, uiControl(hacksBox));
     uiGroupSetMargined(hacksGroup, 1);
-    return hacksGroup;
+    return uiControl(hacksGroup);
 }
 
 static void update() {

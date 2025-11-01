@@ -35,7 +35,7 @@ static void onWeaponSlotsSelected(uiRadioButtons *radioButtons, void *data) {
     uiControlEnable(uiControl(giveWeaponBtn));
 }
 
-static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) {
+static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
     // --- Weapons Group ---
@@ -83,7 +83,7 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     // Añadir el VBox al grupo
     uiGroupSetChild(weaponGroup, uiControl(weaponsVBox));
     uiGroupSetMargined(weaponGroup, 1);
-    return weaponGroup;
+    return uiControl(weaponGroup);
 }
 
 static void update() {

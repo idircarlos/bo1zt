@@ -64,7 +64,7 @@ static void onPlayerButtonClick(uiButton *button, void *data) {
     controllerSetSimpleCheat(controller, simpleCheatName, value);
 }
 
-static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) {
+static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
     uiGroup *playerGroup = uiNewGroup("Player");
@@ -120,7 +120,7 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
 
     uiGroupSetChild(playerGroup, uiControl(playerBox));
     uiGroupSetMargined(playerGroup, 1);
-    return playerGroup;
+    return uiControl(playerGroup);
 }
 
 static void update() {

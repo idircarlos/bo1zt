@@ -146,7 +146,7 @@ static uiAttributedString *buildInfoAttributedString(const char *str, uiAttribut
     return attributedString;
 }
 
-static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) {
+static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
 
@@ -207,7 +207,7 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     uiGroupSetChild(gameGroup, uiControl(gameBox));
     uiGroupSetMargined(gameGroup, 1);
 
-    return gameGroup;
+    return uiControl(gameGroup);
 }
 
 static void update() {

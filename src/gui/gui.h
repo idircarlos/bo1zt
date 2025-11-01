@@ -4,9 +4,13 @@
 #include <ui.h>
 #include "../controller/controller.h"
 
-typedef struct UIControlGroup UIControlGroup;
+typedef struct {
+    uiControl *(*build)(Controller *, uiWindow *);
+    void (*update)();
+} UIControlGroup;
 
-UIControlGroup *guiControlGroupCreate(uiGroup *(*build)(Controller *, uiWindow *), void (*update)());
+
+UIControlGroup *guiControlGroupCreate(uiControl *(*build)(Controller *, uiWindow *), void (*update)());
 void guiInit(Controller *controller);
 void guiRun(void);
 bool guiIsCheatChecked(CheatName cheat);

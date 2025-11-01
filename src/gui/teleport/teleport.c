@@ -62,7 +62,7 @@ static void onTeleportLoadButtonClick(uiButton *button, void *data) {
     uiFreeText(filePath);
 }
 
-static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) {
+static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
     // --- Teleport Group ---
@@ -99,7 +99,7 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     // --- Añadir al grupo ---
     uiGroupSetChild(teleportGroup, uiControl(teleportBox));
     uiGroupSetMargined(teleportGroup, 1);
-    return teleportGroup;
+    return uiControl(teleportGroup);
 }
 
 static void update() {

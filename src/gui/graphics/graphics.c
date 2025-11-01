@@ -31,7 +31,6 @@ static void onSpinboxChange(uiSpinbox *spin, void *data) {
     (void)data;
     SimpleCheatName simpleCheatName = (SimpleCheatName)(uintptr_t)data;
     int value = (float)uiSpinboxValue(spin);
-    LOG_INFO("value is = %d\n", value);
     controllerSetSimpleCheat(controller, simpleCheatName, &value);
 }
 
@@ -55,7 +54,8 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     }
 }
 
-static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) {
+
+static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
     // --- Graphics Group ---
@@ -115,7 +115,7 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
 
     uiGroupSetChild(graphicsGroup, uiControl(graphicsBox));
     uiGroupSetMargined(graphicsGroup, 1);
-    return graphicsGroup;
+    return uiControl(graphicsGroup);
 }
 
 static void update() {
