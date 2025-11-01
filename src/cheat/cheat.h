@@ -28,6 +28,8 @@ typedef enum {
     CHEAT_NAME_DISABLE_FOG,
     CHEAT_NAME_FULLBRIGHT,
     CHEAT_NAME_COLORIZED,
+    CHEAT_NAME_FIX_MOVEMENT_SPEED,   // this cheat is divided into two SimpleCheat (backwards + straif velocities)
+    CHEAT_NAME_SHOW_FPS,
 } CheatName;
 
 typedef union {
@@ -232,6 +234,9 @@ extern RoundCheat ROUND_CHEAT;
 
 // Game box
 extern GameCheat GAME_CHEAT;
+extern Cheat CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS;
+extern Cheat CHEAT_FIX_MOVEMENT_SPEED_STRAIF;
+extern Cheat CHEAT_SHOW_FPS;
 
 // Graphics box
 extern SimpleCheat SIMPLE_CHEAT_FOV;

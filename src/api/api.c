@@ -69,6 +69,12 @@ bool _apiSetFullbright(Process *process, bool enabled);
 bool _apiGetColorized(Process *process);
 bool _apiSetColorized(Process *process, bool enabled);
 
+bool _apiGetFixMovementSpeed(Process *process);
+bool _apiSetFixMovementSpeed(Process *process, bool enabled);
+
+bool _apiGetShowFps(Process *process);
+bool _apiSetShowFps(Process *process, bool enabled);
+
 bool _apiChangeName(Process *process, char *name);
 bool _apiSetSpeed(Process *process, uint32_t value);
 bool _apiGiveWeaponAmmo(Process *process, Weapon weapon);
@@ -143,6 +149,10 @@ bool apiIsCheatEnabled(Api *api, CheatName cheatName) {
             return _apiGetFullbright(process);
         case CHEAT_NAME_COLORIZED:
             return _apiGetColorized(process);
+        case CHEAT_NAME_FIX_MOVEMENT_SPEED:
+            return _apiGetFixMovementSpeed(process);
+        case CHEAT_NAME_SHOW_FPS:
+            return _apiGetShowFps(process);
         
         default:
             LOG_WARN("Unkwown cheatName %d\n", cheatName);
@@ -199,6 +209,10 @@ bool apiSetCheatEnabled(Api *api, CheatName cheatName, bool enabled) {
             return _apiSetFullbright(process, enabled);
         case CHEAT_NAME_COLORIZED:
             return _apiSetColorized(process, enabled);
+        case CHEAT_NAME_FIX_MOVEMENT_SPEED:
+            return _apiSetFixMovementSpeed(process, enabled);
+        case CHEAT_NAME_SHOW_FPS:
+            return _apiSetShowFps(process, enabled);
         default:
             LOG_WARN("Unknown cheatName %d\n", cheatName);
             return false;
@@ -822,6 +836,80 @@ bool _apiGetColorized(Process *process) {
 bool _apiSetColorized(Process *process, bool enabled) {
     uint32_t value = enabled ? CHEAT_COLORIZED.on.u32 : CHEAT_COLORIZED.off.u32;
     return processWrite(process, CHEAT_COLORIZED.offset, &value, sizeof(value));
+}
+
+bool _apiGetFixMovementSpeed(Process *process) {
+    uint32_t backwardsAddress1 = 0;
+    bool success = processRead(process, CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.offset, &backwardsAddress1, sizeof(backwardsAddress1));
+    if (!success) {
+        printf("Failed to read Fix Movement Speed Backward address\n");
+        return false;
+    }
+    float backwardsValue = 0;
+    success = processRead(process, backwardsAddress1 + 0x18, &backwardsValue, sizeof(backwardsValue));
+    if (!success) {
+        printf("Failed to read Fix Movement Speed Backward value\n");
+        return false;
+    }
+    uint32_t straifAddress1 = 0;
+    success = processRead(process, CHEAT_FIX_MOVEMENT_SPEED_STRAIF.offset, &straifAddress1, sizeof(straifAddress1));
+    if (!success) {
+        printf("Failed to read Fix Movement Speed Straif address\n");
+        return false;
+    }
+    float straifValue = 0;
+    success = processRead(process, straifAddress1 + 0x18, &straifValue, sizeof(straifValue));
+    if (!success) {
+        printf("Failed to read Fix Movement Speed Straif value\n");
+        return false;
+    }
+    return backwardsValue == CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.on.f32 && straifValue == CHEAT_FIX_MOVEMENT_SPEED_STRAIF.on.f32;
+}
+
+bool _apiSetFixMovementSpeed(Process *process, bool enabled) {
+    uint32_t backwardsAddress1 = 0;
+    bool success = processRead(process, CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.offset, &backwardsAddress1, sizeof(backwardsAddress1));
+    if (!success) {
+        printf("Failed to read Fix Movement Speed Backwards address\n");
+        return false;
+    }
+    uint32_t straifAddress1 = 0;
+    success = processRead(process, CHEAT_FIX_MOVEMENT_SPEED_STRAIF.offset, &straifAddress1, sizeof(straifAddress1));
+    if (!success) {
+        printf("Failed to read Fix Movement Speed Straif address\n");
+        return false;
+    }
+    float backwardsValue = enabled ? CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.on.f32 : CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.off.f32;
+    float straifValue = enabled ? CHEAT_FIX_MOVEMENT_SPEED_STRAIF.on.f32 : CHEAT_FIX_MOVEMENT_SPEED_STRAIF.off.f32;
+    return processWrite(process, backwardsAddress1 + 0x18, &backwardsValue, sizeof(backwardsValue)) && processWrite(process, straifAddress1 + 0x18, &straifValue, sizeof(straifValue));
+}
+
+
+bool _apiGetShowFps(Process *process) {
+    uint32_t address1 = 0;
+    bool success = processRead(process, CHEAT_SHOW_FPS.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Show FPS address\n");
+        return false;
+    }
+    uint8_t value = 0;
+    success = processRead(process, address1 + 0x18, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read Show FPS value\n");
+        return false;
+    }
+    return value == CHEAT_SHOW_FPS.on.byte;
+}
+
+bool _apiSetShowFps(Process *process, bool enabled) {
+    uint32_t address1 = 0;
+    bool success = processRead(process, CHEAT_SHOW_FPS.offset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Show FPS address\n");
+        return false;
+    }
+    uint8_t value = enabled ? CHEAT_SHOW_FPS.on.byte : CHEAT_SHOW_FPS.off.byte;
+    return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
 
 

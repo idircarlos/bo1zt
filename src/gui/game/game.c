@@ -2,6 +2,7 @@
 #include "../../logger/logger.h"
 #include <string.h>
 #include <ui.h>
+#include <stdio.h>
 
 // Controller instance
 static Controller *controller;
@@ -54,6 +55,8 @@ static void makeTimAttributedString(void) {
     uiAttributedStringSetAttribute(timText, attrRed, 0, len);
     uiAttributedStringSetAttribute(timText, attrBold, 0, len);
 }
+
+// Listeners
 
 static void handlerUnusedDragBroken(uiAreaHandler *a, uiArea *area) {
     (void)a;
@@ -126,9 +129,15 @@ static void handlerTimDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) 
     uiFreeFontButtonFont(&font);
 }
 
-// ----------------------------------------------------------------------
-// UI Construction
-// ----------------------------------------------------------------------
+static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
+    CheatName cheatName = (CheatName)(uintptr_t)data;
+    bool enabled = uiCheckboxChecked(checkbox);
+    bool success = controllerIsGameRunning(controller) ? controllerSetCheat(controller, cheatName, enabled) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
+    if (!success) {
+        fprintf(stderr, "Failed to set Game cheat %d to %d\n", cheatName, enabled);
+        uiCheckboxSetChecked(checkbox, !enabled); // Revert checkbox state
+    }
+}
 
 static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
@@ -161,63 +170,38 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
 
     statusLabel = uiNewLabel("Status:");
     statusArea = uiNewArea(&statusHandler);
-    uiGridAppend(grid, uiControl(statusLabel),
-                 0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(statusArea),
-                 1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-
     timLabel = uiNewLabel("TIM:");
     timArea = uiNewArea(&timHandler);
-    uiGridAppend(grid, uiControl(timLabel),
-                 0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(timArea),
-                 1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-
     resetsLabel = uiNewLabel("Resets:");
     resetsNumLabel = uiNewLabel("0");
-    uiGridAppend(grid, uiControl(resetsLabel),
-                 0, 2, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(resetsNumLabel),
-                 1, 2, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-
-    
-    
     patchMovementCheckbox = uiNewCheckbox(" Fix Movement Speed");
     showFpsCheckbox = uiNewCheckbox(" Show FPS");
-
-    uiGridAppend(grid, uiControl(patchMovementCheckbox),
-                 0, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(showFpsCheckbox),
-                 1, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-
     hostnameButton = uiNewButton("Set Hostname");
     hostnameEntry = uiNewEntry();
-
-    uiGridAppend(grid, uiControl(hostnameButton),
-                 0, 4, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(hostnameEntry),
-                 1, 4, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-
     camosButton = uiNewButton("Setup Camos");
     widgetsButton = uiNewButton("Add Widgets");
-
-    uiGridAppend(grid, uiControl(camosButton),
-                 0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(widgetsButton),
-                 1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    
     launchButton = uiNewButton("Launch Game");
     closeButton = uiNewButton("Close Game");
 
-    
+    uiCheckboxOnToggled(patchMovementCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_FIX_MOVEMENT_SPEED);
+    uiCheckboxOnToggled(showFpsCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_SHOW_FPS);
 
-    uiGridAppend(grid, uiControl(launchButton),
-                 0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(closeButton),
-                 1, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(statusLabel),              0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(statusArea),               1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(timLabel),                 0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(timArea),                  1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(resetsLabel),              0, 2, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(resetsNumLabel),           1, 2, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(patchMovementCheckbox),    0, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(showFpsCheckbox),          1, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(hostnameButton),           0, 4, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(hostnameEntry),            1, 4, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(camosButton),              0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(widgetsButton),            1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(launchButton),             0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(closeButton),              1, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     uiBoxAppend(gameBox, uiControl(grid), 1);
-
 
     uiGroupSetChild(gameGroup, uiControl(gameBox));
     uiGroupSetMargined(gameGroup, 1);
