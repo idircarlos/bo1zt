@@ -3,55 +3,22 @@
 **Black Ops 1 Zombies Trainer**
 
 A simple trainer for *Black Ops 1 Zombies* written in C.
-This tool is being created just for fun while learning reverse engineering fundamentals. This tool is still under development. Main features available:
+This tool is being created just for fun while learning reverse engineering fundamentals. This tool is still under development. Main features:
 
-Player:
-- [x] Change name
-- [x] Set Health
-- [x] Set Points
-- [x] Set Speed
-- [x] Set Kills
-- [x] Set Headshots
-
-Hacks:
-- [x] God Mode
-- [x] No Clip
-- [x] Invisible
-- [x] No Recoil
-- [x] Infinite Ammo
-- [x] Box Never Moves
-- [x] Instant Kill
-- [x] Fast Gameplay
-- [x] Third Person
-- [x] No Shellshock
-- [x] Increase Knife Rangee
-- [x] Small Crosshair
-
-Graphics:
-- [x] Set FOV
-- [x] Set FOV Scale
-- [x] Set FPS Cap or Unlimit FPS
-- [x] Make Borderless
-- [x] Disable HUD
-- [x] Disable FOG
-- [x] Fullbright mode
-- [x] Colorized mode
-- [ ] Customize UI
-
-Misc:
-- [x] Give any weapon in any slot
-- [ ] Give ammo
-- [x] Teleport to any location. They can be saved and loaded.
-- [x] Change to any round
-- [ ] Game info
-- [X] Fix Movement Speed PC Issue
-- [x] Show FPS
-- [ ] TIM Compatibility
-- [ ] Setup Camos
-- [ ] Add Floating Widgets
-- [ ] Open/Close Game
-
-And a lot more stuff not yet scoped.
+|    Player       |  Hacks               |  Graphics                 |  Misc                                |
+| --------------- | ---------------------- | --------------------------- | -------------------------------------- |
+| ✅ Change name   | ✅ God Mode             | ✅ Set FOV                   | ✅ Give any weapon in any slot          |
+| ✅ Set Health    | ✅ No Clip              | ✅ Set FOV Scale             | ⬜ Give ammo                            |
+| ✅ Set Points    | ✅ Invisible            | ✅ Set FPS Cap / Unlimit FPS | ✅ Teleport to any location (save/load) |
+| ✅ Set Speed     | ✅ No Recoil            | ✅ Make Borderless           | ✅ Change to any round                  |
+| ✅ Set Kills     | ✅ Infinite Ammo        | ✅ Disable HUD               | ⬜ Game info                            |
+| ✅ Set Headshots | ✅ Box Never Moves      | ✅ Disable FOG               | ✅ Fix Movement Speed PC Issue          |
+|                 | ✅ Instant Kill         | ✅ Fullbright mode           | ✅ Show FPS                             |
+|                 | ✅ Fast Gameplay        | ✅ Colorized mode            | ⬜ TIM Compatibility                    |
+|                 | ✅ Third Person         | ⬜ Customize UI              | ⬜ Setup Camos                          |
+|                 | ✅ No Shellshock        |                             | ⬜ Add Floating Widgets                 |
+|                 | ✅ Increase Knife Range |                             | ⬜ Open/Close Game                      |
+|                 | ✅ Small Crosshair      |                             |                                        |
 
 ## Requirements
 
