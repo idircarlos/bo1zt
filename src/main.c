@@ -50,5 +50,6 @@ int main(void) {
     threadCreate(updateGameThread, NULL);
     guiRun();
     guiCleanup();
+    
     return 0;
 }
