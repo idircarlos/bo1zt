@@ -11,10 +11,10 @@ This tool is being created just for fun while learning reverse engineering funda
 | ✅ Set Health    | ✅ No Clip              | ✅ Set FOV Scale             | ⬜ Give ammo                            |
 | ✅ Set Points    | ✅ Invisible            | ✅ Set FPS Cap / Unlimit FPS | ✅ Teleport to any location (save/load) |
 | ✅ Set Speed     | ✅ No Recoil            | ✅ Make Borderless           | ✅ Change to any round                  |
-| ✅ Set Kills     | ✅ Infinite Ammo        | ✅ Disable HUD               | ⬜ Game info                            |
+| ✅ Set Kills     | ✅ Infinite Ammo        | ✅ Disable HUD               | ✅ Game info                            |
 | ✅ Set Headshots | ✅ Box Never Moves      | ✅ Disable FOG               | ✅ Fix Movement Speed PC Issue          |
 |                 | ✅ Instant Kill         | ✅ Fullbright mode           | ✅ Show FPS                             |
-|                 | ✅ Fast Gameplay        | ✅ Colorized mode            | ⬜ TIM Compatibility                    |
+|                 | ✅ Fast Gameplay        | ✅ Colorized mode            | ✅ TIM Compatibility                    |
 |                 | ✅ Third Person         | ⬜ Customize UI              | ⬜ Setup Camos                          |
 |                 | ✅ No Shellshock        |                             | ⬜ Add Floating Widgets                 |
 |                 | ✅ Increase Knife Range |                             | ⬜ Open/Close Game                      |
