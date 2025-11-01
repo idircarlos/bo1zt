@@ -34,10 +34,8 @@ int processRunningThread(void *data) {
 int updateGuiThread(void *data) {
     (void)data;
     while (true) {
-        while(!controllerIsGameRunning(controller)) {
-            threadSleep(500);
-        }
-        guiUpdate();
+        
+        
         threadSleep(500);
     }
     return 0;
@@ -46,9 +44,8 @@ int updateGuiThread(void *data) {
 int updateGameThread(void *data) {
     (void)data;
     while (true) {
-        while(!controllerIsGameRunning(controller)) {
-            threadSleep(500);
-        }
+        controllerUpdateState(controller);
+        guiUpdate();
         controllerUpdateTrainerConfig(controller);
         threadSleep(100);
     }
@@ -60,7 +57,7 @@ int main(void) {
     controller = controllerCreate();
     threadCreate(processRunningThread, NULL);
     guiInit(controller);
-    threadCreate(updateGuiThread, NULL);
+    //threadCreate(updateGuiThread, NULL);
     threadCreate(updateGameThread, NULL);
     guiRun();
     guiCleanup();

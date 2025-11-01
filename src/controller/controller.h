@@ -3,6 +3,7 @@
 
 #include "../process/process.h"
 #include "../cheat/cheat.h"
+#include "../state/state.h"
 
 typedef struct Controller Controller;
 
@@ -12,6 +13,7 @@ bool controllerIsGameAttached(Controller *controller);
 bool controllerAttachGame(Controller *controller);
 bool controllerDetachGame(Controller *controller);
 bool controllerIsGameRunning(Controller *controller);
+bool controllerIsTimRunning(Controller *controller);
 void controllerWaitUntilGameCloses(Controller *controller); // This method should be called from a different thread to not block the main thread (UI)
 bool controllerIsGameWindowAttached(Controller *controller);
 bool controllerTryAttachGameWindow(Controller *controller);
@@ -26,8 +28,8 @@ WeaponName controllerGetPlayerWeapon(Controller *controller, int slot);
 bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int slot);
 bool controllerGivePlayerAmmo(Controller *controller);
 bool controllerSetRound(Controller *controller, int currentRound, int nextRound);
-bool controllerIsZombiesGameActive(Controller *controller);
-int controllerGetGameResets(Controller *controller);
+State *controllerGetState(Controller *controller);
+void controllerUpdateState(Controller *controller);
 void controllerUpdateTrainerConfig(Controller *controller);
 void controllerDestroy(Controller *controller);
 

@@ -62,9 +62,9 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
     uiButtonOnClicked(giveAmmoBtn, onGiveAmmoButtonClicked, NULL);
 
     weaponSlotsRadioButtons = uiNewRadioButtons();
-    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 1   ");
-    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 2   ");
-    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 3   ");
+    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 1 ");
+    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 2 ");
+    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 3 ");
 
     uiRadioButtonsOnSelected(weaponSlotsRadioButtons, onWeaponSlotsSelected, NULL);
     

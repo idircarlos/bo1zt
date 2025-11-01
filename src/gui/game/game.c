@@ -1,21 +1,36 @@
 #include "game.h"
 #include "../../logger/logger.h"
+#include "../../state/state.h"
 #include <string.h>
 #include <ui.h>
 #include <stdio.h>
+
+static const char *RUNNING_TEXT = "Running";
+static const char *NOT_RUNNING_TEXT = "Not running";
+
+static bool cachedGameAttached = false;
+static bool cachedTimRunning = false;
 
 // Controller instance
 static Controller *controller;
 static uiWindow *parent;
 
 // --- UI Elements ---
+static uiAttribute *attrRed = NULL;
+static uiAttribute *attrGreen = NULL;
+static uiAttribute *attrBold = NULL;
+
 static uiArea *statusArea = NULL;
 static uiAreaHandler statusHandler;
-static uiAttributedString *statusText = NULL;
+static uiAttributedString *statusCurrentText = NULL;
+static uiAttributedString *statusNotRunningText = NULL;
+static uiAttributedString *statusRunningText = NULL;
 
 static uiArea *timArea = NULL;
 static uiAreaHandler timHandler;
-static uiAttributedString *timText = NULL;
+static uiAttributedString *timCurrentText = NULL;
+static uiAttributedString *timNotRunningText = NULL;
+static uiAttributedString *timRunningText = NULL;
 
 static uiLabel *statusLabel = NULL;
 static uiLabel *resetsLabel = NULL;
@@ -29,32 +44,6 @@ static uiButton *camosButton = NULL;
 static uiButton *widgetsButton = NULL;
 static uiButton *launchButton = NULL;
 static uiButton *closeButton = NULL;
-
-// ----------------------------------------------------------------------
-// Draw "Not running" in red + bold
-// ----------------------------------------------------------------------
-
-static void makeStatusAttributedString(void) {
-    statusText = uiNewAttributedString("Not running");
-
-    uiAttribute *attrRed = uiNewColorAttribute(1.0, 0.0, 0.0, 1.0);
-    uiAttribute *attrBold = uiNewWeightAttribute(uiTextWeightBold);
-
-    size_t len = uiAttributedStringLen(statusText);
-    uiAttributedStringSetAttribute(statusText, attrRed, 0, len);
-    uiAttributedStringSetAttribute(statusText, attrBold, 0, len);
-}
-
-static void makeTimAttributedString(void) {
-    timText = uiNewAttributedString("Not running");
-
-    uiAttribute *attrRed = uiNewColorAttribute(1.0, 0.0, 0.0, 1.0);
-    uiAttribute *attrBold = uiNewWeightAttribute(uiTextWeightBold);
-
-    size_t len = uiAttributedStringLen(timText);
-    uiAttributedStringSetAttribute(timText, attrRed, 0, len);
-    uiAttributedStringSetAttribute(timText, attrBold, 0, len);
-}
 
 // Listeners
 
@@ -86,7 +75,7 @@ static void handlerUnusedMouseEvent(uiAreaHandler *a, uiArea *area, uiAreaMouseE
 static void handlerStatusDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
     (void)a;
     (void)area;
-    if (!statusText)
+    if (!statusCurrentText)
         return;
 
     uiFontDescriptor font;
@@ -94,7 +83,7 @@ static void handlerStatusDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *
     uiDrawTextLayout *layout;
 
     uiLoadControlFont(&font);
-    params.String = statusText;
+    params.String = statusCurrentText;
     params.DefaultFont = &font;
     params.Width = p->AreaWidth;
     params.Align = uiDrawTextAlignLeft;
@@ -109,7 +98,7 @@ static void handlerStatusDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *
 static void handlerTimDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
     (void)a;
     (void)area;
-    if (!timText)
+    if (!timCurrentText)
         return;
 
     uiFontDescriptor font;
@@ -117,7 +106,7 @@ static void handlerTimDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) 
     uiDrawTextLayout *layout;
 
     uiLoadControlFont(&font);
-    params.String = timText;
+    params.String = timCurrentText;
     params.DefaultFont = &font;
     params.Width = p->AreaWidth;
     params.Align = uiDrawTextAlignLeft;
@@ -132,33 +121,43 @@ static void handlerTimDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) 
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
-    bool success = controllerIsGameRunning(controller) ? controllerSetCheat(controller, cheatName, enabled) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
+    bool success = controllerIsGameAttached(controller) ? controllerSetCheat(controller, cheatName, enabled) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
     if (!success) {
         fprintf(stderr, "Failed to set Game cheat %d to %d\n", cheatName, enabled);
         uiCheckboxSetChecked(checkbox, !enabled); // Revert checkbox state
     }
 }
 
+// Builders
+static uiAttributedString *buildInfoAttributedString(const char *str, uiAttribute *colorAttribute, uiAreaHandler *areaHandler, void (*handlerDraw)(uiAreaHandler *, uiArea *, uiAreaDrawParams *)) {
+    memset(areaHandler, 0, sizeof(uiAreaHandler));
+    areaHandler->Draw = handlerDraw;
+    areaHandler->DragBroken = handlerUnusedDragBroken;
+    areaHandler->KeyEvent = handlerUnusedKeyEvent;
+    areaHandler->MouseCrossed = handlerUnusedMouseCrossed;
+    areaHandler->MouseEvent = handlerUnusedMouseEvent;
+
+    uiAttributedString *attributedString = uiNewAttributedString(str);
+    size_t len = uiAttributedStringLen(attributedString);
+    uiAttributedStringSetAttribute(attributedString, colorAttribute, 0, len);
+    uiAttributedStringSetAttribute(attributedString, attrBold, 0, len);
+    return attributedString;
+}
+
 static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
 
-    makeStatusAttributedString();
-    makeTimAttributedString();
+    attrRed = uiNewColorAttribute(181/256.0, 38/256.0, 62/256.0, 1.0);
+    attrGreen = uiNewColorAttribute(38/256.0, 181/256.0, 90/256.0, 1.0);
+    attrBold = uiNewWeightAttribute(uiTextWeightBold);
 
-    memset(&statusHandler, 0, sizeof(uiAreaHandler));
-    statusHandler.Draw = handlerStatusDraw;
-    statusHandler.DragBroken = handlerUnusedDragBroken;
-    statusHandler.KeyEvent = handlerUnusedKeyEvent;
-    statusHandler.MouseCrossed = handlerUnusedMouseCrossed;
-    statusHandler.MouseEvent = handlerUnusedMouseEvent;
-
-    memset(&timHandler, 0, sizeof(uiAreaHandler));
-    timHandler.Draw = handlerTimDraw;
-    timHandler.DragBroken = handlerUnusedDragBroken;
-    timHandler.KeyEvent = handlerUnusedKeyEvent;
-    timHandler.MouseCrossed = handlerUnusedMouseCrossed;
-    timHandler.MouseEvent = handlerUnusedMouseEvent;
+    statusNotRunningText = buildInfoAttributedString(NOT_RUNNING_TEXT, attrRed, &statusHandler, handlerStatusDraw);
+    statusRunningText = buildInfoAttributedString(RUNNING_TEXT, attrGreen, &statusHandler, handlerStatusDraw);
+    statusCurrentText = statusNotRunningText;
+    timNotRunningText = buildInfoAttributedString(NOT_RUNNING_TEXT, attrRed, &timHandler, handlerTimDraw);
+    timRunningText = buildInfoAttributedString(RUNNING_TEXT, attrGreen, &timHandler, handlerTimDraw);
+    timCurrentText = timNotRunningText;
 
     // --- Game Group ---
     uiGroup *gameGroup = uiNewGroup("Game");
@@ -210,7 +209,20 @@ static uiGroup *build(Controller *controllerInstance, uiWindow *parentInstance) 
 }
 
 static void update() {
-    // Nothing for now
+    State *state = controllerGetState(controller);
+    bool gameAttached = stateIsGameAttached(state);
+    // Avoid redrawing the area constanly
+    if (gameAttached != cachedGameAttached) {
+        statusCurrentText = gameAttached ? statusRunningText : statusNotRunningText;
+        uiAreaQueueRedrawAll(statusArea);
+        cachedGameAttached = gameAttached;
+    }
+    bool timRunning = stateIsTimRunning(state);
+    if (timRunning != cachedTimRunning) {
+        timCurrentText = timRunning ? timRunningText : timNotRunningText;
+        uiAreaQueueRedrawAll(timArea);
+        cachedTimRunning = timRunning;
+    }
 }
 
 // External API for Controller

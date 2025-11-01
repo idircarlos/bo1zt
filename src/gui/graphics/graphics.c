@@ -36,7 +36,7 @@ static void onSpinboxChange(uiSpinbox *spin, void *data) {
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
-    bool success = controllerIsGameRunning(controller) ? controllerSetCheat(controller, cheatName, enabled) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
+    bool success = controllerIsGameAttached(controller) ? controllerSetCheat(controller, cheatName, enabled) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
     if (!success) {
         fprintf(stderr, "Failed to set Graphics cheat %d to %d\n", cheatName, enabled);
         uiCheckboxSetChecked(checkbox, !enabled); // Revert checkbox state

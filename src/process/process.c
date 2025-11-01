@@ -108,8 +108,6 @@ void processWaitUntilCloses(Process *process) {
 
 void processClose(Process *process) {
     if (process->handle) {
-        CloseHandle(process->handle);
-        CloseHandle(process->windowInfo.hwnd);
         process->handle = NULL;
         process->pid = 0;
         process->windowInfo.hwnd = NULL;

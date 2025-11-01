@@ -11,6 +11,7 @@
 #include <stdio.h>
 
 #define GAME_EXECUTABLE_NAME "BlackOps.exe"
+#define TIM_EXECUTABLE_NAME "Black Ops TIM.exe"
 #define GAME_WINDOW_NAME_PREFIX "Call of Duty"
 
 struct Controller {
@@ -39,6 +40,11 @@ bool controllerIsGameRunning(Controller *controller) {
     return processIsRunning(GAME_EXECUTABLE_NAME);
 }
 
+bool controllerIsTimRunning(Controller *controller) {
+    (void)controller;
+    return processIsRunning(TIM_EXECUTABLE_NAME);
+}
+
 bool controllerIsGameAttached(Controller *controller) {
     return controller != NULL && controller->process != NULL;
 }
@@ -49,12 +55,16 @@ bool controllerAttachGame(Controller *controller) {
         LOG_WARN("Game is already attached. This souldn't happen. Omitting the operation\n");
         return true;
     }
+    if (!controller->state) controller->state = stateCreate();
     if (!controller->process) controller->process = processOpen(GAME_EXECUTABLE_NAME);
     if (!controller->process) return false;
     if (!controller->api) controller->api = apiCreate(controller);
-    if (!controller->state) controller->state = stateCreate(0, 0);
-    bool isZombiesActive = controllerIsZombiesGameActive(controller);
-    int gameResets = controllerGetGameResets(controller);
+    bool isGameAttached = controllerIsGameAttached(controller);
+    bool isTimRunning = controllerIsTimRunning(controller);
+    bool isZombiesActive = apiIsZombiesGameRunning(controller->api);
+    int gameResets = apiGetGameResets(controller->api);
+    stateSetGameAttached(controller->state, isGameAttached);
+    stateSetTimRunning(controller->state, isTimRunning);
     stateSetZombiesGameActive(controller->state, isZombiesActive);
     stateSetGameResets(controller->state, gameResets);
     return true;
@@ -67,7 +77,7 @@ bool controllerDetachGame(Controller *controller) {
     }
     LOG_INFO("Detaching game\n");
     processClose(controller->process);
-    stateReset(controller->state);
+    stateGameClear(controller->state);
     controller->process = NULL;
     return true;
 }
@@ -155,17 +165,23 @@ bool controllerSetRound(Controller *controller, int currentRound, int nextRound)
     return apiSetRound(controller->api, currentRound, nextRound);
 }
 
-bool controllerIsZombiesGameActive(Controller *controller) {
-    if (!controller || !controller->process) return false;
-    return apiIsZombiesGameRunning(controller->api);
+State *controllerGetState(Controller *controller) {
+    return controller->state;
 }
 
-int controllerGetGameResets(Controller *controller) {
-    if (!controller || !controller->process) return false;
-    return apiGetGameResets(controller->api);
+void controllerUpdateState(Controller *controller) {
+    stateSetTimRunning(controller->state, controllerIsTimRunning(controller));
+    if (!controllerIsGameAttached(controller)) {
+        stateGameClear(controller->state);
+        return;
+    };
+    stateSetGameAttached(controller->state, controllerIsGameAttached(controller));
+    stateSetZombiesGameActive(controller->state, apiIsZombiesGameRunning(controller->api));
+    stateSetGameResets(controller->state, apiGetGameResets(controller->api));
 }
 
 void controllerUpdateTrainerConfig(Controller *controller) {
+    if (!controllerIsGameAttached(controller)) return;
     // --- Graphics Config ---
     int fov = uiGraphicsGetFov();
     int fovScale = uiGraphicsGetFovScale();
