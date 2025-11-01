@@ -31,16 +31,6 @@ int processRunningThread(void *data) {
     return 0;
 }
 
-int updateGuiThread(void *data) {
-    (void)data;
-    while (true) {
-        
-        
-        threadSleep(500);
-    }
-    return 0;
-}
-
 int updateGameThread(void *data) {
     (void)data;
     while (true) {
@@ -57,7 +47,6 @@ int main(void) {
     controller = controllerCreate();
     threadCreate(processRunningThread, NULL);
     guiInit(controller);
-    //threadCreate(updateGuiThread, NULL);
     threadCreate(updateGameThread, NULL);
     guiRun();
     guiCleanup();
