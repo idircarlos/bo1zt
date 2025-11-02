@@ -1,4 +1,5 @@
 #include "controller.h"
+#include "../config/config.h"
 #include "../process/process.h"
 #include "../api/api.h"
 #include "../gui/gui.h"
@@ -19,11 +20,13 @@ struct Controller {
     Process *process;
     Api *api;
     State *state;
+    Config *config;
 };
 
 Controller* controllerCreate() {
     Controller *controller = (Controller*)malloc(sizeof(Controller));
     if (!controller) return NULL;
+    controller->config = configCreate();
     controller->process = NULL;
     controller->state = NULL;
     controller->api = NULL;

@@ -2,12 +2,7 @@
 #define UI_CUSTOMIZER_H_
 
 #include "../../gui.h"
-
-typedef struct {
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-} Color;
+#include "../../../common/common.h"
 
 UIControlGroup *uiCustomizerBuildControlGroup();
 Color uiCustomizerGetCheatColor(SimpleCheatName cheat);

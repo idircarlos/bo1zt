@@ -34,11 +34,7 @@ static uiButton *btnClose;
 static Color buildColor(uiColorButton *button) {
     double r, g, b, a;
     uiColorButtonColor(button, &r, &g, &b, &a);
-    Color color = {
-        .r = (uint8_t)(r * 255.0),
-        .g = (uint8_t)(g * 255.0),
-        .b = (uint8_t)(b * 255.0),
-    };
+    Color color = colorCreate(1, 2, 3);
     return color;
 }
 
@@ -71,6 +67,8 @@ static void onSpinboxChange(uiSpinbox *spinbox, void *data) {
 }
 
 static void onCloseButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
     uiControlHide(uiControl(parent));
 }
 
