@@ -90,6 +90,8 @@
 #define SIMPLE_CHEAT_OFFSET_FOV 0x02FF6888
 #define SIMPLE_CHEAT_OFFSET_FOV_SCALE 0x02FF66A8
 #define SIMPLE_CHEAT_OFFSET_FPS_CAP 0x02481760
+#define SIMPLE_CHEAT_OFFSET_CUSTOMIZER_SCORE_BASE 0x02FF82E0
+#define SIMPLE_CHEAT_OFFSET_CUSTOMIZER_WARN_BASE 0x00BE3B84
 #define SIMPLE_CHEAT_OFFSET_CURRENT_WEAPON 0x01C08C84
 #define SIMPLE_CHEAT_OFFSET_GIVE_WEAPON_1 0x01C08D34
 #define SIMPLE_CHEAT_OFFSET_CLIP_WEAPON_1 0x01C08F00
@@ -324,9 +326,110 @@ Cheat CHEAT_COLORIZED = {
     {.u32 = CHEAT_VALUE_COLORIZED_OFF},
 };
 
+CustomizerCheat CUSTOMIZER_CHEAT_SCORE_BACKGROUND = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_SCORE_BASE,
+    .offset = 0x18,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_SCORE_P1 = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_SCORE_BASE,
+    .offset = 0xF8,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_SCORE_P2 = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_SCORE_BASE,
+    .offset = 0x168,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_SCORE_P3 = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_SCORE_BASE,
+    .offset = 0x1D8,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_SCORE_P4 = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_SCORE_BASE,
+    .offset = 0x248,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_TRANSPARENCY_POINTS = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_SCORE_BASE,
+    .offset = 0x88,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_TRANSPARENCY_SCOREBOARD = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_SCORE_BASE,
+    .offset = 0x4E8,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_WARN_RELOAD_PRIMARY = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_WARN_BASE,
+    .offset = 0x18,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_WARN_RELOAD_SECONDARY = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_WARN_BASE,
+    .offset = 0x88,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_WARN_LOW_AMMO_PRIMARY = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_WARN_BASE,
+    .offset = 0x248,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_WARN_LOW_AMMO_SECONDARY = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_WARN_BASE,
+    .offset = 0x2B8,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_WARN_NO_AMMO_PRIMARY = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_WARN_BASE,
+    .offset = 0x328,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_WARN_NO_AMMO_SECONDARY = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_WARN_BASE,
+    .offset = 0x398,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_WARN_FREQUENCY = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_WARN_BASE,
+    .offset = 0xF8,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_WARN_MIN = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_WARN_BASE,
+    .offset = 0x1D8,
+};
+
+CustomizerCheat CUSTOMIZER_CHEAT_WARN_MAX = {
+    .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_WARN_BASE,
+    .offset = 0x168,
+};
+
+
 SimpleCheat SIMPLE_CHEAT_LOOKUP [] = {  SIMPLE_CHEAT_CHANGE_NAME, SIMPLE_CHEAT_SET_HEALTH, SIMPLE_CHEAT_SET_POINTS,
                                         SIMPLE_CHEAT_SET_SPEED, SIMPLE_CHEAT_SET_KILLS, SIMPLE_CHEAT_SET_HEADSHOTS,
-                                        SIMPLE_CHEAT_CHANGE_HOSTNAME, SIMPLE_CHEAT_FOV, SIMPLE_CHEAT_FOV_SCALE, SIMPLE_CHEAT_FPS_CAP };
+                                        SIMPLE_CHEAT_CHANGE_HOSTNAME, SIMPLE_CHEAT_FOV, SIMPLE_CHEAT_FOV_SCALE, SIMPLE_CHEAT_FPS_CAP,
+                                    };
+
+
+CustomizerCheat CUSTOMIZER_CHEAT_LOOKUP [] = {  CUSTOMIZER_CHEAT_SCORE_BACKGROUND,
+                                                CUSTOMIZER_CHEAT_SCORE_P1,
+                                                CUSTOMIZER_CHEAT_SCORE_P2,
+                                                CUSTOMIZER_CHEAT_SCORE_P3,
+                                                CUSTOMIZER_CHEAT_SCORE_P4,
+                                                CUSTOMIZER_CHEAT_TRANSPARENCY_POINTS,
+                                                CUSTOMIZER_CHEAT_TRANSPARENCY_SCOREBOARD,
+                                                CUSTOMIZER_CHEAT_WARN_RELOAD_PRIMARY,
+                                                CUSTOMIZER_CHEAT_WARN_RELOAD_SECONDARY,
+                                                CUSTOMIZER_CHEAT_WARN_LOW_AMMO_PRIMARY,
+                                                CUSTOMIZER_CHEAT_WARN_LOW_AMMO_SECONDARY,
+                                                CUSTOMIZER_CHEAT_WARN_NO_AMMO_PRIMARY,
+                                                CUSTOMIZER_CHEAT_WARN_NO_AMMO_SECONDARY,
+                                                CUSTOMIZER_CHEAT_WARN_FREQUENCY,
+                                                CUSTOMIZER_CHEAT_WARN_MIN,
+                                                CUSTOMIZER_CHEAT_WARN_MAX,
+                                            };
 
 const char *WEAPON_LOOKUP [] = {
     "WEAPON_UNKNOWNWEAPON",
@@ -500,4 +603,8 @@ const char *cheatGetWeaponName(WeaponName weapon) {
 
 WeaponName cheatGetSanitizedWeapon(int index) {
     return WEAPON_SANITIZED[index];
+}
+
+CustomizerCheat cheatGetCustomizerCheat(SimpleCheatName cheatName) {
+    return CUSTOMIZER_CHEAT_LOOKUP[cheatName - SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND];
 }

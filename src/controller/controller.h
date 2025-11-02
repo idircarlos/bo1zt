@@ -30,6 +30,7 @@ bool controllerGivePlayerAmmo(Controller *controller);
 bool controllerSetRound(Controller *controller, int currentRound, int nextRound);
 State *controllerGetState(Controller *controller);
 void controllerUpdateState(Controller *controller);
+void controllerInitTrainerConfig(Controller *controller);
 void controllerUpdateTrainerConfig(Controller *controller);
 void controllerDestroy(Controller *controller);
 

@@ -6,6 +6,7 @@
 #include "../state/state.h"
 #include "../gui/hacks/hacks.h"
 #include "../gui/graphics/graphics.h"
+#include "../gui/graphics/customizer/customizer.h"
 #include "../gui/game/game.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -178,6 +179,13 @@ void controllerUpdateState(Controller *controller) {
     stateSetGameAttached(controller->state, controllerIsGameAttached(controller));
     stateSetZombiesGameActive(controller->state, apiIsZombiesGameRunning(controller->api));
     stateSetGameResets(controller->state, apiGetGameResets(controller->api));
+}
+
+void controllerInitTrainerConfig(Controller *controller) {
+    // TODO: Fix this to add all values.
+    if (!controllerIsGameAttached(controller)) return;
+    Color scoreBg = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND, &scoreBg);
 }
 
 void controllerUpdateTrainerConfig(Controller *controller) {

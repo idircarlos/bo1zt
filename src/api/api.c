@@ -5,6 +5,7 @@
 #include "../map/map.h"
 #include "../hook/hook.h"
 #include "../process/process.h"
+#include "../gui/graphics/customizer/customizer.h"
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -83,6 +84,10 @@ bool _apiChangeHostname(Process *process, char *hostname);
 bool _apiFov(Process *process, float value);
 bool _apiFovScale(Process *process, float value);
 bool _apiFpsCap(Process *process, uint32_t value);
+
+bool _apiCustomizerColor(Process *process, SimpleCheatName cheatName, Color color);
+bool _apiCustomizerFloat(Process *process, SimpleCheatName cheatName, float value);
+
 bool _apiSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheatName, uint32_t value);
 
 
@@ -249,6 +254,25 @@ bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value) {
             return _apiFovScale(process, (float)(*(int*)value));
         case SIMPLE_CHEAT_NAME_FPS_CAP:
             return _apiFpsCap(process, (uint32_t)(*(int*)value));
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY:
+            return _apiCustomizerColor(process, simpleCheatName, (Color)(*(Color*)value));
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX:
+            return _apiCustomizerFloat(process, simpleCheatName, ((float)(*(int*)value)/100.0f));   // These are percetaged
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY:
+            return _apiCustomizerFloat(process, simpleCheatName, (float)(*(int*)value));
         case SIMPLE_CHEAT_NAME_SET_HEALTH:
         case SIMPLE_CHEAT_NAME_SET_POINTS:
         case SIMPLE_CHEAT_NAME_SET_KILLS:
@@ -989,6 +1013,44 @@ bool _apiFpsCap(Process *process, uint32_t value) {
     LOG_DEBUG("Writting %d in %x\n", value, cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(uint32_t));
 }
+
+// Colors
+uint32_t _mergeColorComponents(Color color) {
+    // Pack as: [A][B][G][R]
+    // Being R less significative byte.
+    uint32_t mergedColor = 0;
+
+    mergedColor |= (uint32_t)color.r;         // Byte 0 (LSB)
+    mergedColor |= (uint32_t)color.g << 8;    // Byte 1
+    mergedColor |= (uint32_t)color.b << 16;   // Byte 2
+                                              // Byte 3 (alfa) we dont care about this value 
+    return mergedColor;
+}
+
+bool _apiCustomizerColor(Process *process, SimpleCheatName cheatName, Color color) {
+    CustomizerCheat cheat = cheatGetCustomizerCheat(cheatName);
+    uint32_t address1 = 0;
+    bool success = processRead(process, cheat.baseOffset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Customizer %d address\n", cheatName);
+        return false;
+    }
+    uint32_t mergedColor = _mergeColorComponents(color);
+    return processWrite(process, address1 + cheat.offset, &mergedColor, 3); // Only writing RGB, not overwriting Alpha.
+}
+
+bool _apiCustomizerFloat(Process *process, SimpleCheatName cheatName, float value) {
+    CustomizerCheat cheat = cheatGetCustomizerCheat(cheatName);
+    uint32_t address1 = 0;
+    bool success = processRead(process, cheat.baseOffset, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Customizer %d address\n", cheatName);
+        return false;
+    }
+    return processWrite(process, address1 + cheat.offset, &value, sizeof(value));
+}
+
+
 
 bool _apiSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheatName, uint32_t value) {
     SimpleCheat cheat = cheatGetSimpleCheat(simpleCheatName);

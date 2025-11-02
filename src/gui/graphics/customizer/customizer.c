@@ -1,0 +1,230 @@
+#include "customizer.h"
+#include "../../../logger/logger.h"
+#include <ui.h>
+
+// Controller instance
+static Controller *controller;
+static uiWindow *parent;
+
+// Components
+static uiColorButton *scoreBgBtn;
+static uiColorButton *scoreP1Btn;
+static uiColorButton *scoreP2Btn;
+static uiColorButton *scoreP3Btn;
+static uiColorButton *scoreP4Btn;
+
+static uiColorButton *reloadPrimaryBtn;
+static uiColorButton *reloadSecondaryBtn;
+static uiColorButton *lowAmmoPrimaryBtn;
+static uiColorButton *lowAmmoSecondaryBtn;
+static uiColorButton *noAmmoPrimaryBtn;
+static uiColorButton *noAmmoSecondaryBtn;
+
+static uiSlider *scoreboardTransparencySlider;
+static uiSlider *pointsTransparencySlider;
+
+static uiSpinbox *freqSpin;
+static uiSpinbox *minSpin;
+static uiSpinbox *maxSpin;
+
+static uiButton *btnResetDefaults;
+static uiButton *btnClose;
+
+// Aux
+static Color buildColor(uiColorButton *button) {
+    double r, g, b, a;
+    uiColorButtonColor(button, &r, &g, &b, &a);
+    Color color = {
+        .r = (uint8_t)(r * 255.0),
+        .g = (uint8_t)(g * 255.0),
+        .b = (uint8_t)(b * 255.0),
+    };
+    return color;
+}
+
+// Handlers
+static void onColorButtonChange(uiColorButton *button, void *data) {
+    SimpleCheatName cheat = (SimpleCheatName)(uintptr_t)data;
+    Color color = buildColor(button);
+    bool success = controllerIsGameAttached(controller) ? controllerSetSimpleCheat(controller, cheat, &color) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
+    if (!success) {
+        LOG_ERROR("Failed to set Customizer Color cheat %d to RGB(%d, %d, %d)\n", cheat, color);
+    }
+}
+
+static void onSliderChange(uiSlider *slider, void *data) {
+    SimpleCheatName cheat = (SimpleCheatName)(uintptr_t)data;
+    int value = uiSliderValue(slider);
+    bool success = controllerIsGameAttached(controller) ? controllerSetSimpleCheat(controller, cheat, &value) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
+    if (!success) {
+        LOG_ERROR("Failed to set Customizer Slider cheat %d to %d\n", cheat, value);
+    }
+}
+
+static void onSpinboxChange(uiSpinbox *spinbox, void *data) {
+    SimpleCheatName cheat = (SimpleCheatName)(uintptr_t)data;
+    int value = uiSpinboxValue(spinbox);
+    bool success = controllerIsGameAttached(controller) ? controllerSetSimpleCheat(controller, cheat, &value) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
+    if (!success) {
+        LOG_ERROR("Failed to set Customizer Spinbox cheat %d to %d\n", cheat, value);
+    }
+}
+
+static void onCloseButtonClick(uiButton *button, void *data) {
+    uiControlHide(uiControl(parent));
+}
+
+static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
+    controller = controllerInstance;
+    parent = parentInstance;
+
+    uiBox *outerBox = uiNewVerticalBox();
+    uiBoxSetPadded(outerBox, 1);
+
+    uiGrid *grid = uiNewGrid();
+    uiGridSetPadded(grid, 1);
+
+    scoreBgBtn = uiNewColorButton();
+    scoreP1Btn = uiNewColorButton();
+    scoreP2Btn = uiNewColorButton();
+    scoreP3Btn = uiNewColorButton();
+    scoreP4Btn = uiNewColorButton();
+    reloadPrimaryBtn = uiNewColorButton();
+    reloadSecondaryBtn = uiNewColorButton();
+    lowAmmoPrimaryBtn = uiNewColorButton();
+    lowAmmoSecondaryBtn = uiNewColorButton();
+    noAmmoPrimaryBtn = uiNewColorButton();
+    noAmmoSecondaryBtn = uiNewColorButton();
+    scoreboardTransparencySlider = uiNewSlider(0, 100);
+    pointsTransparencySlider = uiNewSlider(0, 100);
+
+    uiColorButtonOnChanged(scoreBgBtn, onColorButtonChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND);
+    uiColorButtonOnChanged(scoreP1Btn, onColorButtonChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1);
+    uiColorButtonOnChanged(scoreP2Btn, onColorButtonChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2);
+    uiColorButtonOnChanged(scoreP3Btn, onColorButtonChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3);
+    uiColorButtonOnChanged(scoreP4Btn, onColorButtonChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4);
+    uiColorButtonOnChanged(reloadPrimaryBtn, onColorButtonChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY);
+    uiColorButtonOnChanged(reloadSecondaryBtn, onColorButtonChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY);
+    uiColorButtonOnChanged(lowAmmoPrimaryBtn, onColorButtonChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY);
+    uiColorButtonOnChanged(lowAmmoSecondaryBtn, onColorButtonChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY);
+    uiColorButtonOnChanged(noAmmoPrimaryBtn, onColorButtonChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY);
+    uiColorButtonOnChanged(noAmmoSecondaryBtn, onColorButtonChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY);
+
+    uiSliderOnChanged(scoreboardTransparencySlider, onSliderChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD);
+    uiSliderOnChanged(pointsTransparencySlider, onSliderChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS);
+
+    // --- Colores de puntuación ---
+    uiGridAppend(grid, uiControl(uiNewLabel("Score Background")),           0, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);   
+    uiGridAppend(grid, uiControl(scoreBgBtn),                               1, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Score Player 1")),             0, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(scoreP1Btn),                               1, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Score Player 2")),             0, 2, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(scoreP2Btn),                               1, 2, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Score Player 3")),             0, 3, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(scoreP3Btn),                               1, 3, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Score Player 4")),             0, 4, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(scoreP4Btn),                               1, 4, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Reload Warn Primary")),        0, 5, 1, 1, 1, uiAlignFill, 0, uiAlignFill);    
+    uiGridAppend(grid, uiControl(reloadPrimaryBtn),                         1, 5, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Reload Warn Secondary")),      0, 6, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(reloadSecondaryBtn),                       1, 6, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Low Ammo Warn Primary")),      0, 7, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(lowAmmoPrimaryBtn),                        1, 7, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Low Ammo Warn Secondary")),    0, 8, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(lowAmmoSecondaryBtn),                      1, 8, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("No Ammo Warn Primary")),       0, 9, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(noAmmoPrimaryBtn),                         1, 9, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("No Ammo Warn Secondary")),     0, 10, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(noAmmoSecondaryBtn),                       1, 10, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Scoreboard Transparency %")),  0, 11, 1, 1, 1, uiAlignFill, 0, uiAlignFill);    
+    uiGridAppend(grid, uiControl(scoreboardTransparencySlider),             1, 11, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Points Transparency %")),      0, 12, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(pointsTransparencySlider),                 1, 12, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Warning Transitions")),        0, 13, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiBox *warnBox = uiNewHorizontalBox();
+    uiBoxSetPadded(warnBox, 1);
+
+    uiGrid *warnGrid = uiNewGrid();
+    uiGridSetPadded(warnGrid, 1);
+
+    freqSpin = uiNewSpinbox(0, 10);
+    minSpin = uiNewSpinbox(-200, 200);
+    maxSpin = uiNewSpinbox(-200, 200);
+
+    uiSpinboxOnChanged(freqSpin, onSpinboxChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY);
+    uiSpinboxOnChanged(minSpin, onSpinboxChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN);
+    uiSpinboxOnChanged(maxSpin, onSpinboxChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX);
+
+    uiSpinboxSetValue(freqSpin, 1);
+    uiSpinboxSetValue(minSpin, 0);
+    uiSpinboxSetValue(maxSpin, 100);
+
+    uiGridAppend(warnGrid, uiControl(uiNewLabel("Freq (sec)")),             0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(warnGrid, uiControl(freqSpin),                             1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(warnGrid, uiControl(uiNewLabel("Min %")),                  0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(warnGrid, uiControl(minSpin),                              1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(warnGrid, uiControl(uiNewLabel("Max %")),                  0, 2, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(warnGrid, uiControl(maxSpin),                              1, 2, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+
+    uiBoxAppend(warnBox, uiControl(warnGrid), 1);
+    
+    uiGridAppend(grid, uiControl(warnBox),                                  1, 13, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+
+    // --- Botones inferiores ---
+    uiBox *buttonBox = uiNewHorizontalBox();
+    uiBoxSetPadded(buttonBox, 1);
+
+    btnResetDefaults = uiNewButton("Reset To Defaults");
+    btnClose = uiNewButton("Close");
+
+    uiButtonOnClicked(btnClose, onCloseButtonClick, NULL);
+
+    uiBoxAppend(buttonBox, uiControl(btnResetDefaults), 1);
+    uiBoxAppend(buttonBox, uiControl(btnClose), 1);
+
+    uiBoxAppend(outerBox, uiControl(grid), 1);
+    uiBoxAppend(outerBox, uiControl(buttonBox), 0);
+
+    return uiControl(outerBox);
+}
+
+static void update() {
+    // Nothing for now
+}
+
+// External API for Controller
+Color uiCustomizerGetCheatColor(SimpleCheatName cheat) {
+    switch (cheat) {
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND:
+            return buildColor(scoreBgBtn);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1:
+            return buildColor(scoreP1Btn);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2:
+            return buildColor(scoreP2Btn);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3:
+            return buildColor(scoreP3Btn);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4:
+            return buildColor(scoreP4Btn);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY:
+            return buildColor(reloadPrimaryBtn);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY:
+            return buildColor(reloadSecondaryBtn);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY:
+            return buildColor(lowAmmoPrimaryBtn);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY:
+            return buildColor(lowAmmoSecondaryBtn);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY:
+            return buildColor(noAmmoPrimaryBtn);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY:
+            return buildColor(noAmmoSecondaryBtn);
+        default:
+            LOG_ERROR("Unknown cheat %d\n", cheat);
+            return buildColor(scoreBgBtn); // Just return random color
+    }
+}
+
+
+UIControlGroup *uiCustomizerBuildControlGroup() {
+    UIControlGroup *cg = guiControlGroupCreate(build, update);
+    return cg;
+}

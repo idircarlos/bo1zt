@@ -24,6 +24,7 @@ int processRunningThread(void *data) {
             threadSleep(200);
         }
         LOG_INFO("Window attached!\n");
+        controllerInitTrainerConfig(controller);
         controllerWaitUntilGameCloses(controller);
         LOG_INFO("Game has been closed\n");
         controllerDetachGame(controller);
@@ -37,7 +38,7 @@ int updateGameThread(void *data) {
         controllerUpdateState(controller);
         guiUpdate();
         controllerUpdateTrainerConfig(controller);
-        threadSleep(100);
+        threadSleep(1000);
     }
 }
 
@@ -45,8 +46,8 @@ int updateGameThread(void *data) {
 int main(void) {
     loggerInit(NULL);
     controller = controllerCreate();
-    threadCreate(processRunningThread, NULL);
     guiInit(controller);
+    threadCreate(processRunningThread, NULL);
     threadCreate(updateGameThread, NULL);
     guiRun();
     guiCleanup();

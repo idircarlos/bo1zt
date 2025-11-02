@@ -1,6 +1,9 @@
 #include "graphics.h"
+#include "customizer/customizer.h"
 #include "../../logger/logger.h"
 #include <stdio.h>
+
+#define UI_CUSTOMIZER_CONTROL_GROUP_SIZE 1
 
 static bool cachedTimRunning = false;
 
@@ -25,10 +28,11 @@ static uiCheckbox *fogCheckbox = NULL;
 static uiCheckbox *fullbrightCheckbox = NULL;
 static uiCheckbox *colorizedCheckbox = NULL;
 
+static uiWindow *customizerWindow = NULL;
+static UIControlGroup *controlGroups[] = {NULL};
+
 // Handlers
 static void onSpinboxChange(uiSpinbox *spin, void *data) {
-    (void)spin;
-    (void)data;
     SimpleCheatName simpleCheatName = (SimpleCheatName)(uintptr_t)data;
     int value = (float)uiSpinboxValue(spin);
     controllerSetSimpleCheat(controller, simpleCheatName, &value);
@@ -54,6 +58,33 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     }
 }
 
+static int onCustomizerClose(uiWindow *window, void *data) {
+    (void)window;
+    (void)data;
+    uiControlHide(uiControl(customizerWindow));
+    return 0;
+}
+
+static void onButtonCustomizeUiClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    uiWindowSetResizeable(customizerWindow, false);
+    uiWindowSetMargined(customizerWindow, true);
+    uiWindowSetIcon(customizerWindow, "IDI_ICON1");
+    uiControlShow(uiControl(customizerWindow));
+}
+
+static void buildCustomizer() {
+    UIControlGroup *customizerControlGroup = uiCustomizerBuildControlGroup();
+    controlGroups[0] = customizerControlGroup;
+
+    customizerWindow = uiNewWindow("Customize UI", 200, 200, 0);    
+    uiControl *customizerGroup = customizerControlGroup->build(controller, customizerWindow);
+
+    uiWindowOnClosing(customizerWindow, onCustomizerClose, NULL);
+    uiWindowSetMargined(customizerWindow, 1);
+    uiWindowSetChild(customizerWindow, uiControl(customizerGroup));
+}
 
 static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
@@ -79,6 +110,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     colorizedCheckbox = uiNewCheckbox(" Colorized");
 
     customizeUiButton = uiNewButton("Customize UI");
+    buildCustomizer();
 
     uiSpinboxSetValue(fovSpin, 90);
     uiSpinboxSetValue(fovScaleSpin, 100);
@@ -94,6 +126,8 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiSpinboxOnChanged(fovSpin, onSpinboxChange, (void*)SIMPLE_CHEAT_NAME_FOV);
     uiSpinboxOnChanged(fovScaleSpin, onSpinboxChange, (void*)SIMPLE_CHEAT_NAME_FOV_SCALE);
     uiSpinboxOnChanged(fpsCapSpin, onSpinboxChange, (void*)SIMPLE_CHEAT_NAME_FPS_CAP);
+
+    uiButtonOnClicked(customizeUiButton, onButtonCustomizeUiClick, NULL);
 
     uiGrid *graphicsGrid = uiNewGrid();
     uiGridSetPadded(graphicsGrid, 1);
