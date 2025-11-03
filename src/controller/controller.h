@@ -4,6 +4,7 @@
 #include "../process/process.h"
 #include "../cheat/cheat.h"
 #include "../state/state.h"
+#include "../config/config.h"
 
 typedef struct Controller Controller;
 
@@ -32,6 +33,10 @@ State *controllerGetState(Controller *controller);
 void controllerUpdateState(Controller *controller);
 void controllerInitTrainerConfig(Controller *controller);
 void controllerUpdateTrainerConfig(Controller *controller);
+GraphicsConfig controllerGetGraphicsConfig(Controller *controller);
+CustomizerConfig controllerGetCustomizerConfig(Controller *controller);
+void controllerUpdateConfig(Controller *controller, ConfigType type);
+void controllerResetConfig(Controller *controller, ConfigType type);
 void controllerDestroy(Controller *controller);
 
 #endif // CONTROLLER_H_

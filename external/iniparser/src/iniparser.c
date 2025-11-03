@@ -174,7 +174,7 @@ int iniparser_getnsec(const dictionary * d)
     for (i=0 ; i<d->size ; i++) {
         if (d->key[i]==NULL)
             continue ;
-        if (strstr(d->key[i], "::")==NULL) {
+        if (strchr(d->key[i], ':')==NULL) {
             nsec ++ ;
         }
     }
@@ -364,12 +364,12 @@ int iniparser_getsecnkeys(const dictionary * d, const char * s)
     seclen  = (int)strlen(s);
     xstrcpy(s, keym, sizeof(keym));
     keym[seclen] = ':';
-    keym[seclen + 1] = ':';
+    keym[seclen + 1] = '\0';
 
     for (j=0 ; j<d->size ; j++) {
         if (d->key[j]==NULL)
             continue ;
-        if (!strncmp(d->key[j], keym, seclen+2))
+        if (!strncmp(d->key[j], keym, seclen+1))
             nkeys++;
     }
 
@@ -880,7 +880,7 @@ dictionary * iniparser_load_file(FILE * in, const char * ininame)
             break ;
 
             case LINE_VALUE:
-            sprintf(tmp, "%s::%s", section, key);
+            sprintf(tmp, "%s:%s", section, key);
             mem_err = dictionary_set(dict, tmp, val);
             break ;
 

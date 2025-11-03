@@ -1,5 +1,6 @@
 #include "customizer.h"
 #include "../../../logger/logger.h"
+#include "../../../config/config.h"
 #include <ui.h>
 
 // Controller instance
@@ -27,15 +28,22 @@ static uiSpinbox *freqSpin;
 static uiSpinbox *minSpin;
 static uiSpinbox *maxSpin;
 
-static uiButton *btnResetDefaults;
-static uiButton *btnClose;
+static uiButton *btnReset;
+static uiButton *btnSave;
+
+static void init();
 
 // Aux
 static Color buildColor(uiColorButton *button) {
     double r, g, b, a;
     uiColorButtonColor(button, &r, &g, &b, &a);
-    Color color = colorCreate(1, 2, 3);
+    Color color = colorCreate(r*255, g*255, b*255);
     return color;
+}
+
+static void setColorButton(uiColorButton *button, Color color) {
+    LOG_INFO("Setting color button to RGB(%d, %d, %d)\n", color.r, color.g, color.b);
+    uiColorButtonSetColor(button, color.r / 255.0, color.g / 255.0, color.b / 255.0, 1.0);
 }
 
 // Handlers
@@ -45,7 +53,10 @@ static void onColorButtonChange(uiColorButton *button, void *data) {
     bool success = controllerIsGameAttached(controller) ? controllerSetSimpleCheat(controller, cheat, &color) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
     if (!success) {
         LOG_ERROR("Failed to set Customizer Color cheat %d to RGB(%d, %d, %d)\n", cheat, color);
+        return;
     }
+    uiControlEnable(uiControl(btnReset));
+    uiControlEnable(uiControl(btnSave));
 }
 
 static void onSliderChange(uiSlider *slider, void *data) {
@@ -54,7 +65,10 @@ static void onSliderChange(uiSlider *slider, void *data) {
     bool success = controllerIsGameAttached(controller) ? controllerSetSimpleCheat(controller, cheat, &value) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
     if (!success) {
         LOG_ERROR("Failed to set Customizer Slider cheat %d to %d\n", cheat, value);
+        return;
     }
+    uiControlEnable(uiControl(btnReset));
+    uiControlEnable(uiControl(btnSave));
 }
 
 static void onSpinboxChange(uiSpinbox *spinbox, void *data) {
@@ -63,13 +77,46 @@ static void onSpinboxChange(uiSpinbox *spinbox, void *data) {
     bool success = controllerIsGameAttached(controller) ? controllerSetSimpleCheat(controller, cheat, &value) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
     if (!success) {
         LOG_ERROR("Failed to set Customizer Spinbox cheat %d to %d\n", cheat, value);
+        return;
     }
+    uiControlEnable(uiControl(btnReset));
+    uiControlEnable(uiControl(btnSave));
 }
 
-static void onCloseButtonClick(uiButton *button, void *data) {
+static void onResetButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    uiControlHide(uiControl(parent));
+    controllerResetConfig(controller, CONFIG_CUSTOMIZER);
+    init();
+    uiControlDisable(uiControl(btnReset));
+    uiControlDisable(uiControl(btnSave));
+}
+
+static void onSaveButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    controllerUpdateConfig(controller, CONFIG_CUSTOMIZER);
+    uiControlDisable(uiControl(btnSave));
+}
+
+static void init() {
+    CustomizerConfig config = controllerGetCustomizerConfig(controller);
+    setColorButton(scoreBgBtn, config.scoreBackground);
+    setColorButton(scoreP1Btn, config.scorePlayer1);
+    setColorButton(scoreP2Btn, config.scorePlayer2);
+    setColorButton(scoreP3Btn, config.scorePlayer3);
+    setColorButton(scoreP4Btn, config.scorePlayer4);
+    setColorButton(reloadPrimaryBtn, config.reloadWarnPrimary);
+    setColorButton(reloadSecondaryBtn, config.reloadWarnSecondary);
+    setColorButton(lowAmmoPrimaryBtn, config.lowAmmoWarnPrimary);
+    setColorButton(lowAmmoSecondaryBtn, config.lowAmmoWarnSecondary);
+    setColorButton(noAmmoPrimaryBtn, config.noAmmoWarnPrimary);
+    setColorButton(noAmmoSecondaryBtn, config.noAmmoWarnSecondary);
+    uiSliderSetValue(scoreboardTransparencySlider, config.scoreboardTransparency);
+    uiSliderSetValue(pointsTransparencySlider, config.pointsTransparency);
+    uiSpinboxSetValue(freqSpin, config.warningTransitionsFrequency);
+    uiSpinboxSetValue(minSpin, config.warningTransitionsMin);
+    uiSpinboxSetValue(maxSpin, config.warningTransitionsMax);
 }
 
 static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
@@ -153,10 +200,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiSpinboxOnChanged(minSpin, onSpinboxChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN);
     uiSpinboxOnChanged(maxSpin, onSpinboxChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX);
 
-    uiSpinboxSetValue(freqSpin, 1);
-    uiSpinboxSetValue(minSpin, 0);
-    uiSpinboxSetValue(maxSpin, 100);
-
     uiGridAppend(warnGrid, uiControl(uiNewLabel("Freq (sec)")),             0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(warnGrid, uiControl(freqSpin),                             1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(warnGrid, uiControl(uiNewLabel("Min %")),                  0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
@@ -172,16 +215,22 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiBox *buttonBox = uiNewHorizontalBox();
     uiBoxSetPadded(buttonBox, 1);
 
-    btnResetDefaults = uiNewButton("Reset To Defaults");
-    btnClose = uiNewButton("Close");
+    btnReset = uiNewButton("Reset");
+    btnSave = uiNewButton("Save");
 
-    uiButtonOnClicked(btnClose, onCloseButtonClick, NULL);
+    uiButtonOnClicked(btnReset, onResetButtonClick, NULL);
+    uiButtonOnClicked(btnSave, onSaveButtonClick, NULL);
 
-    uiBoxAppend(buttonBox, uiControl(btnResetDefaults), 1);
-    uiBoxAppend(buttonBox, uiControl(btnClose), 1);
+    uiControlDisable(uiControl(btnReset));
+    uiControlDisable(uiControl(btnSave));
+
+    uiBoxAppend(buttonBox, uiControl(btnReset), 1);
+    uiBoxAppend(buttonBox, uiControl(btnSave), 1);
 
     uiBoxAppend(outerBox, uiControl(grid), 1);
     uiBoxAppend(outerBox, uiControl(buttonBox), 0);
+
+    init();
 
     return uiControl(outerBox);
 }
@@ -218,6 +267,24 @@ Color uiCustomizerGetCheatColor(SimpleCheatName cheat) {
         default:
             LOG_ERROR("Unknown cheat %d\n", cheat);
             return buildColor(scoreBgBtn); // Just return random color
+    }
+}
+
+int uiCustomizerGetCheatInt(SimpleCheatName cheat) {
+    switch (cheat) {
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD:
+            return uiSliderValue(scoreboardTransparencySlider);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS:
+            return uiSliderValue(pointsTransparencySlider);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY:
+            return uiSpinboxValue(freqSpin);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN:
+            return uiSpinboxValue(minSpin);
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX:
+            return uiSpinboxValue(maxSpin);
+        default:
+            LOG_ERROR("Unknown cheat %d\n", cheat);
+            return 0;
     }
 }
 

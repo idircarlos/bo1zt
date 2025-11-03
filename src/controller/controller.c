@@ -185,10 +185,45 @@ void controllerUpdateState(Controller *controller) {
 }
 
 void controllerInitTrainerConfig(Controller *controller) {
-    // TODO: Fix this to add all values.
     if (!controllerIsGameAttached(controller)) return;
     Color scoreBg = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND);
+    Color scoreP1 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1);
+    Color scoreP2 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2);
+    Color scoreP3 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3);
+    Color scoreP4 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4);
+    Color reloadWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY);
+    Color reloadWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY);
+    Color lowAmmoWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY);
+    Color lowAmmoWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY);
+    Color noAmmoWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY);
+    Color noAmmoWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY);
+    int transparencyPoints = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS);
+    int transparencyScoreboard = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD);
+    int warnFrequency = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY);
+    int warnMin = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN);
+    int warnMax = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX);
+    
     controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND, &scoreBg);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1, &scoreP1);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2, &scoreP2);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3, &scoreP3);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4, &scoreP4);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS, &transparencyPoints);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD, &transparencyScoreboard);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY, &reloadWarnPrimary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY, &reloadWarnSecondary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY, &lowAmmoWarnPrimary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY, &lowAmmoWarnSecondary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY, &noAmmoWarnPrimary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY, &noAmmoWarnSecondary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY, &warnFrequency);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN, &warnMin);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX, &warnMax);
+
+    bool makeBorderless = uiGraphicsIsChecked(CHEAT_NAME_MAKE_BORDERLESS);
+    if (controllerIsGameWindowAttached(controller) && !processIsBorderless(controller->process) && makeBorderless) {
+        controllerSetCheat(controller, CHEAT_NAME_MAKE_BORDERLESS, makeBorderless);
+    }
 }
 
 void controllerUpdateTrainerConfig(Controller *controller) {
@@ -214,11 +249,6 @@ void controllerUpdateTrainerConfig(Controller *controller) {
     controllerSetCheat(controller, CHEAT_NAME_DISABLE_FOG, disableFog);
     controllerSetCheat(controller, CHEAT_NAME_COLORIZED, colorized);
     controllerSetCheat(controller, CHEAT_NAME_FULLBRIGHT, fullbright);
-    // Only make borderless once
-    bool makeBorderless = uiGraphicsIsChecked(CHEAT_NAME_MAKE_BORDERLESS);
-    if (controllerIsGameWindowAttached(controller) && !processIsBorderless(controller->process) && makeBorderless) {
-        controllerSetCheat(controller, CHEAT_NAME_MAKE_BORDERLESS, makeBorderless);
-    }
 
     // --- Game Config ---
     bool fixMovementSpeed = uiGameIsChecked(CHEAT_NAME_FIX_MOVEMENT_SPEED);
@@ -229,5 +259,64 @@ void controllerUpdateTrainerConfig(Controller *controller) {
         char *hostname = uiGameGetHostname();
         controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, hostname);
         uiFreeText(hostname);
+    }
+}
+
+GraphicsConfig controllerGetGraphicsConfig(Controller *controller) {
+    return controller->config->graphics;
+}
+
+CustomizerConfig controllerGetCustomizerConfig(Controller *controller) {
+    return controller->config->customizer;
+}
+
+void controllerUpdateConfig(Controller *controller, ConfigType type) {
+    if (!controller) return;
+    switch (type) {
+        case CONFIG_GRAPHICS:
+            controller->config->graphics.fov = uiGraphicsGetFov();
+            controller->config->graphics.fovScale = uiGraphicsGetFovScale();
+            controller->config->graphics.fpsCap = uiGraphicsGetFpsCap();
+            controller->config->graphics.borderless = uiGraphicsIsChecked(CHEAT_NAME_MAKE_BORDERLESS);
+            controller->config->graphics.unlimitFps = uiGraphicsIsChecked(CHEAT_NAME_UNLIMIT_FPS);
+            controller->config->graphics.disableHud = uiGraphicsIsChecked(CHEAT_NAME_DISABLE_HUD);
+            controller->config->graphics.disableFog = uiGraphicsIsChecked(CHEAT_NAME_DISABLE_FOG);
+            controller->config->graphics.fullbright = uiGraphicsIsChecked(CHEAT_NAME_FULLBRIGHT);
+            controller->config->graphics.colorized = uiGraphicsIsChecked(CHEAT_NAME_COLORIZED);
+            break;
+        case CONFIG_CUSTOMIZER:
+            controller->config->customizer.scoreBackground =  uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND);
+            controller->config->customizer.scorePlayer1 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1);
+            controller->config->customizer.scorePlayer2 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2);
+            controller->config->customizer.scorePlayer3 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3);
+            controller->config->customizer.scorePlayer4 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4);
+            controller->config->customizer.reloadWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY);
+            controller->config->customizer.reloadWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY);
+            controller->config->customizer.lowAmmoWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY);
+            controller->config->customizer.lowAmmoWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY);
+            controller->config->customizer.noAmmoWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY);
+            controller->config->customizer.noAmmoWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY);
+            controller->config->customizer.scoreboardTransparency = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD);
+            controller->config->customizer.pointsTransparency = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS);
+            controller->config->customizer.warningTransitionsFrequency = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY);
+            controller->config->customizer.warningTransitionsMin = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN);
+            controller->config->customizer.warningTransitionsMax = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX);
+            break;
+        default:
+            LOG_ERROR("Unknown Config Type %d\n", type);
+            return;
+    }
+    configSave(controller->config);
+}
+
+void controllerResetConfig(Controller *controller, ConfigType type) {
+    if (!controller) return;
+    switch (type) {
+        case CONFIG_GRAPHICS:
+            configResetGraphics(controller->config); return;
+        case CONFIG_CUSTOMIZER:
+            configResetCustomizer(controller->config); return;
+        default:
+            LOG_ERROR("Unknown Config Type %d\n", type);
     }
 }

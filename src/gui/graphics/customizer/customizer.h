@@ -6,5 +6,6 @@
 
 UIControlGroup *uiCustomizerBuildControlGroup();
 Color uiCustomizerGetCheatColor(SimpleCheatName cheat);
+int uiCustomizerGetCheatInt(SimpleCheatName cheat);
 
 #endif // UI_CUSTOMIZER_H_

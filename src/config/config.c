@@ -8,8 +8,8 @@
 
 #define INI_FILE_NAME "BO1ZT.ini"
 #define STRFMT_BUFF_SIZE 1024
-#define COLOR_INI_FMT "Color(%d,%d,%d)"
-#define COLOR_INI_DEFAULT "Color(255,255,255)"
+#define COLOR_INI_FMT "Color(%hhu,%hhu,%hhu)"
+#define COLOR_INI_DEFAULT "Color(111,111,111)"
 
 // Aux
 static inline char *strfmt(char *buff, const char *fmt, ...) {
@@ -42,31 +42,31 @@ static bool configLoad(Config *config) {
         return false;
     }
 
-    config->fov = iniparser_getint(dictionary, "Graphics:FOV", config->fov);
-    config->fovScale = iniparser_getint(dictionary, "Graphics:FOVScale", config->fovScale);
-    config->fpsCap = iniparser_getint(dictionary, "Graphics:FPSCap", config->fpsCap);
-    config->borderless = iniparser_getboolean(dictionary, "Graphics:Borderless", config->borderless);
-    config->unlimitFps = iniparser_getboolean(dictionary, "Graphics:UnlimitFps", config->unlimitFps);
-    config->disableHud = iniparser_getboolean(dictionary, "Graphics:DisableHud", config->disableHud);
-    config->disableFog = iniparser_getboolean(dictionary, "Graphics:DisableFog", config->disableFog);
-    config->fullbright = iniparser_getboolean(dictionary, "Graphics:Fullbright", config->fullbright);
-    config->colorized = iniparser_getboolean(dictionary, "Graphics:Colorized", config->colorized);
-    config->scoreBackground = colorFromString(iniparser_getstring(dictionary, "Customizer:ScoreBackground", COLOR_INI_DEFAULT));
-    config->scorePlayer1 = colorFromString(iniparser_getstring(dictionary, "Customizer:ScorePlayer1", COLOR_INI_DEFAULT));
-    config->scorePlayer2 = colorFromString(iniparser_getstring(dictionary, "Customizer:ScorePlayer2", COLOR_INI_DEFAULT));
-    config->scorePlayer3 = colorFromString(iniparser_getstring(dictionary, "Customizer:ScorePlayer3", COLOR_INI_DEFAULT));
-    config->scorePlayer4 = colorFromString(iniparser_getstring(dictionary, "Customizer:ScorePlayer4", COLOR_INI_DEFAULT));
-    config->reloadWarnPrimary = colorFromString(iniparser_getstring(dictionary, "Customizer:ReloadWarnPrimary", COLOR_INI_DEFAULT));
-    config->reloadWarnSecondary = colorFromString(iniparser_getstring(dictionary, "Customizer:ReloadWarnSecondary", COLOR_INI_DEFAULT));
-    config->lowAmmoWarnPrimary = colorFromString(iniparser_getstring(dictionary, "Customizer:LowAmmoWarnPrimary", COLOR_INI_DEFAULT));
-    config->lowAmmoWarnSecondary = colorFromString(iniparser_getstring(dictionary, "Customizer:LowAmmoWarnSecondary", COLOR_INI_DEFAULT));
-    config->noAmmoWarnPrimary = colorFromString(iniparser_getstring(dictionary, "Customizer:NoAmmoWarnPrimary", COLOR_INI_DEFAULT));
-    config->noAmmoWarnSecondary = colorFromString(iniparser_getstring(dictionary, "Customizer:NoAmmoWarnSecondary", COLOR_INI_DEFAULT));
-    config->scoreboardTransparency = iniparser_getint(dictionary, "Customizer:ScoreboardTransparency", config->scoreboardTransparency);
-    config->pointsTransparency = iniparser_getint(dictionary, "Customizer:PointsTransparency", config->pointsTransparency);
-    config->warningTransitionsFrequency = iniparser_getint(dictionary, "Customizer:WarningTransitionsFrequency", config->warningTransitionsFrequency);
-    config->warningTransitionsMin = iniparser_getint(dictionary, "Customizer:WarningTransitionsMin", config->warningTransitionsMin);
-    config->warningTransitionsMax = iniparser_getint(dictionary, "Customizer:WarningTransitionsMax", config->warningTransitionsMax);
+    config->graphics.fov = iniparser_getint(dictionary, "Graphics:FOV", config->graphics.fov);
+    config->graphics.fovScale = iniparser_getint(dictionary, "Graphics:FOVScale", config->graphics.fovScale);
+    config->graphics.fpsCap = iniparser_getint(dictionary, "Graphics:FPSCap", config->graphics.fpsCap);
+    config->graphics.borderless = iniparser_getboolean(dictionary, "Graphics:Borderless", config->graphics.borderless);
+    config->graphics.unlimitFps = iniparser_getboolean(dictionary, "Graphics:UnlimitFps", config->graphics.unlimitFps);
+    config->graphics.disableHud = iniparser_getboolean(dictionary, "Graphics:DisableHud", config->graphics.disableHud);
+    config->graphics.disableFog = iniparser_getboolean(dictionary, "Graphics:DisableFog", config->graphics.disableFog);
+    config->graphics.fullbright = iniparser_getboolean(dictionary, "Graphics:Fullbright", config->graphics.fullbright);
+    config->graphics.colorized = iniparser_getboolean(dictionary, "Graphics:Colorized", config->graphics.colorized);
+    config->customizer.scoreBackground = colorFromString(iniparser_getstring(dictionary, "Customizer:ScoreBackground", COLOR_INI_DEFAULT));
+    config->customizer.scorePlayer1 = colorFromString(iniparser_getstring(dictionary, "Customizer:ScorePlayer1", COLOR_INI_DEFAULT));
+    config->customizer.scorePlayer2 = colorFromString(iniparser_getstring(dictionary, "Customizer:ScorePlayer2", COLOR_INI_DEFAULT));
+    config->customizer.scorePlayer3 = colorFromString(iniparser_getstring(dictionary, "Customizer:ScorePlayer3", COLOR_INI_DEFAULT));
+    config->customizer.scorePlayer4 = colorFromString(iniparser_getstring(dictionary, "Customizer:ScorePlayer4", COLOR_INI_DEFAULT));
+    config->customizer.reloadWarnPrimary = colorFromString(iniparser_getstring(dictionary, "Customizer:ReloadWarnPrimary", COLOR_INI_DEFAULT));
+    config->customizer.reloadWarnSecondary = colorFromString(iniparser_getstring(dictionary, "Customizer:ReloadWarnSecondary", COLOR_INI_DEFAULT));
+    config->customizer.lowAmmoWarnPrimary = colorFromString(iniparser_getstring(dictionary, "Customizer:LowAmmoWarnPrimary", COLOR_INI_DEFAULT));
+    config->customizer.lowAmmoWarnSecondary = colorFromString(iniparser_getstring(dictionary, "Customizer:LowAmmoWarnSecondary", COLOR_INI_DEFAULT));
+    config->customizer.noAmmoWarnPrimary = colorFromString(iniparser_getstring(dictionary, "Customizer:NoAmmoWarnPrimary", COLOR_INI_DEFAULT));
+    config->customizer.noAmmoWarnSecondary = colorFromString(iniparser_getstring(dictionary, "Customizer:NoAmmoWarnSecondary", COLOR_INI_DEFAULT));
+    config->customizer.scoreboardTransparency = iniparser_getint(dictionary, "Customizer:ScoreboardTransparency", config->customizer.scoreboardTransparency);
+    config->customizer.pointsTransparency = iniparser_getint(dictionary, "Customizer:PointsTransparency", config->customizer.pointsTransparency);
+    config->customizer.warningTransitionsFrequency = iniparser_getint(dictionary, "Customizer:WarningTransitionsFrequency", config->customizer.warningTransitionsFrequency);
+    config->customizer.warningTransitionsMin = iniparser_getint(dictionary, "Customizer:WarningTransitionsMin", config->customizer.warningTransitionsMin);
+    config->customizer.warningTransitionsMax = iniparser_getint(dictionary, "Customizer:WarningTransitionsMax", config->customizer.warningTransitionsMax);
 
     iniparser_freedict(dictionary);
     return true;
@@ -103,67 +103,84 @@ bool configSave(Config *config) {
 
     char valueBuffer[1024] = "";
     ret += iniparser_set(dictionary, "Graphics", NULL);
-    ret += iniparser_set(dictionary, "Graphics:FOV", strfmt(valueBuffer, "%d", config->fov));
-    ret += iniparser_set(dictionary, "Graphics:FOVScale", strfmt(valueBuffer, "%d", config->fovScale));
-    ret += iniparser_set(dictionary, "Graphics:FPSCap", strfmt(valueBuffer, "%d", config->fpsCap));
-    ret += iniparser_set(dictionary, "Graphics:Borderless", strfmt(valueBuffer, "%d", config->borderless));
-    ret += iniparser_set(dictionary, "Graphics:UnlimitFps", strfmt(valueBuffer, "%d", config->unlimitFps));
-    ret += iniparser_set(dictionary, "Graphics:DisableHud", strfmt(valueBuffer, "%d", config->disableHud));
-    ret += iniparser_set(dictionary, "Graphics:DisableFog", strfmt(valueBuffer, "%d", config->disableFog));
-    ret += iniparser_set(dictionary, "Graphics:Fullbright", strfmt(valueBuffer, "%d", config->fullbright));
-    ret += iniparser_set(dictionary, "Graphics:Colorized", strfmt(valueBuffer, "%d", config->colorized));
+    ret += iniparser_set(dictionary, "Graphics:FOV", strfmt(valueBuffer, "%d", config->graphics.fov));
+    ret += iniparser_set(dictionary, "Graphics:FOVScale", strfmt(valueBuffer, "%d", config->graphics.fovScale));
+    ret += iniparser_set(dictionary, "Graphics:FPSCap", strfmt(valueBuffer, "%d", config->graphics.fpsCap));
+    ret += iniparser_set(dictionary, "Graphics:Borderless", strfmt(valueBuffer, "%d", config->graphics.borderless));
+    ret += iniparser_set(dictionary, "Graphics:UnlimitFps", strfmt(valueBuffer, "%d", config->graphics.unlimitFps));
+    ret += iniparser_set(dictionary, "Graphics:DisableHud", strfmt(valueBuffer, "%d", config->graphics.disableHud));
+    ret += iniparser_set(dictionary, "Graphics:DisableFog", strfmt(valueBuffer, "%d", config->graphics.disableFog));
+    ret += iniparser_set(dictionary, "Graphics:Fullbright", strfmt(valueBuffer, "%d", config->graphics.fullbright));
+    ret += iniparser_set(dictionary, "Graphics:Colorized", strfmt(valueBuffer, "%d", config->graphics.colorized));
     ret += iniparser_set(dictionary, "Customizer", NULL);
-    ret += iniparser_set(dictionary, "Customizer:ScoreBackground", strfmt(valueBuffer, COLOR_INI_FMT, config->scoreBackground.r, config->scoreBackground.g, config->scoreBackground.b));
-    ret += iniparser_set(dictionary, "Customizer:ScorePlayer1", strfmt(valueBuffer, COLOR_INI_FMT, config->scorePlayer1.r, config->scorePlayer1.g, config->scorePlayer1.b));
-    ret += iniparser_set(dictionary, "Customizer:ScorePlayer2", strfmt(valueBuffer, COLOR_INI_FMT, config->scorePlayer2.r, config->scorePlayer2.g, config->scorePlayer2.b));
-    ret += iniparser_set(dictionary, "Customizer:ScorePlayer3", strfmt(valueBuffer, COLOR_INI_FMT, config->scorePlayer3.r, config->scorePlayer3.g, config->scorePlayer3.b));
-    ret += iniparser_set(dictionary, "Customizer:ScorePlayer4", strfmt(valueBuffer, COLOR_INI_FMT, config->scorePlayer4.r, config->scorePlayer4.g, config->scorePlayer4.b));
-    ret += iniparser_set(dictionary, "Customizer:ReloadWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->reloadWarnPrimary.r, config->reloadWarnPrimary.g, config->reloadWarnPrimary.b));
-    ret += iniparser_set(dictionary, "Customizer:ReloadWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->reloadWarnSecondary.r, config->reloadWarnSecondary.g, config->reloadWarnSecondary.b));
-    ret += iniparser_set(dictionary, "Customizer:LowAmmoWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->lowAmmoWarnPrimary.r, config->lowAmmoWarnPrimary.g, config->lowAmmoWarnPrimary.b));
-    ret += iniparser_set(dictionary, "Customizer:LowAmmoWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->lowAmmoWarnSecondary.r, config->lowAmmoWarnSecondary.g, config->lowAmmoWarnSecondary.b));
-    ret += iniparser_set(dictionary, "Customizer:NoAmmoWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->noAmmoWarnPrimary.r, config->noAmmoWarnPrimary.g, config->noAmmoWarnPrimary.b));
-    ret += iniparser_set(dictionary, "Customizer:NoAmmoWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->noAmmoWarnSecondary.r, config->noAmmoWarnSecondary.g, config->noAmmoWarnSecondary.b));
-    ret += iniparser_set(dictionary, "Customizer:ScoreboardTransparency", strfmt(valueBuffer, "%d", config->scoreboardTransparency));
-    ret += iniparser_set(dictionary, "Customizer:PointsTransparency", strfmt(valueBuffer, "%d", config->pointsTransparency));
-    ret += iniparser_set(dictionary, "Customizer:WarningTransitionsFrequency", strfmt(valueBuffer, "%d", config->warningTransitionsFrequency));
-    ret += iniparser_set(dictionary, "Customizer:WarningTransitionsMin", strfmt(valueBuffer, "%d", config->warningTransitionsMin));
-    ret += iniparser_set(dictionary, "Customizer:WarningTransitionsMax", strfmt(valueBuffer, "%d", config->warningTransitionsMax));
+    ret += iniparser_set(dictionary, "Customizer:ScoreBackground", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scoreBackground.r, config->customizer.scoreBackground.g, config->customizer.scoreBackground.b));
+    ret += iniparser_set(dictionary, "Customizer:ScorePlayer1", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer1.r, config->customizer.scorePlayer1.g, config->customizer.scorePlayer1.b));
+    ret += iniparser_set(dictionary, "Customizer:ScorePlayer2", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer2.r, config->customizer.scorePlayer2.g, config->customizer.scorePlayer2.b));
+    ret += iniparser_set(dictionary, "Customizer:ScorePlayer3", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer3.r, config->customizer.scorePlayer3.g, config->customizer.scorePlayer3.b));
+    ret += iniparser_set(dictionary, "Customizer:ScorePlayer4", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer4.r, config->customizer.scorePlayer4.g, config->customizer.scorePlayer4.b));
+    ret += iniparser_set(dictionary, "Customizer:ReloadWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.reloadWarnPrimary.r, config->customizer.reloadWarnPrimary.g, config->customizer.reloadWarnPrimary.b));
+    ret += iniparser_set(dictionary, "Customizer:ReloadWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.reloadWarnSecondary.r, config->customizer.reloadWarnSecondary.g, config->customizer.reloadWarnSecondary.b));
+    ret += iniparser_set(dictionary, "Customizer:LowAmmoWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.lowAmmoWarnPrimary.r, config->customizer.lowAmmoWarnPrimary.g, config->customizer.lowAmmoWarnPrimary.b));
+    ret += iniparser_set(dictionary, "Customizer:LowAmmoWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.lowAmmoWarnSecondary.r, config->customizer.lowAmmoWarnSecondary.g, config->customizer.lowAmmoWarnSecondary.b));
+    ret += iniparser_set(dictionary, "Customizer:NoAmmoWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.noAmmoWarnPrimary.r, config->customizer.noAmmoWarnPrimary.g, config->customizer.noAmmoWarnPrimary.b));
+    ret += iniparser_set(dictionary, "Customizer:NoAmmoWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.noAmmoWarnSecondary.r, config->customizer.noAmmoWarnSecondary.g, config->customizer.noAmmoWarnSecondary.b));
+    ret += iniparser_set(dictionary, "Customizer:ScoreboardTransparency", strfmt(valueBuffer, "%d", config->customizer.scoreboardTransparency));
+    ret += iniparser_set(dictionary, "Customizer:PointsTransparency", strfmt(valueBuffer, "%d", config->customizer.pointsTransparency));
+    ret += iniparser_set(dictionary, "Customizer:WarningTransitionsFrequency", strfmt(valueBuffer, "%d", config->customizer.warningTransitionsFrequency));
+    ret += iniparser_set(dictionary, "Customizer:WarningTransitionsMin", strfmt(valueBuffer, "%d", config->customizer.warningTransitionsMin));
+    ret += iniparser_set(dictionary, "Customizer:WarningTransitionsMax", strfmt(valueBuffer, "%d", config->customizer.warningTransitionsMax));
     if (ret < 0) {
         LOG_ERROR("Error setting ini values\n");
         return false;
     }
     iniparser_dump_ini(dictionary, ini);
+    dictionary_del(dictionary);
     fclose(ini);
     return false;
 }
 
 void configReset(Config *config) {
-    config->fov = 90;
-    config->fovScale = 100;
-    config->fpsCap = 60;
-    config->borderless = false;
-    config->unlimitFps = false;
-    config->disableHud = false;
-    config->disableFog = false;
-    config->fullbright = false;
-    config->colorized = false;
-    config->scoreBackground = colorCreate(255, 255, 255);
-    config->scorePlayer1 = colorCreate(255, 255, 255);
-    config->scorePlayer2 = colorCreate(255, 255, 255);
-    config->scorePlayer3 = colorCreate(255, 255, 255);
-    config->scorePlayer4 = colorCreate(255, 255, 255);
-    config->reloadWarnPrimary = colorCreate(255, 0, 0);
-    config->reloadWarnSecondary = colorCreate(255, 0, 0);
-    config->lowAmmoWarnPrimary = colorCreate(255, 165, 0);
-    config->lowAmmoWarnSecondary = colorCreate(55, 165, 0);
-    config->noAmmoWarnPrimary = colorCreate(255, 0, 0);
-    config->noAmmoWarnSecondary = colorCreate(255, 0, 0);
-    config->scoreboardTransparency = 100;
-    config->pointsTransparency = 100;
-    config->warningTransitionsFrequency = 5;
-    config->warningTransitionsMin = 50;
-    config->warningTransitionsMax = 100;
+    configResetGraphics(config);
+    configResetCustomizer(config);
+}
+
+void configResetGraphics(Config *config) {
+    GraphicsConfig graphics = {
+        .fov = 90,
+        .fovScale = 100,
+        .fpsCap = 60,
+        .borderless = false,
+        .unlimitFps = false,
+        .disableHud = false,
+        .disableFog = false,
+        .fullbright = false,
+        .colorized = false,
+    };
+
+    config->graphics = graphics;
+}
+
+void configResetCustomizer(Config *config) {
+    CustomizerConfig customizer = {
+        .scoreBackground = colorCreate(255, 255, 255),
+        .scorePlayer1 = colorCreate(255, 255, 255),
+        .scorePlayer2 = colorCreate(255, 255, 255),
+        .scorePlayer3 = colorCreate(255, 255, 255),
+        .scorePlayer4 = colorCreate(255, 255, 255),
+        .reloadWarnPrimary = colorCreate(255, 0, 0),
+        .reloadWarnSecondary = colorCreate(255, 0, 0),
+        .lowAmmoWarnPrimary = colorCreate(255, 165, 0),
+        .lowAmmoWarnSecondary = colorCreate(55, 165, 0),
+        .noAmmoWarnPrimary = colorCreate(255, 0, 0),
+        .noAmmoWarnSecondary = colorCreate(255, 0, 0),
+        .scoreboardTransparency = 100,
+        .pointsTransparency = 100,
+        .warningTransitionsFrequency = 5,
+        .warningTransitionsMin = 50,
+        .warningTransitionsMax = 100,
+    };
+
+    config->customizer = customizer;
 }
 
 void configDestroy(Config *config) {

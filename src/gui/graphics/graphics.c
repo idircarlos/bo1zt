@@ -36,6 +36,7 @@ static void onSpinboxChange(uiSpinbox *spin, void *data) {
     SimpleCheatName simpleCheatName = (SimpleCheatName)(uintptr_t)data;
     int value = (float)uiSpinboxValue(spin);
     controllerSetSimpleCheat(controller, simpleCheatName, &value);
+    controllerUpdateConfig(controller, CONFIG_GRAPHICS);
 }
 
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
@@ -45,9 +46,10 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     if (!success) {
         fprintf(stderr, "Failed to set Graphics cheat %d to %d\n", cheatName, enabled);
         uiCheckboxSetChecked(checkbox, !enabled); // Revert checkbox state
+        return;
     }
     // If "Unlimit FPS" checkbox is toggled, enable/disable FPS Cap Spinbox
-    if (cheatName == CHEAT_NAME_UNLIMIT_FPS && success) {
+    if (cheatName == CHEAT_NAME_UNLIMIT_FPS) {
         if (enabled) {
             uiControlDisable(uiControl(fpsCapLabel));
             uiDisableSpinbox(fpsCapSpin);
@@ -56,6 +58,7 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
             uiEnableSpinbox(fpsCapSpin);
         }
     }
+    controllerUpdateConfig(controller, CONFIG_GRAPHICS);
 }
 
 static int onCustomizerClose(uiWindow *window, void *data) {
@@ -86,6 +89,19 @@ static void buildCustomizer() {
     uiWindowSetChild(customizerWindow, uiControl(customizerGroup));
 }
 
+static void init() {
+    GraphicsConfig config = controllerGetGraphicsConfig(controller);
+    uiSpinboxSetValue(fovSpin, config.fov);
+    uiSpinboxSetValue(fovScaleSpin, config.fovScale);
+    uiSpinboxSetValue(fpsCapSpin, config.fpsCap);
+    uiCheckboxSetChecked(makeBorderlessCheckbox, config.borderless);
+    uiCheckboxSetChecked(unlimitFpsCheckbox, config.unlimitFps);
+    uiCheckboxSetChecked(disableHudCheckbox, config.disableHud);
+    uiCheckboxSetChecked(fogCheckbox, config.disableFog);
+    uiCheckboxSetChecked(fullbrightCheckbox, config.fullbright);
+    uiCheckboxSetChecked(colorizedCheckbox, config.colorized);
+}
+
 static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
@@ -111,10 +127,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     customizeUiButton = uiNewButton("Customize UI");
     buildCustomizer();
-
-    uiSpinboxSetValue(fovSpin, 90);
-    uiSpinboxSetValue(fovScaleSpin, 100);
-    uiSpinboxSetValue(fpsCapSpin, 165);
 
     uiCheckboxOnToggled(makeBorderlessCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_MAKE_BORDERLESS);
     uiCheckboxOnToggled(unlimitFpsCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_UNLIMIT_FPS);
@@ -149,6 +161,9 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiGroupSetChild(graphicsGroup, uiControl(graphicsBox));
     uiGroupSetMargined(graphicsGroup, 1);
+
+    init();
+
     return uiControl(graphicsGroup);
 }
 

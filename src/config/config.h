@@ -5,7 +5,6 @@
 #include <stdbool.h>
 
 typedef struct {
-    // Graphics
     int fov;
     int fovScale;
     int fpsCap;
@@ -15,7 +14,9 @@ typedef struct {
     bool disableFog;
     bool fullbright;
     bool colorized;
-    // Customizer
+} GraphicsConfig;
+
+typedef struct {
     Color scoreBackground;
     Color scorePlayer1;
     Color scorePlayer2;
@@ -32,11 +33,23 @@ typedef struct {
     int warningTransitionsFrequency;
     int warningTransitionsMin;
     int warningTransitionsMax;
+} CustomizerConfig;
+
+typedef struct {
+    GraphicsConfig graphics;
+    CustomizerConfig customizer;    
 } Config;
+
+typedef enum {
+    CONFIG_GRAPHICS = 0,
+    CONFIG_CUSTOMIZER = 1,
+} ConfigType;
 
 Config* configCreate();
 bool configSave(Config *config);
 void configReset(Config *config);
+void configResetGraphics(Config *config);
+void configResetCustomizer(Config *config);
 void configDestroy(Config *config);
 
 #endif // CONFIG_H_
