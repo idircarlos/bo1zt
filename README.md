@@ -1,4 +1,10 @@
+<div style="display:flex;">
+  <img src="https://sm.ign.com/ign_fr/cover/w/world-war-/world-war-z_79k5.jpg" alt="bo1zt icon" width="128">
+</div>
+
 # bo1zt
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/idircarlos/bo1zt)
 
 **Black Ops 1 Zombies Trainer**
 
