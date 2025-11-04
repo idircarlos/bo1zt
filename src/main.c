@@ -10,6 +10,7 @@ static Controller *controller = NULL;
 
 int processRunningThread(void *data) {
     (void)data;
+    bool processExited = false;
     while (true) {
         LOG_INFO("Waiting for game starts...\n");
         while(!controllerIsGameRunning(controller)) {
@@ -20,9 +21,17 @@ int processRunningThread(void *data) {
         }
         LOG_INFO("Game attached! Looking for Game Window\n");
         while (!controllerIsGameWindowAttached(controller)) {
+            // This can happen if the game exits before attaching the window
+            processExited = !controllerIsGameRunning(controller);
+            if (processExited) {
+                LOG_INFO("Game exited before attaching the window\n");
+                controllerDetachGame(controller);
+                break;
+            }
             controllerTryAttachGameWindow(controller);
             threadSleep(200);
         }
+        if (processExited) continue;
         LOG_INFO("Window attached!\n");
         controllerInitTrainerConfig(controller);
         controllerWaitUntilGameCloses(controller);
