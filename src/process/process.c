@@ -16,6 +16,7 @@ typedef struct {
 struct Process {
     HANDLE handle;
     DWORD pid;
+    char executableName[256];
     WindowInfo windowInfo;
 };
 
@@ -36,6 +37,7 @@ Process *processOpen(const char *executableName) {
                 process = (Process*)malloc(sizeof(Process));
                 process->pid = pe.th32ProcessID;
                 process->handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pe.th32ProcessID);
+                strcpy(process->executableName, executableName);
                 WindowInfo windowInfo = { .hwnd = NULL, .windowTitle = NULL, .originalStyle = 0, .originalExStyle = 0, .hasSavedStyle = false };
                 process->windowInfo = windowInfo;
                 break;
@@ -65,6 +67,12 @@ bool processIsRunning(const char *executableName) {
     return found;
 }
 
+bool processExec(const char *executableName) {
+    HINSTANCE result = ShellExecuteA(NULL, "open", executableName,  NULL, NULL, SW_SHOWNORMAL);
+    bool success = (INT_PTR)result > 32; // https://learn.microsoft.com/es-es/windows/win32/api/shellapi/nf-shellapi-shellexecutea
+    return success;
+}
+
 bool processIsWindowAttached(Process *process) {
     return process->windowInfo.hwnd != NULL;
 }
@@ -74,6 +82,27 @@ bool processTryAttachWindow(Process *process, const char *windowTitle) {
     strcpy(process->windowInfo.windowTitle, windowTitle);
     EnumWindows(_EnumWindowsProc, (LPARAM)process);
     return process->windowInfo.hwnd != NULL;
+}
+
+bool processTerminate(Process *process) {
+    if (!processIsRunning(process->executableName)) {
+        LOG_ERROR("Cannot terminate %s (PID %d) since is not running anymore\n", process->executableName, process->pid);
+        return false;
+    }
+    if (processIsWindowAttached(process)) {
+        LOG_INFO("Trying terminating process %s (PID %d) gracefully...\n", process->executableName, process->pid);
+        // Saving these variables since they can be freed/modified by another thread.
+        char *executableName = strdup(process->executableName);
+        DWORD pid = process->pid;
+        PostMessageA(process->windowInfo.hwnd, WM_CLOSE, 0, 0);
+        if (WaitForSingleObject(process->handle, 5000) == WAIT_OBJECT_0) {
+            LOG_INFO("%s (PID %d) gracefully terminated\n", executableName, pid);
+            free(executableName);
+            return true;
+        }
+    }
+    LOG_WARN("Couldn't terminate process %s (PID %d) gracefully. Get /kill -9'ed\n", process->executableName, process->pid);
+    return TerminateProcess(process->handle, 0);
 }
 
 bool processIsBorderless(Process *process) {
@@ -102,7 +131,7 @@ bool processMakeBorderless(Process *process, bool enabled) {
     return _tryMakeNonBorderless(process);
 }
 
-void processWaitUntilCloses(Process *process) {
+void processWaitUntilExits(Process *process) {
     WaitForSingleObject(process->handle, INFINITE);
 }
 

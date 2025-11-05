@@ -1,6 +1,7 @@
 #include "game.h"
 #include "../../logger/logger.h"
 #include "../../state/state.h"
+#include "../../thread/thread.h"
 #include <string.h>
 #include <ui.h>
 #include <stdio.h>
@@ -8,10 +9,14 @@
 
 static const char *RUNNING_TEXT = "Running";
 static const char *NOT_RUNNING_TEXT = "Not running";
+static const char *OPENING_TEXT = "Opening";
+static const char *CLOSING_TEXT = "Closing";
 
 static bool cachedGameAttached = false;
 static bool cachedTimRunning = false;
 static bool cachedResets = 0;
+static bool openingGame = false;
+static bool closingGame = false;
 
 // Controller instance
 static Controller *controller;
@@ -20,6 +25,8 @@ static uiWindow *parent;
 // --- UI Elements ---
 static uiAttribute *attrRed = NULL;
 static uiAttribute *attrGreen = NULL;
+static uiAttribute *attrBlue = NULL;
+static uiAttribute *attrOrange = NULL;
 static uiAttribute *attrBold = NULL;
 
 static uiArea *statusArea = NULL;
@@ -27,6 +34,8 @@ static uiAreaHandler statusHandler;
 static uiAttributedString *statusCurrentText = NULL;
 static uiAttributedString *statusNotRunningText = NULL;
 static uiAttributedString *statusRunningText = NULL;
+static uiAttributedString *statusOpeningText = NULL;
+static uiAttributedString *statusClosingText = NULL;
 
 static uiArea *timArea = NULL;
 static uiAreaHandler timHandler;
@@ -47,8 +56,52 @@ static uiButton *widgetsButton = NULL;
 static uiButton *launchButton = NULL;
 static uiButton *closeButton = NULL;
 
-// Listeners
+// Threads
+static int threadLaunchGame(void *data) {
+    (void)data;
+    LOG_INFO("Launching game from UI\n");
+    uiControlDisable(uiControl(launchButton));
+    openingGame = true;
+    bool success = controllerLaunchGame(controller);
+    openingGame = false;
+    if (!success) {
+        uiMsgBoxError(parent, "Launch game", "Couldn't launch Call of Duty Black Ops 1. Location may have changed or the game is already running.");
+        return 1;
+    }
+    return 0;
+}
 
+static int threadCloseGame(void *data) {
+    (void)data;
+    LOG_INFO("Closing game from UI\n");
+    uiControlDisable(uiControl(closeButton));
+    closingGame = true;
+    bool success = controllerCloseGame(controller);
+    closingGame = false;
+    if (!success) {
+        uiMsgBoxError(parent, "Close game", "Couldn't close Call of Duty Black Ops 1. Game is probably already closed.");
+        return 1;
+    }
+    return 0; 
+}
+
+static int onLaunchGameError(void *data) {
+    (void)data;
+    openingGame = false;
+    uiMsgBoxError(parent, "Launch game", "Couldn't launch Call of Duty Black Ops 1. Probably is either running or stuck at launch in Steam. Try killing the game from Steam or Task Manager.");
+    uiControlEnable(uiControl(launchButton));
+    return 0;
+}
+
+static int onCloseGameError(void *data) {
+    (void)data;
+    openingGame = false;
+    uiMsgBoxError(parent, "Close game", "Couldn't close Call of Duty Black Ops 1. Game is probably already closed or stuck at launch in Steam. Try killing the game from Steam or Task Manager.");
+    uiControlEnable(uiControl(launchButton));
+    return 0;
+}
+
+// Listeners
 static void handlerUnusedDragBroken(uiAreaHandler *a, uiArea *area) {
     (void)a;
     (void)area;
@@ -130,6 +183,28 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     }
 }
 
+static void onLaunchButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    GameConfig config = controllerGetGameConfig(controller);
+    if (strcmp(config.location, "") == 0) {
+        // TODO: Resolve executable location from process running if the game is not in the default Steam path
+        uiMsgBox(parent, "Launch game", "Couldn't find game location. Only for this time, manually open Call of Duty Black Ops 1 to resolve the executable location.");
+        return;
+    }
+    // Run a new thread to avoid blocking the UI while game starts.
+    Thread *gameLauncherThread = threadCreate(threadLaunchGame, NULL);
+    threadCreateWatchdog(gameLauncherThread, 15000, onLaunchGameError, NULL);
+}
+
+static void onCloseButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    // Run a new thread to avoid blocking the UI while game closes.
+    Thread *gameCloserThread = threadCreate(threadCloseGame, NULL);
+    threadCreateWatchdog(gameCloserThread, 15000, onCloseGameError, NULL);
+}
+
 // Builders
 static uiAttributedString *buildInfoAttributedString(const char *str, uiAttribute *colorAttribute, uiAreaHandler *areaHandler, void (*handlerDraw)(uiAreaHandler *, uiArea *, uiAreaDrawParams *)) {
     memset(areaHandler, 0, sizeof(uiAreaHandler));
@@ -152,10 +227,14 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     attrRed = uiNewColorAttribute(181/256.0, 38/256.0, 62/256.0, 1.0);
     attrGreen = uiNewColorAttribute(38/256.0, 181/256.0, 90/256.0, 1.0);
+    attrBlue = uiNewColorAttribute(52/256.0, 88/256.0, 235/256.0, 1.0);
+    attrOrange = uiNewColorAttribute(232/256.0, 142/256.0, 39/256.0, 1.0);
     attrBold = uiNewWeightAttribute(uiTextWeightBold);
 
     statusNotRunningText = buildInfoAttributedString(NOT_RUNNING_TEXT, attrRed, &statusHandler, handlerStatusDraw);
     statusRunningText = buildInfoAttributedString(RUNNING_TEXT, attrGreen, &statusHandler, handlerStatusDraw);
+    statusOpeningText = buildInfoAttributedString(OPENING_TEXT, attrBlue, &statusHandler, handlerStatusDraw);
+    statusClosingText = buildInfoAttributedString(CLOSING_TEXT, attrOrange, &statusHandler, handlerStatusDraw);
     statusCurrentText = statusNotRunningText;
     timNotRunningText = buildInfoAttributedString(NOT_RUNNING_TEXT, attrRed, &timHandler, handlerTimDraw);
     timRunningText = buildInfoAttributedString(RUNNING_TEXT, attrGreen, &timHandler, handlerTimDraw);
@@ -184,8 +263,13 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     launchButton = uiNewButton("Launch Game");
     closeButton = uiNewButton("Close Game");
 
+    uiControlDisable(uiControl(closeButton));
+
     uiCheckboxOnToggled(patchMovementCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_FIX_MOVEMENT_SPEED);
     uiCheckboxOnToggled(showFpsCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_SHOW_FPS);
+
+    uiButtonOnClicked(launchButton, onLaunchButtonClick, NULL);
+    uiButtonOnClicked(closeButton, onCloseButtonClick, NULL);
 
     uiGridAppend(grid, uiControl(statusLabel),              0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(statusArea),               1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
@@ -213,11 +297,24 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 static void update() {
     State *state = controllerGetState(controller);
     bool gameAttached = stateIsGameAttached(state);
-    // Avoid redrawing the area constanly
+    // Avoid redrawing the area and modifying components constantly
     if (gameAttached != cachedGameAttached) {
         statusCurrentText = gameAttached ? statusRunningText : statusNotRunningText;
         uiAreaQueueRedrawAll(statusArea);
         cachedGameAttached = gameAttached;
+        if (gameAttached == false) {
+            uiControlEnable(uiControl(launchButton));
+            uiControlDisable(uiControl(closeButton));
+        } else {
+            uiControlDisable(uiControl(launchButton));
+            uiControlEnable(uiControl(closeButton));
+        }
+    } else if (openingGame) {
+        statusCurrentText = statusOpeningText;
+        uiAreaQueueRedrawAll(statusArea);
+    } else if (closingGame) {
+        statusCurrentText = statusClosingText;
+        uiAreaQueueRedrawAll(statusArea);
     }
     bool timRunning = stateIsTimRunning(state);
     if (timRunning != cachedTimRunning) {

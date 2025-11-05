@@ -10,6 +10,8 @@ typedef struct Controller Controller;
 
 Controller* controllerCreate();
 Process* controllerGetProcess(Controller *controller);
+bool controllerLaunchGame(Controller *controller);
+bool controllerCloseGame(Controller *controller);
 bool controllerIsGameAttached(Controller *controller);
 bool controllerAttachGame(Controller *controller);
 bool controllerDetachGame(Controller *controller);
@@ -33,6 +35,7 @@ State *controllerGetState(Controller *controller);
 void controllerUpdateState(Controller *controller);
 void controllerInitTrainerConfig(Controller *controller);
 void controllerUpdateTrainerConfig(Controller *controller);
+GameConfig controllerGetGameConfig(Controller *controller);
 GraphicsConfig controllerGetGraphicsConfig(Controller *controller);
 CustomizerConfig controllerGetCustomizerConfig(Controller *controller);
 void controllerUpdateConfig(Controller *controller, ConfigType type);

@@ -11,6 +11,7 @@
 #include "../gui/game/game.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #define GAME_EXECUTABLE_NAME "BlackOps.exe"
 #define TIM_EXECUTABLE_NAME "Black Ops TIM.exe"
@@ -53,6 +54,16 @@ bool controllerIsGameAttached(Controller *controller) {
     return controller != NULL && controller->process != NULL;
 }
 
+bool controllerLaunchGame(Controller *controller) {
+    if (!controller) return false;
+    return processExec(controller->config->game.location);
+}
+
+bool controllerCloseGame(Controller *controller) {
+    if (!controller) return false;
+    return processTerminate(controller->process);
+}
+
 bool controllerAttachGame(Controller *controller) {
     if (!controller) return false;
     if (controller->process) {
@@ -89,7 +100,7 @@ bool controllerDetachGame(Controller *controller) {
 void controllerWaitUntilGameCloses(Controller *controller) {
     if (!controller) return;
     if (!controller->process) return;
-    processWaitUntilCloses(controller->process);
+    processWaitUntilExits(controller->process);
 }
 
 bool controllerIsGameWindowAttached(Controller *controller) {
@@ -179,7 +190,7 @@ void controllerUpdateState(Controller *controller) {
         stateGameClear(controller->state);
         return;
     };
-    stateSetGameAttached(controller->state, controllerIsGameAttached(controller));
+    stateSetGameAttached(controller->state, controllerIsGameWindowAttached(controller));
     stateSetZombiesGameActive(controller->state, apiIsZombiesGameRunning(controller->api));
     stateSetGameResets(controller->state, apiGetGameResets(controller->api));
 }
@@ -262,6 +273,10 @@ void controllerUpdateTrainerConfig(Controller *controller) {
     }
 }
 
+GameConfig controllerGetGameConfig(Controller *controller) {
+    return controller->config->game;
+}
+
 GraphicsConfig controllerGetGraphicsConfig(Controller *controller) {
     return controller->config->graphics;
 }
@@ -273,6 +288,10 @@ CustomizerConfig controllerGetCustomizerConfig(Controller *controller) {
 void controllerUpdateConfig(Controller *controller, ConfigType type) {
     if (!controller) return;
     switch (type) {
+        case CONFIG_GAME:
+            strcpy(controller->config->game.hostname, uiGameGetHostname());
+            // We don't update Game:Location since its not directly managed by the UI
+            break;
         case CONFIG_GRAPHICS:
             controller->config->graphics.fov = uiGraphicsGetFov();
             controller->config->graphics.fovScale = uiGraphicsGetFovScale();

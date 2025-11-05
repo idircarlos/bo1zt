@@ -42,7 +42,6 @@ static Color buildColor(uiColorButton *button) {
 }
 
 static void setColorButton(uiColorButton *button, Color color) {
-    LOG_INFO("Setting color button to RGB(%d, %d, %d)\n", color.r, color.g, color.b);
     uiColorButtonSetColor(button, color.r / 255.0, color.g / 255.0, color.b / 255.0, 1.0);
 }
 

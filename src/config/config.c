@@ -3,6 +3,7 @@
 #include <iniparser.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdarg.h>
 #include <errno.h>
 
@@ -42,6 +43,8 @@ static bool configLoad(Config *config) {
         return false;
     }
 
+    strcpy(config->game.hostname, iniparser_getstring(dictionary, "Game:Hostname", config->game.hostname));
+    strcpy(config->game.location, iniparser_getstring(dictionary, "Game:Location", config->game.location));
     config->graphics.fov = iniparser_getint(dictionary, "Graphics:FOV", config->graphics.fov);
     config->graphics.fovScale = iniparser_getint(dictionary, "Graphics:FOVScale", config->graphics.fovScale);
     config->graphics.fpsCap = iniparser_getint(dictionary, "Graphics:FPSCap", config->graphics.fpsCap);
@@ -102,6 +105,9 @@ bool configSave(Config *config) {
     }
 
     char valueBuffer[1024] = "";
+    ret += iniparser_set(dictionary, "Game", NULL);
+    ret += iniparser_set(dictionary, "Game:Hostname", strfmt(valueBuffer, "%s", config->game.hostname));
+    ret += iniparser_set(dictionary, "Game:Location", strfmt(valueBuffer, "%s", config->game.location));
     ret += iniparser_set(dictionary, "Graphics", NULL);
     ret += iniparser_set(dictionary, "Graphics:FOV", strfmt(valueBuffer, "%d", config->graphics.fov));
     ret += iniparser_set(dictionary, "Graphics:FOVScale", strfmt(valueBuffer, "%d", config->graphics.fovScale));
@@ -140,8 +146,16 @@ bool configSave(Config *config) {
 }
 
 void configReset(Config *config) {
+    configResetGame(config);
     configResetGraphics(config);
     configResetCustomizer(config);
+}
+
+void configResetGame(Config *config) {
+    GameConfig game;
+    strcpy(game.hostname, "");
+    strcpy(game.location, "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Call of Duty Black Ops\\BlackOps.exe");
+    config->game = game;
 }
 
 void configResetGraphics(Config *config) {

@@ -8,11 +8,13 @@ typedef struct Process Process;
 
 Process *processOpen(const char *executableName);
 bool processIsRunning(const char *executableName);
+bool processExec(const char *executableName);
 bool processIsWindowAttached(Process *process);
 bool processTryAttachWindow(Process *process, const char *windowTitle);
+bool processTerminate(Process *process);
 bool processIsBorderless(Process *process);
 bool processMakeBorderless(Process *process, bool enabled);
-void processWaitUntilCloses(Process *process);
+void processWaitUntilExits(Process *process);
 void processClose(Process *process);
 bool processRead(Process *process, uint32_t address, void *buffer, size_t size);
 bool processWrite(Process *process, uint32_t address, const void *buffer, size_t size);

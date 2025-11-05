@@ -5,6 +5,11 @@
 #include <stdbool.h>
 
 typedef struct {
+    char hostname[256];
+    char location[256];
+} GameConfig;
+
+typedef struct {
     int fov;
     int fovScale;
     int fpsCap;
@@ -36,18 +41,21 @@ typedef struct {
 } CustomizerConfig;
 
 typedef struct {
+    GameConfig game;
     GraphicsConfig graphics;
-    CustomizerConfig customizer;    
+    CustomizerConfig customizer;
 } Config;
 
 typedef enum {
-    CONFIG_GRAPHICS = 0,
-    CONFIG_CUSTOMIZER = 1,
+    CONFIG_GAME = 0,
+    CONFIG_GRAPHICS,
+    CONFIG_CUSTOMIZER,
 } ConfigType;
 
 Config* configCreate();
 bool configSave(Config *config);
 void configReset(Config *config);
+void configResetGame(Config *config);
 void configResetGraphics(Config *config);
 void configResetCustomizer(Config *config);
 void configDestroy(Config *config);
