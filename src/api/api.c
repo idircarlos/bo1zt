@@ -146,7 +146,7 @@ bool apiIsCheatEnabled(Api *api, CheatName cheatName) {
         case CHEAT_NAME_MAKE_BORDERLESS:
             return _apiGetMakeBorderless(process);
         case CHEAT_NAME_UNLIMIT_FPS:
-            return _apiGetUnlimitFps(process); // TODO: SAVE CURRENT FPS CAP BEFORE ACTIVATING STATE
+            return _apiGetUnlimitFps(process);
         case CHEAT_NAME_DISABLE_HUD:
             return _apiGetDisableHud(process);
         case CHEAT_NAME_DISABLE_FOG:
@@ -206,7 +206,7 @@ bool apiSetCheatEnabled(Api *api, CheatName cheatName, bool enabled) {
         case CHEAT_NAME_MAKE_BORDERLESS:
             return _apiSetMakeBorderless(process, enabled);
         case CHEAT_NAME_UNLIMIT_FPS:
-            return _apiSetUnlimitFps(process, api->controller, enabled); // TODO: SAVE CURRENT FPS CAP BEFORE ACTIVATING STATE
+            return _apiSetUnlimitFps(process, api->controller, enabled);
         case CHEAT_NAME_DISABLE_HUD:
             return _apiSetDisableHud(process, enabled);
         case CHEAT_NAME_DISABLE_FOG:
