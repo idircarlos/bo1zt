@@ -100,6 +100,7 @@ bool processTerminate(Process *process) {
             free(executableName);
             return true;
         }
+        free(executableName);
     }
     LOG_WARN("Couldn't terminate process %s (PID %d) gracefully. Get /kill -9'ed\n", process->executableName, process->pid);
     return TerminateProcess(process->handle, 0);
