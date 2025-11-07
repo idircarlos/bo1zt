@@ -13,10 +13,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define GAME_EXECUTABLE_NAME "BlackOps.exe"
-#define TIM_EXECUTABLE_NAME "Black Ops TIM.exe"
-#define GAME_WINDOW_NAME_PREFIX "Call of Duty"
-
 struct Controller {
     Process *process;
     Api *api;
@@ -287,10 +283,18 @@ CustomizerConfig controllerGetCustomizerConfig(Controller *controller) {
 
 void controllerUpdateConfig(Controller *controller, ConfigType type) {
     if (!controller) return;
+    char *hostname;
+    char *location;
     switch (type) {
         case CONFIG_GAME:
-            strcpy(controller->config->game.hostname, uiGameGetHostname());
-            // We don't update Game:Location since its not directly managed by the UI
+            controller->config->game.fixMovementSpeed = uiGameIsChecked(CHEAT_NAME_FIX_MOVEMENT_SPEED);
+            controller->config->game.showFps = uiGameIsChecked(CHEAT_NAME_SHOW_FPS);
+            hostname = uiGameGetHostname();
+            location = uiGameGetLocation();
+            strcpy(controller->config->game.hostname, hostname);
+            strcpy(controller->config->game.location, location);
+            uiFreeText(hostname);
+            uiFreeText(location);
             break;
         case CONFIG_GRAPHICS:
             controller->config->graphics.fov = uiGraphicsGetFov();

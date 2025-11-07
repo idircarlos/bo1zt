@@ -6,6 +6,10 @@
 #include "../state/state.h"
 #include "../config/config.h"
 
+#define GAME_EXECUTABLE_NAME "BlackOps.exe"
+#define TIM_EXECUTABLE_NAME "Black Ops TIM.exe"
+#define GAME_WINDOW_NAME_PREFIX "Call of Duty"
+
 typedef struct Controller Controller;
 
 Controller* controllerCreate();

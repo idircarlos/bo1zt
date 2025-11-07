@@ -43,6 +43,8 @@ static bool configLoad(Config *config) {
         return false;
     }
 
+    config->graphics.fov = iniparser_getint(dictionary, "Game:FixMovementSpeed", config->game.fixMovementSpeed);
+    config->graphics.fov = iniparser_getint(dictionary, "Game:ShowFPS", config->game.showFps);
     strcpy(config->game.hostname, iniparser_getstring(dictionary, "Game:Hostname", config->game.hostname));
     strcpy(config->game.location, iniparser_getstring(dictionary, "Game:Location", config->game.location));
     config->graphics.fov = iniparser_getint(dictionary, "Graphics:FOV", config->graphics.fov);
@@ -106,6 +108,8 @@ bool configSave(Config *config) {
 
     char valueBuffer[1024] = "";
     ret += iniparser_set(dictionary, "Game", NULL);
+    ret += iniparser_set(dictionary, "Game:FixMovementSpeed", strfmt(valueBuffer, "%d", config->game.fixMovementSpeed));
+    ret += iniparser_set(dictionary, "Game:ShowFPS", strfmt(valueBuffer, "%d", config->game.showFps));
     ret += iniparser_set(dictionary, "Game:Hostname", strfmt(valueBuffer, "%s", config->game.hostname));
     ret += iniparser_set(dictionary, "Game:Location", strfmt(valueBuffer, "%s", config->game.location));
     ret += iniparser_set(dictionary, "Graphics", NULL);
@@ -153,8 +157,11 @@ void configReset(Config *config) {
 
 void configResetGame(Config *config) {
     GameConfig game;
+    game.fixMovementSpeed = false;
+    game.showFps = false;
     strcpy(game.hostname, "");
     strcpy(game.location, "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Call of Duty Black Ops\\BlackOps.exe");
+
     config->game = game;
 }
 

@@ -5,6 +5,8 @@
 #include <stdbool.h>
 
 typedef struct {
+    bool fixMovementSpeed;
+    bool showFps;
     char hostname[256];
     char location[256];
 } GameConfig;

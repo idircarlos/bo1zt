@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define EMPTY_STRING ""
+
 static const char *RUNNING_TEXT = "Running";
 static const char *NOT_RUNNING_TEXT = "Not running";
 static const char *OPENING_TEXT = "Opening";
@@ -56,6 +58,8 @@ static uiButton *widgetsButton = NULL;
 static uiButton *launchButton = NULL;
 static uiButton *closeButton = NULL;
 
+static uiEntry *locationEntry = NULL; // Using this conponent to act as another UI Component but it's purpose is only to update ConfigGame. This componente will be always hidden and not have any parent.
+
 // Threads
 static int threadLaunchGame(void *data) {
     (void)data;
@@ -99,6 +103,18 @@ static int onCloseGameError(void *data) {
     uiMsgBoxError(parent, "Close game", "Couldn't close Call of Duty Black Ops 1. Game is probably already closed or stuck at launch in Steam. Try killing the game from Steam or Task Manager.");
     uiControlEnable(uiControl(launchButton));
     return 0;
+}
+
+// Aux
+static bool isValidExecutableName(char *gamePath) {
+    size_t gamePathLen = strlen(gamePath);
+    size_t gameExecLen = strlen(GAME_EXECUTABLE_NAME);
+
+    if (gameExecLen > gamePathLen) {
+        return false;
+    }
+
+    return strcmp(gamePath + gamePathLen - gameExecLen, GAME_EXECUTABLE_NAME) == 0;
 }
 
 // Listeners
@@ -181,6 +197,13 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
         fprintf(stderr, "Failed to set Game cheat %d to %d\n", cheatName, enabled);
         uiCheckboxSetChecked(checkbox, !enabled); // Revert checkbox state
     }
+    controllerUpdateConfig(controller, CONFIG_GAME);
+}
+
+static void onEntryChange(uiEntry *entry, void *data) {
+    (void)entry;
+    (void)data;
+    controllerUpdateConfig(controller, CONFIG_GAME);
 }
 
 static void onLaunchButtonClick(uiButton *button, void *data) {
@@ -190,7 +213,17 @@ static void onLaunchButtonClick(uiButton *button, void *data) {
     if (strcmp(config.location, "") == 0) {
         // TODO: Resolve executable location from process running if the game is not in the default Steam path
         uiMsgBox(parent, "Launch game", "Couldn't find game location. Only for this time, manually open Call of Duty Black Ops 1 to resolve the executable location.");
-        return;
+        char *gamePath = uiOpenFile(parent);
+        if (!gamePath) {
+            return;
+        } else if (!isValidExecutableName(gamePath)) {
+            uiFreeText(gamePath);
+            uiMsgBoxError(parent, "Launch game", "This seems to not be Black Ops 1 executable! Make sure to select the correct executable \"BlackOps.exe\".");
+            return;
+        }
+        uiEntrySetText(locationEntry, gamePath);
+        controllerUpdateConfig(controller, CONFIG_GAME);
+        uiFreeText(gamePath);
     }
     // Run a new thread to avoid blocking the UI while game starts.
     Thread *gameLauncherThread = threadCreate(threadLaunchGame, NULL);
@@ -219,6 +252,14 @@ static uiAttributedString *buildInfoAttributedString(const char *str, uiAttribut
     uiAttributedStringSetAttribute(attributedString, colorAttribute, 0, len);
     uiAttributedStringSetAttribute(attributedString, attrBold, 0, len);
     return attributedString;
+}
+
+static void init() {
+    GameConfig config = controllerGetGameConfig(controller);
+    uiCheckboxSetChecked(patchMovementCheckbox, config.fixMovementSpeed);
+    uiCheckboxSetChecked(showFpsCheckbox, config.showFps);
+    uiEntrySetText(hostnameEntry, config.hostname);
+    uiEntrySetText(locationEntry, config.location);
 }
 
 static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
@@ -262,11 +303,15 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     widgetsButton = uiNewButton("Add Widgets");
     launchButton = uiNewButton("Launch Game");
     closeButton = uiNewButton("Close Game");
+    locationEntry = uiNewEntry();
 
     uiControlDisable(uiControl(closeButton));
+    uiControlHide(uiControl(locationEntry));
 
     uiCheckboxOnToggled(patchMovementCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_FIX_MOVEMENT_SPEED);
     uiCheckboxOnToggled(showFpsCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_SHOW_FPS);
+
+    uiEntryOnChanged(hostnameEntry, onEntryChange, NULL);
 
     uiButtonOnClicked(launchButton, onLaunchButtonClick, NULL);
     uiButtonOnClicked(closeButton, onCloseButtonClick, NULL);
@@ -290,6 +335,8 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiGroupSetChild(gameGroup, uiControl(gameBox));
     uiGroupSetMargined(gameGroup, 1);
+    
+    init();
 
     return uiControl(gameGroup);
 }
@@ -349,6 +396,10 @@ bool uiGameIsChecked(CheatName cheat) {
             fprintf(stderr, "Unknown cheat %d\n", cheat);
             return false;
     }
+}
+
+char *uiGameGetLocation() {
+    return uiEntryText(locationEntry);
 }
 
 char *uiGameGetHostname() {

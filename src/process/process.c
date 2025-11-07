@@ -68,6 +68,7 @@ bool processIsRunning(const char *executableName) {
 }
 
 bool processExec(const char *executableName) {
+    LOG_INFO("Trying opening %s\n", executableName);
     HINSTANCE result = ShellExecuteA(NULL, "open", executableName,  NULL, NULL, SW_SHOWNORMAL);
     bool success = (INT_PTR)result > 32; // https://learn.microsoft.com/es-es/windows/win32/api/shellapi/nf-shellapi-shellexecutea
     return success;
