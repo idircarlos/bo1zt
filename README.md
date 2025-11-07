@@ -23,7 +23,7 @@ This tool is being created just for fun while learning reverse engineering funda
 |                 | ✅ Fast Gameplay        | ✅ Colorized mode            | ✅ TIM Compatibility                    |
 |                 | ✅ Third Person         | ✅ Customize UI              | ⬜ Setup Camos                          |
 |                 | ✅ No Shellshock        |                             | ⬜ Add Floating Widgets                 |
-|                 | ✅ Increase Knife Range |                             | ⬜ Open/Close Game                      |
+|                 | ✅ Increase Knife Range |                             | ✅ Open/Close Game                      |
 |                 | ✅ Small Crosshair      |                             | ✅ Persisted Settings                       |
 
 ## Requirements
