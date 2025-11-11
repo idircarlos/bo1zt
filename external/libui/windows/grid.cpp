@@ -500,6 +500,7 @@ static void uiGridMinimumSize(uiWindowsControl *c, int *width, int *height)
 	// and that's it; just account for padding
 	*width = colwidth + (ld->nVisibleColumns - 1) * xpadding;
 	*height = rowheight + (ld->nVisibleRows - 1) * ypadding;
+	delete ld;
 }
 
 static void uiGridMinimumSizeChanged(uiWindowsControl *c)
