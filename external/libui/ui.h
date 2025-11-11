@@ -4066,11 +4066,11 @@ _UI_ENUM(SetIconErrorCode) {
  * Sets the window icon.
  *
  * @param w uiWindow instance.
- * @param resourceName Resource of icon file.
+ * @param resourceId Resource ID of icon.
  * @returns SetIconErrorCode
  * @memberof uiWindow
  */
-_UI_EXTERN SetIconErrorCode uiWindowSetIcon(uiWindow *w, const char *resourceName);
+_UI_EXTERN SetIconErrorCode uiWindowSetIcon(uiWindow *w, int resourceId);
 
 /**
  * Gets screen resolution.

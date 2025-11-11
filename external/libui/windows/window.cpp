@@ -310,26 +310,24 @@ void uiWindowSetTitle(uiWindow *w, const char *title)
 	// don't queue resize; the caption isn't part of what affects layout and sizing of the client area (it'll be ellipsized if too long)
 }
 
-SetIconErrorCode uiWindowSetIcon(uiWindow *w, const char *resourceName)
+SetIconErrorCode uiWindowSetIcon(uiWindow *w, int resourceId)
 {
 	if (w->hwnd == NULL)
 	{
 		return WINDOW_NOT_FOUND;
 	}
-	size_t size = strlen(resourceName) + 1;
-	wchar_t *resource = static_cast<wchar_t *>(malloc(size * sizeof(wchar_t)));
-	mbstowcs(resource, resourceName, size);
-	HICON hIcon = LoadIconW(GetModuleHandleW(NULL), resource);
+	
+	HICON hIcon = LoadIconW(GetModuleHandleW(NULL), MAKEINTRESOURCEW(resourceId));
 	if (hIcon == NULL)
 	{
-		free(resource);
 		return ICON_NOT_FOUND;
 	}
+	
 	// Set the application icon
 	SendMessageW(w->hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-	// Cleanup
-	free(resource);
-	DestroyIcon(hIcon);
+	SendMessageW(w->hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+	
+	// Don't destroy the icon. Windows handles this
 	return OK;
 }
 
