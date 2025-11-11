@@ -2,11 +2,21 @@
 #define COMMON_H_
 
 #include <stdint.h>
+#include <stdbool.h>
+
+#define COLOR_WHITE colorCreate(255, 255, 255, 255)
 
 typedef struct {
-    uint8_t r, g, b;
+    uint8_t r, g, b, a;
 } Color;
 
-Color colorCreate(uint8_t r, uint8_t g, uint8_t b);
+Color colorCreate(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+typedef uint32_t Flags;
+
+void flagsAdd(Flags *flags, Flags mask);
+void flagsRemove(Flags *flags, Flags mask);
+bool flagsContains(Flags flags, Flags mask);
+void flagsClear(Flags *flags);
 
 #endif // COMMON_H_
