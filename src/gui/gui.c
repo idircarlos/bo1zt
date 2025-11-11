@@ -85,10 +85,10 @@ static uiControl* buildWindowContent() {
     
     // UI Groups
     uiControl *playerGroup = playerControlGroup->build(controller, window);
-    uiControl *roundGroup = roundControlGroup->build(controller, window);
+    uiControl *cheatGroup = cheatsControlGroup->build(controller, window);
     uiControl *weaponsGroup = weaponsControlGroup->build(controller, window);
     uiControl *teleportGroup = teleportControlGroup->build(controller, window);
-    uiControl *cheatGroup = cheatsControlGroup->build(controller, window);
+    uiControl *roundGroup = roundControlGroup->build(controller, window);
     uiControl *graphicsGroup = graphicsControlGroup->build(controller, window);
     uiControl *gameGroup = gameControlGroup->build(controller, window);
 
