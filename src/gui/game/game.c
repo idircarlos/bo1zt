@@ -2,6 +2,7 @@
 #include "../../logger/logger.h"
 #include "../../state/state.h"
 #include "../../thread/thread.h"
+#include "../../../res/resource_ids.h"
 #include <string.h>
 #include <ui.h>
 #include <stdio.h>
@@ -16,7 +17,7 @@ static const char *CLOSING_TEXT = "Closing";
 
 static bool cachedGameAttached = false;
 static bool cachedTimRunning = false;
-static bool cachedResets = 0;
+static int cachedResets = 0;
 static bool openingGame = false;
 static bool closingGame = false;
 

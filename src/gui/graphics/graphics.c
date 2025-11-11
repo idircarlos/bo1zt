@@ -1,6 +1,7 @@
 #include "graphics.h"
 #include "customizer/customizer.h"
 #include "../../logger/logger.h"
+#include "../../../res/resource_ids.h"
 #include <stdio.h>
 
 #define UI_CUSTOMIZER_CONTROL_GROUP_SIZE 1
@@ -73,7 +74,7 @@ static void onButtonCustomizeUiClick(uiButton *button, void *data) {
     (void)data;
     uiWindowSetResizeable(customizerWindow, false);
     uiWindowSetMargined(customizerWindow, true);
-    uiWindowSetIcon(customizerWindow, "IDI_ICON1");
+    uiWindowSetIcon(customizerWindow, IDI_ICON1);
     uiControlShow(uiControl(customizerWindow));
 }
 
