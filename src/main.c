@@ -45,7 +45,6 @@ int updateGameThread(void *data) {
     (void)data;
     while (true) {
         controllerUpdateState(controller);
-        guiUpdate();
         controllerUpdateTrainerConfig(controller);
         threadSleep(1000);
     }
