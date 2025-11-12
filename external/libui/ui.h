@@ -4110,6 +4110,24 @@ _UI_EXTERN void uiEnableSpinbox(uiSpinbox *s);
  */
 _UI_EXTERN void uiDisableSpinbox(uiSpinbox *s);
 
+
+/**
+ * Message box dialog window.
+ *
+ * A message box displayed in a new window indicating a common message.
+ *
+ * @param parent Parent window.
+ * @param title Dialog window title text.\n
+ *              A valid, `NUL` terminated UTF-8 string.\n
+ *              Data is copied internally. Ownership is not transferred.
+ * @param description Dialog message text.\n
+ *                    A valid, `NUL` terminated UTF-8 string.\n
+ *                    Data is copied internally. Ownership is not transferred.
+ * @returns 1 if OK is pressed, 0 if Cancel or MsgBox was closed.
+ * @ingroup dialogWindow
+ */
+_UI_EXTERN int uiMsgBoxOkCancel(uiWindow *parent, const char *title, const char *description);
+
 #ifdef __cplusplus
 }
 #endif

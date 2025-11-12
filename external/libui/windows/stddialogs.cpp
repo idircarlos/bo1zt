@@ -133,8 +133,19 @@ static void msgbox(HWND parent, const char *title, const char *description, TASK
 void uiMsgBox(uiWindow *parent, const char *title, const char *description)
 {
 	disableAllWindowsExcept(parent);
-	msgbox(windowHWND(parent), title, description, TDCBF_OK_BUTTON, NULL);
+	msgbox(windowHWND(parent), title, description, TDCBF_OK_BUTTON, TD_INFORMATION_ICON);
 	enableAllWindowsExcept(parent);
+}
+
+int uiMsgBoxOkCancel(uiWindow *parent, const char *title, const char *description)
+{
+	int result;
+	disableAllWindowsExcept(parent);
+	HRESULT hr = TaskDialog(windowHWND(parent), NULL, NULL, toUTF16(title), toUTF16(description), TDCBF_OK_BUTTON | TDCBF_CANCEL_BUTTON, TD_INFORMATION_ICON, &result);
+	if (hr != S_OK)
+		logHRESULT(L"error showing task dialog", hr);
+	enableAllWindowsExcept(parent);
+	return result == IDOK ? 1 : 0;
 }
 
 void uiMsgBoxError(uiWindow *parent, const char *title, const char *description)
