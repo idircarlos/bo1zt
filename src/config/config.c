@@ -9,8 +9,8 @@
 
 #define INI_FILE_NAME "BO1ZT.ini"
 #define STRFMT_BUFF_SIZE 1024
-#define COLOR_INI_FMT "Color(%hhu,%hhu,%hhu)"
-#define COLOR_INI_DEFAULT "Color(111,111,111)"
+#define COLOR_INI_FMT "Color(%hhu,%hhu,%hhu,%hhu)"
+#define COLOR_INI_DEFAULT "Color(111,111,111,111)"
 
 // Aux
 static inline char *strfmt(char *buff, const char *fmt, ...) {
@@ -22,11 +22,11 @@ static inline char *strfmt(char *buff, const char *fmt, ...) {
 }
 
 static Color colorFromString(const char *colorString) {
-    uint8_t r = 255, g = 255, b = 255;
-    if (sscanf(colorString, "Color(%hhu,%hhu,%hhu)", &r, &g, &b) != 3) {
+    uint8_t r = 255, g = 255, b = 255, a = 255;
+    if (sscanf(colorString, "Color(%hhu,%hhu,%hhu,%hhu)", &r, &g, &b, &a) != 4) {
         LOG_ERROR("Invalid color string: %s\n", colorString);
     }
-    return colorCreate(r, g, b);
+    return colorCreate(r, g, b, 255);
 }
 
 static bool iniFileExists() {
@@ -123,17 +123,17 @@ bool configSave(Config *config) {
     ret += iniparser_set(dictionary, "Graphics:Fullbright", strfmt(valueBuffer, "%d", config->graphics.fullbright));
     ret += iniparser_set(dictionary, "Graphics:Colorized", strfmt(valueBuffer, "%d", config->graphics.colorized));
     ret += iniparser_set(dictionary, "Customizer", NULL);
-    ret += iniparser_set(dictionary, "Customizer:ScoreBackground", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scoreBackground.r, config->customizer.scoreBackground.g, config->customizer.scoreBackground.b));
-    ret += iniparser_set(dictionary, "Customizer:ScorePlayer1", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer1.r, config->customizer.scorePlayer1.g, config->customizer.scorePlayer1.b));
-    ret += iniparser_set(dictionary, "Customizer:ScorePlayer2", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer2.r, config->customizer.scorePlayer2.g, config->customizer.scorePlayer2.b));
-    ret += iniparser_set(dictionary, "Customizer:ScorePlayer3", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer3.r, config->customizer.scorePlayer3.g, config->customizer.scorePlayer3.b));
-    ret += iniparser_set(dictionary, "Customizer:ScorePlayer4", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer4.r, config->customizer.scorePlayer4.g, config->customizer.scorePlayer4.b));
-    ret += iniparser_set(dictionary, "Customizer:ReloadWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.reloadWarnPrimary.r, config->customizer.reloadWarnPrimary.g, config->customizer.reloadWarnPrimary.b));
-    ret += iniparser_set(dictionary, "Customizer:ReloadWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.reloadWarnSecondary.r, config->customizer.reloadWarnSecondary.g, config->customizer.reloadWarnSecondary.b));
-    ret += iniparser_set(dictionary, "Customizer:LowAmmoWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.lowAmmoWarnPrimary.r, config->customizer.lowAmmoWarnPrimary.g, config->customizer.lowAmmoWarnPrimary.b));
-    ret += iniparser_set(dictionary, "Customizer:LowAmmoWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.lowAmmoWarnSecondary.r, config->customizer.lowAmmoWarnSecondary.g, config->customizer.lowAmmoWarnSecondary.b));
-    ret += iniparser_set(dictionary, "Customizer:NoAmmoWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.noAmmoWarnPrimary.r, config->customizer.noAmmoWarnPrimary.g, config->customizer.noAmmoWarnPrimary.b));
-    ret += iniparser_set(dictionary, "Customizer:NoAmmoWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.noAmmoWarnSecondary.r, config->customizer.noAmmoWarnSecondary.g, config->customizer.noAmmoWarnSecondary.b));
+    ret += iniparser_set(dictionary, "Customizer:ScoreBackground", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scoreBackground.r, config->customizer.scoreBackground.g, config->customizer.scoreBackground.b, config->customizer.scoreBackground.a));
+    ret += iniparser_set(dictionary, "Customizer:ScorePlayer1", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer1.r, config->customizer.scorePlayer1.g, config->customizer.scorePlayer1.b, config->customizer.scorePlayer1.a));
+    ret += iniparser_set(dictionary, "Customizer:ScorePlayer2", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer2.r, config->customizer.scorePlayer2.g, config->customizer.scorePlayer2.b, config->customizer.scorePlayer2.a));
+    ret += iniparser_set(dictionary, "Customizer:ScorePlayer3", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer3.r, config->customizer.scorePlayer3.g, config->customizer.scorePlayer3.b, config->customizer.scorePlayer3.a));
+    ret += iniparser_set(dictionary, "Customizer:ScorePlayer4", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.scorePlayer4.r, config->customizer.scorePlayer4.g, config->customizer.scorePlayer4.b, config->customizer.scorePlayer4.a));
+    ret += iniparser_set(dictionary, "Customizer:ReloadWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.reloadWarnPrimary.r, config->customizer.reloadWarnPrimary.g, config->customizer.reloadWarnPrimary.b, config->customizer.reloadWarnPrimary.a));
+    ret += iniparser_set(dictionary, "Customizer:ReloadWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.reloadWarnSecondary.r, config->customizer.reloadWarnSecondary.g, config->customizer.reloadWarnSecondary.b, config->customizer.reloadWarnSecondary.a));
+    ret += iniparser_set(dictionary, "Customizer:LowAmmoWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.lowAmmoWarnPrimary.r, config->customizer.lowAmmoWarnPrimary.g, config->customizer.lowAmmoWarnPrimary.b, config->customizer.lowAmmoWarnPrimary.a));
+    ret += iniparser_set(dictionary, "Customizer:LowAmmoWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.lowAmmoWarnSecondary.r, config->customizer.lowAmmoWarnSecondary.g, config->customizer.lowAmmoWarnSecondary.b, config->customizer.lowAmmoWarnSecondary.a));
+    ret += iniparser_set(dictionary, "Customizer:NoAmmoWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.noAmmoWarnPrimary.r, config->customizer.noAmmoWarnPrimary.g, config->customizer.noAmmoWarnPrimary.b, config->customizer.noAmmoWarnPrimary.a));
+    ret += iniparser_set(dictionary, "Customizer:NoAmmoWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.noAmmoWarnSecondary.r, config->customizer.noAmmoWarnSecondary.g, config->customizer.noAmmoWarnSecondary.b, config->customizer.noAmmoWarnSecondary.a));
     ret += iniparser_set(dictionary, "Customizer:ScoreboardTransparency", strfmt(valueBuffer, "%d", config->customizer.scoreboardTransparency));
     ret += iniparser_set(dictionary, "Customizer:PointsTransparency", strfmt(valueBuffer, "%d", config->customizer.pointsTransparency));
     ret += iniparser_set(dictionary, "Customizer:WarningTransitionsFrequency", strfmt(valueBuffer, "%d", config->customizer.warningTransitionsFrequency));
@@ -183,17 +183,17 @@ void configResetGraphics(Config *config) {
 
 void configResetCustomizer(Config *config) {
     CustomizerConfig customizer = {
-        .scoreBackground = colorCreate(255, 255, 255),
-        .scorePlayer1 = colorCreate(255, 255, 255),
-        .scorePlayer2 = colorCreate(255, 255, 255),
-        .scorePlayer3 = colorCreate(255, 255, 255),
-        .scorePlayer4 = colorCreate(255, 255, 255),
-        .reloadWarnPrimary = colorCreate(255, 0, 0),
-        .reloadWarnSecondary = colorCreate(255, 0, 0),
-        .lowAmmoWarnPrimary = colorCreate(255, 165, 0),
-        .lowAmmoWarnSecondary = colorCreate(55, 165, 0),
-        .noAmmoWarnPrimary = colorCreate(255, 0, 0),
-        .noAmmoWarnSecondary = colorCreate(255, 0, 0),
+        .scoreBackground = colorCreate(255, 255, 255, 255),
+        .scorePlayer1 = colorCreate(255, 255, 255, 255),
+        .scorePlayer2 = colorCreate(255, 255, 255, 255),
+        .scorePlayer3 = colorCreate(255, 255, 255, 255),
+        .scorePlayer4 = colorCreate(255, 255, 255, 255),
+        .reloadWarnPrimary = colorCreate(255, 0, 0, 255),
+        .reloadWarnSecondary = colorCreate(255, 0, 0, 255),
+        .lowAmmoWarnPrimary = colorCreate(255, 165, 0, 255),
+        .lowAmmoWarnSecondary = colorCreate(55, 165, 0, 255),
+        .noAmmoWarnPrimary = colorCreate(255, 0, 0, 255),
+        .noAmmoWarnSecondary = colorCreate(255, 0, 0, 255),
         .scoreboardTransparency = 100,
         .pointsTransparency = 100,
         .warningTransitionsFrequency = 5,
