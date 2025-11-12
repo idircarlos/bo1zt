@@ -1,4 +1,5 @@
 #include "widgets.h"
+#include "../../../common/common.h"
 #include "../../../widget/timer/timer.h"
 #include "../../../widget/velocity/velocity.h"
 #include "../../../widget/fonts.h"
@@ -8,6 +9,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#define N_WIDGETS 3
+#define WIDGET_TIMER "Timer"
+#define WIDGET_ROUND_TIMER "Round Timer"
+#define WIDGET_VELOCITY "Velocity"
 
 // Widget types for the table
 typedef enum {
