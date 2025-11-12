@@ -1,6 +1,7 @@
 #include "customizer.h"
 #include "../../../logger/logger.h"
 #include "../../../config/config.h"
+#include "../../gui_internal.h"
 #include <ui.h>
 
 // Controller instance
@@ -32,18 +33,6 @@ static uiButton *btnReset;
 static uiButton *btnSave;
 
 static void init();
-
-// Aux
-static Color buildColor(uiColorButton *button) {
-    double r, g, b, a;
-    uiColorButtonColor(button, &r, &g, &b, &a);
-    Color color = colorCreate(r*255, g*255, b*255, a*255);
-    return color;
-}
-
-static void setColorButton(uiColorButton *button, Color color) {
-    uiColorButtonSetColor(button, color.r / 255.0, color.g / 255.0, color.b / 255.0, 1.0);
-}
 
 // Handlers
 static void onColorButtonChange(uiColorButton *button, void *data) {

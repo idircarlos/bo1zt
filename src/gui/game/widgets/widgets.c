@@ -1,4 +1,5 @@
 #include "widgets.h"
+#include "../../gui_internal.h"
 #include "../../../common/common.h"
 #include "../../../widget/timer/timer.h"
 #include "../../../widget/velocity/velocity.h"
@@ -130,18 +131,6 @@ static void tableModelSetCellValue(uiTableModelHandler *mh, uiTableModel *m, int
         widgets[row]->status.enabled = checked;
         checked ? widgetShow(widgets[row]->widget) : widgetHide(widgets[row]->widget);
     }
-}
-
-// Aux
-static Color buildColor(uiColorButton *button) {
-    double r, g, b, a;
-    uiColorButtonColor(button, &r, &g, &b, &a);
-    Color color = colorCreate(r*255, g*255, b*255, a*255);
-    return color;
-}
-
-static void setColorButton(uiColorButton *button, Color color) {
-    uiColorButtonSetColor(button, color.r / 255.0, color.g / 255.0, color.b / 255.0, 1.0);
 }
 
 static void hintHandlerDragBroken(uiAreaHandler *a, uiArea *area) { (void)a; (void)area; }
