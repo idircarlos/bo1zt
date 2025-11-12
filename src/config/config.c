@@ -1,5 +1,6 @@
 #include "config.h"
 #include "../logger/logger.h"
+#include "../gui/game/widgets/widgets.h"
 #include <iniparser.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -72,6 +73,20 @@ static bool configLoad(Config *config) {
     config->customizer.warningTransitionsFrequency = iniparser_getint(dictionary, "Customizer:WarningTransitionsFrequency", config->customizer.warningTransitionsFrequency);
     config->customizer.warningTransitionsMin = iniparser_getint(dictionary, "Customizer:WarningTransitionsMin", config->customizer.warningTransitionsMin);
     config->customizer.warningTransitionsMax = iniparser_getint(dictionary, "Customizer:WarningTransitionsMax", config->customizer.warningTransitionsMax);
+    for (int i = 0; i < N_CONFIG_WIDGETS; i++) {
+        char keyEnabled[128];
+        char keyFont[128];
+        char keyTextColor[128];
+        char keyHideOnDefault[128];
+        snprintf(keyEnabled, sizeof(keyEnabled), "Widgets:%sEnabled", uiWidgetsGetName(i));
+        snprintf(keyFont, sizeof(keyFont), "Widgets:%sFont", uiWidgetsGetName(i));
+        snprintf(keyTextColor, sizeof(keyTextColor), "Widgets:%sTextColor", uiWidgetsGetName(i));
+        snprintf(keyHideOnDefault, sizeof(keyHideOnDefault), "Widgets:%sHideOnDefault", uiWidgetsGetName(i));
+        config->widgets[i].enabled = iniparser_getboolean(dictionary, keyEnabled, false);
+        strcpy(config->widgets[i].font, iniparser_getstring(dictionary, keyFont, "Digital-7 Mono"));
+        config->widgets[i].textColor = colorFromString(iniparser_getstring(dictionary, keyTextColor, COLOR_INI_DEFAULT));
+        config->widgets[i].hideOnDefault = iniparser_getboolean(dictionary, keyHideOnDefault, false);
+    }
 
     iniparser_freedict(dictionary);
     return true;
@@ -139,6 +154,22 @@ bool configSave(Config *config) {
     ret += iniparser_set(dictionary, "Customizer:WarningTransitionsFrequency", strfmt(valueBuffer, "%d", config->customizer.warningTransitionsFrequency));
     ret += iniparser_set(dictionary, "Customizer:WarningTransitionsMin", strfmt(valueBuffer, "%d", config->customizer.warningTransitionsMin));
     ret += iniparser_set(dictionary, "Customizer:WarningTransitionsMax", strfmt(valueBuffer, "%d", config->customizer.warningTransitionsMax));
+    ret += iniparser_set(dictionary, "Widgets", NULL);
+    for (int i = 0; i < N_CONFIG_WIDGETS; i++) {
+        char keyEnabled[128];
+        char keyFont[128];
+        char keyTextColor[128];
+        char keyHideOnDefault[128];
+        snprintf(keyEnabled, sizeof(keyEnabled), "Widgets:%sEnabled", uiWidgetsGetName(i));
+        snprintf(keyFont, sizeof(keyFont), "Widgets:%sFont", uiWidgetsGetName(i));
+        snprintf(keyTextColor, sizeof(keyTextColor), "Widgets:%sTextColor", uiWidgetsGetName(i));
+        snprintf(keyHideOnDefault, sizeof(keyHideOnDefault), "Widgets:%sHideOnDefault", uiWidgetsGetName(i));
+        ret += iniparser_set(dictionary, keyEnabled, strfmt(valueBuffer, "%d", config->widgets[i].enabled));
+        ret += iniparser_set(dictionary, keyFont, strfmt(valueBuffer, "%s", config->widgets[i].font));
+        ret += iniparser_set(dictionary, keyTextColor, strfmt(valueBuffer, COLOR_INI_FMT, config->widgets[i].textColor.r, config->widgets[i].textColor.g, config->widgets[i].textColor.b, config->widgets[i].textColor.a));
+        ret += iniparser_set(dictionary, keyHideOnDefault, strfmt(valueBuffer, "%d", config->widgets[i].hideOnDefault));
+    }
+
     if (ret < 0) {
         LOG_ERROR("Error setting ini values\n");
         return false;
@@ -146,13 +177,16 @@ bool configSave(Config *config) {
     iniparser_dump_ini(dictionary, ini);
     dictionary_del(dictionary);
     fclose(ini);
-    return false;
+    return true;
 }
 
 void configReset(Config *config) {
     configResetGame(config);
     configResetGraphics(config);
     configResetCustomizer(config);
+    for (int i = 0; i < N_CONFIG_WIDGETS; i++) {
+        configResetWidget(config, i);
+    }
 }
 
 void configResetGame(Config *config) {
@@ -169,7 +203,7 @@ void configResetGraphics(Config *config) {
     GraphicsConfig graphics = {
         .fov = 90,
         .fovScale = 100,
-        .fpsCap = 60,
+        .fpsCap = 185,
         .borderless = false,
         .unlimitFps = false,
         .disableHud = false,
@@ -202,6 +236,15 @@ void configResetCustomizer(Config *config) {
     };
 
     config->customizer = customizer;
+}
+
+void configResetWidget(Config *config, int index) {
+    WidgetConfig widget;
+    widget.enabled = false;
+    strcpy(widget.font, "Digital-7 Mono");
+    widget.textColor = colorCreate(255, 255, 255, 255);
+    widget.hideOnDefault = false;
+    config->widgets[index] = widget;
 }
 
 void configDestroy(Config *config) {

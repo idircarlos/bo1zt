@@ -4,5 +4,12 @@
 #include "../../gui.h"
 
 UIControlGroup *uiWidgetsBuildControlGroup();
+const char *uiWidgetsGetName(int index);
+bool uiWidgetsIsEnabled(int index);
+const char *uiWidgetsGetFont(int index);
+Color uiWidgetsGetTextColor(int index);
+bool uiWidgetsIsHideOnDefaultChecked(int index);
+bool uiWidgetsIsSavable();
+void uiWidgetsReset();
 
 #endif // UI_WIDGETS_H_

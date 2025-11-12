@@ -4,6 +4,8 @@
 #include "../common/common.h"
 #include <stdbool.h>
 
+#define N_CONFIG_WIDGETS 3
+
 typedef struct {
     bool fixMovementSpeed;
     bool showFps;
@@ -43,15 +45,24 @@ typedef struct {
 } CustomizerConfig;
 
 typedef struct {
+    bool enabled;
+    char font[256];
+    Color textColor;
+    bool hideOnDefault;
+} WidgetConfig;
+
+typedef struct {
     GameConfig game;
     GraphicsConfig graphics;
     CustomizerConfig customizer;
+    WidgetConfig widgets[N_CONFIG_WIDGETS];
 } Config;
 
 typedef enum {
     CONFIG_GAME = 0,
     CONFIG_GRAPHICS,
     CONFIG_CUSTOMIZER,
+    CONFIG_WIDGETS,
 } ConfigType;
 
 Config* configCreate();
@@ -60,6 +71,7 @@ void configReset(Config *config);
 void configResetGame(Config *config);
 void configResetGraphics(Config *config);
 void configResetCustomizer(Config *config);
+void configResetWidget(Config *config, int index);
 void configDestroy(Config *config);
 
 #endif // CONFIG_H_

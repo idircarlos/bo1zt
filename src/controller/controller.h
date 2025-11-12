@@ -42,8 +42,10 @@ void controllerUpdateTrainerConfig(Controller *controller);
 GameConfig controllerGetGameConfig(Controller *controller);
 GraphicsConfig controllerGetGraphicsConfig(Controller *controller);
 CustomizerConfig controllerGetCustomizerConfig(Controller *controller);
+WidgetConfig controllerGetWidgetConfig(Controller *controller, int index);
 void controllerUpdateConfig(Controller *controller, ConfigType type);
 void controllerResetConfig(Controller *controller, ConfigType type);
+void controllerWidgetResetConfig(Controller *controller, int index);
 void controllerDestroy(Controller *controller);
 
 #endif // CONTROLLER_H_

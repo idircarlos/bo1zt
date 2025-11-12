@@ -9,6 +9,7 @@
 #include "../gui/graphics/graphics.h"
 #include "../gui/graphics/customizer/customizer.h"
 #include "../gui/game/game.h"
+#include "../gui/game/widgets/widgets.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -281,6 +282,10 @@ CustomizerConfig controllerGetCustomizerConfig(Controller *controller) {
     return controller->config->customizer;
 }
 
+WidgetConfig controllerGetWidgetConfig(Controller *controller, int index) {
+    return controller->config->widgets[index];
+}
+
 void controllerUpdateConfig(Controller *controller, ConfigType type) {
     if (!controller) return;
     char *hostname;
@@ -325,10 +330,29 @@ void controllerUpdateConfig(Controller *controller, ConfigType type) {
             controller->config->customizer.warningTransitionsMin = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN);
             controller->config->customizer.warningTransitionsMax = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX);
             break;
+        case CONFIG_WIDGETS:
+            for (int i = 0; i < N_CONFIG_WIDGETS; i++) {
+                controller->config->widgets[i].enabled = uiWidgetsIsEnabled(i);
+                const char *font = uiWidgetsGetFont(i);
+                strcpy(controller->config->widgets[i].font, font);
+                controller->config->widgets[i].textColor = uiWidgetsGetTextColor(i);
+                controller->config->widgets[i].hideOnDefault = uiWidgetsIsHideOnDefaultChecked(i);   
+            }
+            break;
         default:
             LOG_ERROR("Unknown Config Type %d\n", type);
             return;
     }
+    configSave(controller->config);
+}
+
+void controllerWidgetUpdateConfig(Controller *controller, int index) {
+    if (!controller) return;
+    controller->config->widgets[index].enabled = uiWidgetsIsEnabled(index);
+    const char *font = uiWidgetsGetFont(index);
+    strcpy(controller->config->widgets[index].font, font);
+    controller->config->widgets[index].textColor = uiWidgetsGetTextColor(index);
+    controller->config->widgets[index].hideOnDefault = uiWidgetsIsHideOnDefaultChecked(index);
     configSave(controller->config);
 }
 
@@ -342,4 +366,9 @@ void controllerResetConfig(Controller *controller, ConfigType type) {
         default:
             LOG_ERROR("Unknown Config Type %d\n", type);
     }
+}
+
+void controllerWidgetResetConfig(Controller *controller, int index) {
+    if (!controller) return;
+    configResetWidget(controller->config, index);
 }

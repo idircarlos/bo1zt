@@ -115,6 +115,11 @@ static int onCloseGameError(void *data) {
 static int onWidgetsWindowClose(uiWindow *window, void *data) {
     (void)window;
     (void)data;
+    if (uiWidgetsIsSavable()) {
+        int okPressed = uiMsgBoxOkCancel(parent, "Are you sure?", "You have pending changes.");
+        if (!okPressed) return 0;
+        uiWidgetsReset();
+    }
     uiControlHide(uiControl(widgetsWindow));
     return 0;
 }
@@ -278,7 +283,7 @@ static uiAttributedString *buildInfoAttributedString(const char *str, uiAttribut
 static void buildWidgets() {
     widgetsControlGroup = uiWidgetsBuildControlGroup();
     
-    widgetsWindow = uiNewWindow("Widget Settings", 100, 176, 0);
+    widgetsWindow = uiNewWindow("Widget Settings", 50, 200, 0);
     uiControl *widgetsGroup = widgetsControlGroup->build(controller, widgetsWindow);
     
     uiWindowOnClosing(widgetsWindow, onWidgetsWindowClose, NULL);
