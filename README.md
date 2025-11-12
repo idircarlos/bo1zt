@@ -14,7 +14,7 @@
 [![libui](https://img.shields.io/badge/Library-libui-blue)](https://github.com/libui-ng/libui-ng)
 [![OpenGL](https://img.shields.io/badge/Library-OpenGL-blue)](https://www.opengl.org/)
 [![iniparser](https://img.shields.io/badge/Library-iniparser-blue)](https://gitlab.com/iniparser/iniparser)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](http://makeapullrequest.com)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/idircarlos/bo1zt/fork)
 
 **Black Ops 1 Zombies Trainer**
 
