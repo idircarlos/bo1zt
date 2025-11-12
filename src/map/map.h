@@ -4,6 +4,12 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#define mapPutInt(map, key, val) mapPut(map, key, (void*)(intptr_t)(val))
+#define mapGetInt(map, key) ((int)(intptr_t)mapGet(map, key))
+
+#define mapPutBool(map, key, val) mapPut(map, key, (void*)(intptr_t)(val))
+#define mapGetBool(map, key) ((bool)(intptr_t)mapGet(map, key))
+
 
 typedef struct MapEntry MapEntry;
 typedef struct Map Map;

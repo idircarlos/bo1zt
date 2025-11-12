@@ -137,7 +137,6 @@ void guiInit(Controller *controllerInstance) {
 
 void guiRun(void) {
     uiControlShow(uiControl(window));
-    uiMain();
     while (uiMainStep(0)) {
         guiUpdate();
     }

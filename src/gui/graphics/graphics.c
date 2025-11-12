@@ -1,12 +1,15 @@
 #include "graphics.h"
 #include "customizer/customizer.h"
+#include "../../map/map.h"
 #include "../../logger/logger.h"
 #include "../../../res/resource_ids.h"
 #include <stdio.h>
 
 #define UI_CUSTOMIZER_CONTROL_GROUP_SIZE 1
 
-static bool cachedTimRunning = false;
+#define CACHE_TIM_RUNNING "TIM_RUNNING"
+
+static Map *cache = NULL;
 
 // Controller instance
 static Controller *controller;
@@ -91,6 +94,8 @@ static void buildCustomizer() {
 }
 
 static void init() {
+    cache = mapCreate();
+    mapPutBool(cache, CACHE_TIM_RUNNING, false);
     GraphicsConfig config = controllerGetGraphicsConfig(controller);
     uiSpinboxSetValue(fovSpin, config.fov);
     uiSpinboxSetValue(fovScaleSpin, config.fovScale);
@@ -171,7 +176,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 static void update() {
     State *state = controllerGetState(controller);
     bool timRunning = stateIsTimRunning(state);
-    if (timRunning != cachedTimRunning) {
+    if (timRunning != mapGetBool(cache, CACHE_TIM_RUNNING)) {
         if (timRunning) {
             uiDisableSpinbox(fovSpin);
             uiDisableSpinbox(fovScaleSpin);
@@ -189,7 +194,7 @@ static void update() {
             uiControlEnable(uiControl(fpsCapLabel));
             uiControlEnable(uiControl(unlimitFpsCheckbox));
         }
-        cachedTimRunning = timRunning;
+        mapPutBool(cache, CACHE_TIM_RUNNING, timRunning);
     }
 }
 

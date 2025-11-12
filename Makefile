@@ -27,7 +27,6 @@ $(TARGET): $(OBJ) lib/libui.a lib/libiniparser.a $(RESOURCES)
 # === Compile each source ===
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
-	@echo Compiling $<
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 # === External libraries ===

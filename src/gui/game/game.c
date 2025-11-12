@@ -3,24 +3,25 @@
 #include "../../logger/logger.h"
 #include "../../state/state.h"
 #include "../../thread/thread.h"
+#include "../../map/map.h"
 #include "../../../res/resource_ids.h"
 #include <string.h>
 #include <ui.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define EMPTY_STRING ""
+#define RUNNING_TEXT "Running"
+#define NOT_RUNNING_TEXT "Not running"
+#define OPENING_TEXT "Opening"
+#define CLOSING_TEXT "Closing"
 
-static const char *RUNNING_TEXT = "Running";
-static const char *NOT_RUNNING_TEXT = "Not running";
-static const char *OPENING_TEXT = "Opening";
-static const char *CLOSING_TEXT = "Closing";
+#define CACHE_GAME_ATTACHED "GAME_ATTACHED"
+#define CACHE_TIM_RUNNING "TIM_RUNNING"
+#define CACHE_RESETS "RESETS"
+#define CACHE_OPENING_GAME "OPENING_GAME"
+#define CACHE_CLOSING_GAME "CLOSING_GAME"
 
-static bool cachedGameAttached = false;
-static bool cachedTimRunning = false;
-static int cachedResets = 0;
-static bool openingGame = false;
-static bool closingGame = false;
+static Map *cache = NULL;
 
 // Controller instance
 static Controller *controller;
@@ -71,9 +72,9 @@ static int threadLaunchGame(void *data) {
     (void)data;
     LOG_INFO("Launching game from UI\n");
     uiControlDisable(uiControl(launchButton));
-    openingGame = true;
+    mapPutBool(cache, CACHE_OPENING_GAME, true);
     bool success = controllerLaunchGame(controller);
-    openingGame = false;
+    mapPutBool(cache, CACHE_OPENING_GAME, false);
     if (!success) {
         uiMsgBoxError(parent, "Launch game", "Couldn't launch Call of Duty Black Ops 1. Location may have changed or the game is already running.");
         return 1;
@@ -85,9 +86,9 @@ static int threadCloseGame(void *data) {
     (void)data;
     LOG_INFO("Closing game from UI\n");
     uiControlDisable(uiControl(closeButton));
-    closingGame = true;
+    mapPutBool(cache, CACHE_CLOSING_GAME, true);
     bool success = controllerCloseGame(controller);
-    closingGame = false;
+    mapPutBool(cache, CACHE_CLOSING_GAME, false);
     if (!success) {
         uiMsgBoxError(parent, "Close game", "Couldn't close Call of Duty Black Ops 1. Game is probably already closed.");
         return 1;
@@ -97,7 +98,7 @@ static int threadCloseGame(void *data) {
 
 static int onLaunchGameError(void *data) {
     (void)data;
-    openingGame = false;
+    mapPutBool(cache, CACHE_OPENING_GAME, false);
     uiMsgBoxError(parent, "Launch game", "Couldn't launch Call of Duty Black Ops 1. Probably is either running or stuck at launch in Steam. Try killing the game from Steam or Task Manager.");
     uiControlEnable(uiControl(launchButton));
     return 0;
@@ -105,7 +106,7 @@ static int onLaunchGameError(void *data) {
 
 static int onCloseGameError(void *data) {
     (void)data;
-    openingGame = false;
+    mapPutBool(cache, CACHE_CLOSING_GAME, false);
     uiMsgBoxError(parent, "Close game", "Couldn't close Call of Duty Black Ops 1. Game is probably already closed or stuck at launch in Steam. Try killing the game from Steam or Task Manager.");
     uiControlEnable(uiControl(launchButton));
     return 0;
@@ -286,6 +287,12 @@ static void buildWidgets() {
 }
 
 static void init() {
+    cache = mapCreate();
+    mapPutBool(cache, CACHE_GAME_ATTACHED, false);
+    mapPutBool(cache, CACHE_TIM_RUNNING, false);
+    mapPutInt(cache, CACHE_RESETS, 0);
+    mapPutBool(cache, CACHE_OPENING_GAME, false);
+    mapPutBool(cache, CACHE_CLOSING_GAME, false);
     GameConfig config = controllerGetGameConfig(controller);
     uiCheckboxSetChecked(patchMovementCheckbox, config.fixMovementSpeed);
     uiCheckboxSetChecked(showFpsCheckbox, config.showFps);
@@ -378,10 +385,10 @@ static void update() {
     State *state = controllerGetState(controller);
     bool gameAttached = stateIsGameAttached(state);
     // Avoid redrawing the area and modifying components constantly
-    if (gameAttached != cachedGameAttached) {
+    if (gameAttached != mapGetBool(cache, CACHE_GAME_ATTACHED)) {
         statusCurrentText = gameAttached ? statusRunningText : statusNotRunningText;
         uiAreaQueueRedrawAll(statusArea);
-        cachedGameAttached = gameAttached;
+        mapPutBool(cache, CACHE_GAME_ATTACHED, gameAttached);
         if (gameAttached == false) {
             uiControlEnable(uiControl(launchButton));
             uiControlDisable(uiControl(closeButton));
@@ -389,18 +396,18 @@ static void update() {
             uiControlDisable(uiControl(launchButton));
             uiControlEnable(uiControl(closeButton));
         }
-    } else if (openingGame) {
+    } else if (mapGetBool(cache, CACHE_OPENING_GAME)) {
         statusCurrentText = statusOpeningText;
         uiAreaQueueRedrawAll(statusArea);
-    } else if (closingGame) {
+    } else if (mapGetBool(cache, CACHE_CLOSING_GAME)) {
         statusCurrentText = statusClosingText;
         uiAreaQueueRedrawAll(statusArea);
     }
     bool timRunning = stateIsTimRunning(state);
-    if (timRunning != cachedTimRunning) {
+    if (timRunning != mapGetBool(cache, CACHE_TIM_RUNNING)) {
         timCurrentText = timRunning ? timRunningText : timNotRunningText;
         uiAreaQueueRedrawAll(timArea);
-        cachedTimRunning = timRunning;
+        mapPutBool(cache, CACHE_TIM_RUNNING, timRunning);
         if (timRunning) {
             uiControlDisable(uiControl(hostnameLabel));
             uiControlDisable(uiControl(hostnameEntry));
@@ -410,11 +417,11 @@ static void update() {
         }
     }
     int resets = stateGetGameResets(state);
-    if (resets != cachedResets) {
-        char resetsStr[8];
+    if (resets != mapGetInt(cache, CACHE_RESETS)) {
+        char resetsStr[4];
         sprintf(resetsStr, "%d", resets);
         uiLabelSetText(resetsNumLabel, resetsStr);
-        cachedResets = resets;
+        mapPutInt(cache, CACHE_RESETS, resets);
     }
     widgetsControlGroup->update();
 }
