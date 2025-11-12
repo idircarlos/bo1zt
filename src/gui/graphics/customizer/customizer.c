@@ -37,7 +37,7 @@ static void init();
 static Color buildColor(uiColorButton *button) {
     double r, g, b, a;
     uiColorButtonColor(button, &r, &g, &b, &a);
-    Color color = colorCreate(r*255, g*255, b*255);
+    Color color = colorCreate(r*255, g*255, b*255, a*255);
     return color;
 }
 
