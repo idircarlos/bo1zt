@@ -68,6 +68,11 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
 static int onCustomizerClose(uiWindow *window, void *data) {
     (void)window;
     (void)data;
+    if (uiCustomizerIsSavable()) {
+        int okPressed = uiMsgBoxOkCancel(parent, "Are you sure?", "You have pending changes.");
+        if (!okPressed) return 0;
+        uiCustomizerReset();
+    }
     uiControlHide(uiControl(customizerWindow));
     return 0;
 }

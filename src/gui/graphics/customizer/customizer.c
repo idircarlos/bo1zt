@@ -77,7 +77,7 @@ static void onResetButtonClick(uiButton *button, void *data) {
     controllerResetConfig(controller, CONFIG_CUSTOMIZER);
     init();
     uiControlDisable(uiControl(btnReset));
-    uiControlDisable(uiControl(btnSave));
+    uiControlEnable(uiControl(btnSave));
 }
 
 static void onSaveButtonClick(uiButton *button, void *data) {
@@ -105,6 +105,7 @@ static void init() {
     uiSpinboxSetValue(freqSpin, config.warningTransitionsFrequency);
     uiSpinboxSetValue(minSpin, config.warningTransitionsMin);
     uiSpinboxSetValue(maxSpin, config.warningTransitionsMax);
+    uiControlDisable(uiControl(btnSave));
 }
 
 static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
@@ -209,9 +210,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiButtonOnClicked(btnReset, onResetButtonClick, NULL);
     uiButtonOnClicked(btnSave, onSaveButtonClick, NULL);
 
-    uiControlDisable(uiControl(btnReset));
-    uiControlDisable(uiControl(btnSave));
-
     uiBoxAppend(buttonBox, uiControl(btnReset), 1);
     uiBoxAppend(buttonBox, uiControl(btnSave), 1);
 
@@ -276,6 +274,13 @@ int uiCustomizerGetCheatInt(SimpleCheatName cheat) {
     }
 }
 
+bool uiCustomizerIsSavable() {
+    return uiControlEnabled(uiControl(btnSave));
+}
+
+void uiCustomizerReset() {
+    init();
+}
 
 UIControlGroup *uiCustomizerBuildControlGroup() {
     UIControlGroup *cg = guiControlGroupCreate(build, update);

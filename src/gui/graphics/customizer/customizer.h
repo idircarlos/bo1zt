@@ -7,5 +7,7 @@
 UIControlGroup *uiCustomizerBuildControlGroup();
 Color uiCustomizerGetCheatColor(SimpleCheatName cheat);
 int uiCustomizerGetCheatInt(SimpleCheatName cheat);
+bool uiCustomizerIsSavable();
+void uiCustomizerReset();
 
 #endif // UI_CUSTOMIZER_H_
