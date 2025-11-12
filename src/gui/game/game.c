@@ -1,4 +1,5 @@
 #include "game.h"
+#include "widgets/widgets.h"
 #include "../../logger/logger.h"
 #include "../../state/state.h"
 #include "../../thread/thread.h"
@@ -61,6 +62,10 @@ static uiButton *closeButton = NULL;
 
 static uiEntry *locationEntry = NULL; // Using this conponent to act as another UI Component but it's purpose is only to update ConfigGame. This componente will be always hidden and not have any parent.
 
+// Widgets window
+static uiWindow *widgetsWindow = NULL;
+static UIControlGroup *widgetsControlGroup = NULL;
+
 // Threads
 static int threadLaunchGame(void *data) {
     (void)data;
@@ -103,6 +108,13 @@ static int onCloseGameError(void *data) {
     openingGame = false;
     uiMsgBoxError(parent, "Close game", "Couldn't close Call of Duty Black Ops 1. Game is probably already closed or stuck at launch in Steam. Try killing the game from Steam or Task Manager.");
     uiControlEnable(uiControl(launchButton));
+    return 0;
+}
+
+static int onWidgetsWindowClose(uiWindow *window, void *data) {
+    (void)window;
+    (void)data;
+    uiControlHide(uiControl(widgetsWindow));
     return 0;
 }
 
@@ -149,7 +161,6 @@ static void handlerStatusDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *
     (void)area;
     if (!statusCurrentText)
         return;
-
     uiFontDescriptor font;
     uiDrawTextLayoutParams params;
     uiDrawTextLayout *layout;
@@ -212,7 +223,6 @@ static void onLaunchButtonClick(uiButton *button, void *data) {
     (void)data;
     GameConfig config = controllerGetGameConfig(controller);
     if (strcmp(config.location, "") == 0) {
-        // TODO: Resolve executable location from process running if the game is not in the default Steam path
         uiMsgBox(parent, "Launch game", "Couldn't find game location. Only for this time, manually open Call of Duty Black Ops 1 to resolve the executable location.");
         char *gamePath = uiOpenFile(parent);
         if (!gamePath) {
@@ -229,6 +239,15 @@ static void onLaunchButtonClick(uiButton *button, void *data) {
     // Run a new thread to avoid blocking the UI while game starts.
     Thread *gameLauncherThread = threadCreate(threadLaunchGame, NULL);
     threadCreateWatchdog(gameLauncherThread, 15000, onLaunchGameError, NULL);
+}
+
+static void onWidgetsButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    uiWindowSetResizeable(widgetsWindow, false);
+    uiWindowSetMargined(widgetsWindow, true);
+    uiWindowSetIcon(widgetsWindow, IDI_ICON1);
+    uiControlShow(uiControl(widgetsWindow));
 }
 
 static void onCloseButtonClick(uiButton *button, void *data) {
@@ -253,6 +272,17 @@ static uiAttributedString *buildInfoAttributedString(const char *str, uiAttribut
     uiAttributedStringSetAttribute(attributedString, colorAttribute, 0, len);
     uiAttributedStringSetAttribute(attributedString, attrBold, 0, len);
     return attributedString;
+}
+
+static void buildWidgets() {
+    widgetsControlGroup = uiWidgetsBuildControlGroup();
+    
+    widgetsWindow = uiNewWindow("Widget Settings", 100, 176, 0);
+    uiControl *widgetsGroup = widgetsControlGroup->build(controller, widgetsWindow);
+    
+    uiWindowOnClosing(widgetsWindow, onWidgetsWindowClose, NULL);
+    uiWindowSetMargined(widgetsWindow, 1);
+    uiWindowSetChild(widgetsWindow, uiControl(widgetsGroup));
 }
 
 static void init() {
@@ -314,6 +344,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiEntryOnChanged(hostnameEntry, onEntryChange, NULL);
 
+    uiButtonOnClicked(widgetsButton, onWidgetsButtonClick, NULL);
     uiButtonOnClicked(launchButton, onLaunchButtonClick, NULL);
     uiButtonOnClicked(closeButton, onCloseButtonClick, NULL);
 
@@ -338,6 +369,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiGroupSetMargined(gameGroup, 1);
     
     init();
+    buildWidgets();
 
     return uiControl(gameGroup);
 }
@@ -384,6 +416,7 @@ static void update() {
         uiLabelSetText(resetsNumLabel, resetsStr);
         cachedResets = resets;
     }
+    widgetsControlGroup->update();
 }
 
 // External API for Controller
