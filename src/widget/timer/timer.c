@@ -58,9 +58,9 @@ static WidgetVTable timerVTable = {
     .destroy = timerDestroy
 };
 
-Widget* timerWidgetCreate(int x, int y) {
+Widget* timerWidgetCreate() {
     TimerData* data = (TimerData*)calloc(1, sizeof(TimerData));
-    return widgetCreate("TimerFloat", "Timer", &timerVTable, data, x, y, 300, 100, 72);
+    return widgetCreate("Timer", &timerVTable, data, WIDGET_TIMER_RECT, WIDGET_TIMER_FONT_SIZE);
 }
 
 void timerWidgetStart(Widget* timer) {

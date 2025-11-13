@@ -336,7 +336,9 @@ void controllerUpdateConfig(Controller *controller, ConfigType type) {
                 const char *font = uiWidgetsGetFont(i);
                 strcpy(controller->config->widgets[i].font, font);
                 controller->config->widgets[i].textColor = uiWidgetsGetTextColor(i);
-                controller->config->widgets[i].hideOnDefault = uiWidgetsIsHideOnDefaultChecked(i);   
+                controller->config->widgets[i].hideOnDefault = uiWidgetsIsHideOnDefaultChecked(i); 
+                controller->config->widgets[i].rect = uiWidgetsGetRect(i);
+                controller->config->widgets[i].fontSize = uiWidgetsGetFontSize(i);  
             }
             break;
         default:

@@ -4,8 +4,9 @@
 #include "../../../widget/timer/timer.h"
 #include "../../../widget/velocity/velocity.h"
 #include "../../../widget/fonts.h"
-#include "../../../../res/resource_ids.h"
+#include "../../../map/map.h"
 #include "../../../logger/logger.h"
+#include "../../../../res/resource_ids.h"
 #include <ui.h>
 #include <string.h>
 #include <stdio.h>
@@ -15,6 +16,8 @@
 #define WIDGET_TIMER "Timer"
 #define WIDGET_ROUND_TIMER "Round Timer"
 #define WIDGET_VELOCITY "Velocity"
+
+#define WIDGET_TRANSFORMING "WIDGET_TRANSFORMING"
 
 #define N_FONTS 21
 
@@ -31,6 +34,8 @@ typedef struct {
     Color color;
     bool hideOnDefault;
     bool resetable;
+    Rect rect;
+    int fontSize;
 } WidgetProps;
 
 typedef struct {
@@ -42,6 +47,8 @@ typedef struct {
 // Controller instance
 static Controller *controller;
 static uiWindow *parent;
+
+static Map *cache = NULL;
 
 static WidgetObj *widgets[N_WIDGETS] = { NULL, NULL, NULL };
 
@@ -220,8 +227,12 @@ static void updateWidgetObj(WidgetObj *obj, WidgetProps props) {
     obj->status.color = props.color;
     obj->status.hideOnDefault = props.hideOnDefault;
     obj->status.resetable = props.resetable;
-    widgetSetFont(obj->widget,fontNames[obj->status.fontIndex]);
+    obj->status.rect = props.rect;
+    obj->status.fontSize = props.fontSize;
+    widgetSetFont(obj->widget, fontNames[obj->status.fontIndex]);
     widgetSetTextColor(obj->widget, obj->status.color);
+    widgetSetPosition(obj->widget, obj->status.rect);
+    widgetSetFontSize(obj->widget, obj->status.fontSize);
     props.enabled ? widgetShow(obj->widget) : widgetHide(obj->widget);
 }
 
@@ -320,7 +331,9 @@ static WidgetProps getWidgetPropsFromConfig(int index) {
         fontIndex,
         widgetConfig.textColor,
         widgetConfig.hideOnDefault,
-        false
+        false,
+        widgetConfig.rect,
+        widgetConfig.fontSize,
     };
     return props;
 }
@@ -330,7 +343,6 @@ static void init() {
         WidgetProps props = getWidgetPropsFromConfig(i);
         updateWidgetObj(widgets[i], props);
     }
-
     uiComboboxSetSelected(widgetFontCombobox, widgets[WIDGET_NAME_TIMER]->status.fontIndex);
     setColorButton(widgetColorBtn, widgets[WIDGET_NAME_TIMER]->status.color);
     selectedWidgetIndex = 0;
@@ -428,9 +440,11 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     fontsInit();
     fontsLoad(IDR_FONT_DIGITAL_7_MONO);
-    createWidgetObj(WIDGET_NAME_TIMER, timerWidgetCreate(200, 200));
-    createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate(200, 400));
-    createWidgetObj(WIDGET_NAME_VELOCITY, velocityWidgetCreate(600, 200));
+    createWidgetObj(WIDGET_NAME_TIMER, timerWidgetCreate());
+    createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate());
+    createWidgetObj(WIDGET_NAME_VELOCITY, velocityWidgetCreate());
+    cache = mapCreate();
+    mapPutBool(cache, WIDGET_TRANSFORMING, false);
     init();
 
     return uiControl(outerBox);
@@ -448,6 +462,21 @@ static void update() {
         uiTableSetSelection(widgetTable, &currentSelection);
     }
     if (selection) uiFreeTableSelection(selection);
+    
+    // Save widget Rect and Font size if its being transformed. This is not handled by the Widgets Config UI.
+    // We only care if one the widgets is veing moved/resized.
+    bool wasTransforming = mapGetBool(cache, WIDGET_TRANSFORMING);
+    bool isTransformingNow = false;
+    for (int i = 0; i < N_WIDGETS; i++) {
+        if (widgetIsTransforming(widgets[i]->widget)) {
+            isTransformingNow = true;
+            break;
+        }
+    }
+    if (wasTransforming && !isTransformingNow) {
+        controllerUpdateConfig(controller, CONFIG_WIDGETS);
+    }
+    mapPutBool(cache, WIDGET_TRANSFORMING, isTransformingNow);
 }
 
 // External API for Controller
@@ -489,4 +518,38 @@ bool uiWidgetsIsSavable() {
 
 void uiWidgetsReset() {
     init();
+}
+
+Rect uiWidgetsGetRect(int index) {
+    return widgetGetPosition(widgets[index]->widget);
+}
+
+int uiWidgetsGetFontSize(int index) {
+    return widgetGetFontSize(widgets[index]->widget);
+}
+
+Rect uiWidgetsGetDefaultRect(int index) {
+    switch(index) {
+        case WIDGET_NAME_TIMER:
+        case WIDGET_NAME_ROUND_TIMER:
+            return WIDGET_TIMER_RECT;
+        case WIDGET_NAME_VELOCITY:
+            return WIDGET_VELOCITY_RECT;
+        default:
+            LOG_ERROR("Unknown widget index %d\n", index);
+            return rectCreate(0, 0, 0, 0);
+    }
+}
+
+int uiWidgetsGetDefaultFontSize(int index) {
+    switch(index) {
+        case WIDGET_NAME_TIMER:
+        case WIDGET_NAME_ROUND_TIMER:
+            return WIDGET_TIMER_FONT_SIZE;
+        case WIDGET_NAME_VELOCITY:
+            return WIDGET_VELOCITY_FONT_SIZE;
+        default:
+            LOG_ERROR("Unknown widget index %d\n", index);
+            return 0;
+    }
 }

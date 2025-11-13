@@ -3,8 +3,11 @@
 
 #include "../widget.h"
 
+#define WIDGET_VELOCITY_RECT rectCreate(200, 200, 175, 50)
+#define WIDGET_VELOCITY_FONT_SIZE 36
+
 // Velocity-specific operations
-Widget* velocityWidgetCreate(int x, int y);
+Widget* velocityWidgetCreate();
 void velocityWidgetSetSpeed(Widget* velocity, float speed);
 float velocityWidgetGetSpeed(const Widget* velocity);
 

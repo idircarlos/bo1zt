@@ -12,6 +12,8 @@
 #define STRFMT_BUFF_SIZE 1024
 #define COLOR_INI_FMT "Color(%hhu,%hhu,%hhu,%hhu)"
 #define COLOR_INI_DEFAULT "Color(111,111,111,111)"
+#define RECT_INI_FMT "Rect(%u,%u,%u,%u)"
+#define RECT_INI_DEFAULT "Rect(111,111,111,111)"
 
 // Aux
 static inline char *strfmt(char *buff, const char *fmt, ...) {
@@ -27,7 +29,15 @@ static Color colorFromString(const char *colorString) {
     if (sscanf(colorString, "Color(%hhu,%hhu,%hhu,%hhu)", &r, &g, &b, &a) != 4) {
         LOG_ERROR("Invalid color string: %s\n", colorString);
     }
-    return colorCreate(r, g, b, 255);
+    return colorCreate(r, g, b, a);
+}
+
+static Rect rectFromString(const char *rectString) {
+    uint32_t x = 0, y = 0, w = 0, h = 0;
+    if (sscanf(rectString, "Rect(%u,%u,%u,%u)", &x, &y, &w, &h) != 4) {
+        LOG_ERROR("Invalid rect string: %s\n", rectString);
+    }
+    return rectCreate(x, y, w, h);
 }
 
 static bool iniFileExists() {
@@ -78,14 +88,20 @@ static bool configLoad(Config *config) {
         char keyFont[128];
         char keyTextColor[128];
         char keyHideOnDefault[128];
+        char keyRect[128];
+        char keyFontSize[128];
         snprintf(keyEnabled, sizeof(keyEnabled), "Widgets:%sEnabled", uiWidgetsGetName(i));
         snprintf(keyFont, sizeof(keyFont), "Widgets:%sFont", uiWidgetsGetName(i));
         snprintf(keyTextColor, sizeof(keyTextColor), "Widgets:%sTextColor", uiWidgetsGetName(i));
         snprintf(keyHideOnDefault, sizeof(keyHideOnDefault), "Widgets:%sHideOnDefault", uiWidgetsGetName(i));
-        config->widgets[i].enabled = iniparser_getboolean(dictionary, keyEnabled, false);
-        strcpy(config->widgets[i].font, iniparser_getstring(dictionary, keyFont, "Digital-7 Mono"));
+        snprintf(keyRect, sizeof(keyRect), "Widgets:%sRect", uiWidgetsGetName(i));
+        snprintf(keyFontSize, sizeof(keyFontSize), "Widgets:%sFontSize", uiWidgetsGetName(i));
+        config->widgets[i].enabled = iniparser_getboolean(dictionary, keyEnabled, config->widgets[i].enabled);
+        strcpy(config->widgets[i].font, iniparser_getstring(dictionary, keyFont, config->widgets[i].font));
         config->widgets[i].textColor = colorFromString(iniparser_getstring(dictionary, keyTextColor, COLOR_INI_DEFAULT));
-        config->widgets[i].hideOnDefault = iniparser_getboolean(dictionary, keyHideOnDefault, false);
+        config->widgets[i].hideOnDefault = iniparser_getboolean(dictionary, keyHideOnDefault, config->widgets[i].hideOnDefault);
+        config->widgets[i].rect = rectFromString(iniparser_getstring(dictionary, keyRect, RECT_INI_DEFAULT));
+        config->widgets[i].fontSize = iniparser_getint(dictionary, keyFontSize, config->widgets[i].fontSize);
     }
 
     iniparser_freedict(dictionary);
@@ -102,6 +118,11 @@ Config* configCreate() {
     }
 
     configReset(config);
+    for (int i = 0; i < N_CONFIG_WIDGETS; i++) {
+        config->widgets[i].rect = uiWidgetsGetDefaultRect(i);
+        config->widgets[i].fontSize = uiWidgetsGetDefaultFontSize(i);
+    }
+    LOG_INFO("rect = %d %d\n", config->widgets[0].rect.x, config->widgets[0].rect.y);
     configSave(config);
     return config;
 }
@@ -160,14 +181,20 @@ bool configSave(Config *config) {
         char keyFont[128];
         char keyTextColor[128];
         char keyHideOnDefault[128];
+        char keyRect[128];
+        char keyFontSize[128];
         snprintf(keyEnabled, sizeof(keyEnabled), "Widgets:%sEnabled", uiWidgetsGetName(i));
         snprintf(keyFont, sizeof(keyFont), "Widgets:%sFont", uiWidgetsGetName(i));
         snprintf(keyTextColor, sizeof(keyTextColor), "Widgets:%sTextColor", uiWidgetsGetName(i));
         snprintf(keyHideOnDefault, sizeof(keyHideOnDefault), "Widgets:%sHideOnDefault", uiWidgetsGetName(i));
+        snprintf(keyRect, sizeof(keyRect), "Widgets:%sRect", uiWidgetsGetName(i));
+        snprintf(keyFontSize, sizeof(keyFontSize), "Widgets:%sFontSize", uiWidgetsGetName(i));
         ret += iniparser_set(dictionary, keyEnabled, strfmt(valueBuffer, "%d", config->widgets[i].enabled));
         ret += iniparser_set(dictionary, keyFont, strfmt(valueBuffer, "%s", config->widgets[i].font));
         ret += iniparser_set(dictionary, keyTextColor, strfmt(valueBuffer, COLOR_INI_FMT, config->widgets[i].textColor.r, config->widgets[i].textColor.g, config->widgets[i].textColor.b, config->widgets[i].textColor.a));
         ret += iniparser_set(dictionary, keyHideOnDefault, strfmt(valueBuffer, "%d", config->widgets[i].hideOnDefault));
+        ret += iniparser_set(dictionary, keyRect, strfmt(valueBuffer, RECT_INI_FMT, config->widgets[i].rect.x, config->widgets[i].rect.y, config->widgets[i].rect.w, config->widgets[i].rect.h));
+        ret += iniparser_set(dictionary, keyFontSize, strfmt(valueBuffer, "%d", config->widgets[i].fontSize));
     }
 
     if (ret < 0) {
@@ -243,7 +270,7 @@ void configResetWidget(Config *config, int index) {
     widget.enabled = false;
     strcpy(widget.font, "Digital-7 Mono");
     widget.textColor = colorCreate(255, 255, 255, 255);
-    widget.hideOnDefault = false;
+    widget.hideOnDefault = false;    
     config->widgets[index] = widget;
 }
 

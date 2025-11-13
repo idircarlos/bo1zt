@@ -12,8 +12,11 @@ void widgetDestroy(Widget* widget);
 void widgetShow(Widget* widget);
 void widgetHide(Widget* widget);
 bool widgetIsVisible(const Widget* widget);
-void widgetGetPosition(const Widget* widget, int* x, int* y);
-void widgetSetPosition(Widget* widget, int x, int y);
+bool widgetIsTransforming(const Widget* widget);
+Rect widgetGetPosition(const Widget* widget);
+void widgetSetPosition(Widget* widget, Rect rect);
+int widgetGetFontSize(const Widget *widget);
+void widgetSetFontSize(Widget* widget, int fontSize);
 void widgetSetFont(Widget* widget, const char* face);
 void widgetSetTextColor(Widget* widget, Color color);
 

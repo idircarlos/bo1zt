@@ -401,21 +401,46 @@ bool widgetIsVisible(const Widget* widget) {
     return widget && widget->win.hwnd && IsWindowVisible(widget->win.hwnd);
 }
 
-void widgetGetPosition(const Widget* widget, int* x, int* y) {
-    if (!widget || !x || !y) return;
+bool widgetIsTransforming(const Widget* widget) {
+    return flagsContains(widget->win.flags, WINDOW_RESIZING | WINDOW_DRAGGING);
+}
+
+Rect widgetGetPosition(const Widget* widget) {
+    if (!widget) return rectCreate(0, 0, 0, 0);
     
     RECT r;
     GetWindowRect(widget->win.hwnd, &r);
-    *x = r.left;
-    *y = r.top;
+    return rectCreate((uint32_t)r.left, (uint32_t)r.top, (uint32_t)r.right - r.left, (uint32_t)r.bottom - r.top);
 }
 
-void widgetSetPosition(Widget* widget, int x, int y) {
-    if (!widget) return;
+int widgetGetFontSize(const Widget* widget) {
+    return widget->render.fontSize;
+}
+
+void widgetSetFontSize(Widget* widget, int fontSize) {
+    if (!widget || fontSize <= 0) return;
+    InterlockedExchange(&widget->pending.fontSize, (LONG)fontSize);
+}
+
+void widgetSetPosition(Widget* widget, Rect rect) {
+    if (!widget || !widget->win.hwnd) return;
     
-    widget->pending.pos.x = x;
-    widget->pending.pos.y = y;
-    flagsAdd(&widget->pending.flags, PENDING_POS);
+    RECT currentRect;
+    GetWindowRect(widget->win.hwnd, &currentRect);
+    uint32_t currentW = (uint32_t)(currentRect.right - currentRect.left);
+    uint32_t currentH = (uint32_t)(currentRect.bottom - currentRect.top);
+    
+    UINT flags = SWP_NOZORDER | SWP_NOACTIVATE;
+    
+    if (rect.w != currentW || rect.h != currentH) {
+        SetWindowPos(widget->win.hwnd, HWND_TOPMOST, rect.x, rect.y, rect.w, rect.h, flags);        
+        widget->pending.size.cx = rect.w;
+        widget->pending.size.cy = rect.h;
+        flagsAdd(&widget->pending.flags, PENDING_SIZE);
+    } else {
+        flags |= SWP_NOSIZE;
+        SetWindowPos(widget->win.hwnd, HWND_TOPMOST, rect.x, rect.y, 0, 0, flags);
+    }
 }
 
 void widgetSetFont(Widget* widget, const char* face) {
@@ -434,13 +459,14 @@ void widgetSetTextColor(Widget* widget, Color color) {
     // Since it cannot be differentiated betwenn textColor and bgColor when displaying it.
     // For now, I am setting (1,0,0) which is still ~Pure Black 
     if (color.r == 0 && color.g == 0 && color.b == 0) color.r = 1;
+    printf("%d\n", color.a);
     widget->render.textColor = color;
     if (widget->win.hwnd) {
         PostMessageA(widget->win.hwnd, WM_USER + 1, 0, 0);
     }
 }
 
-Widget* widgetCreate(const char* className, const char* windowTitle, WidgetVTable* vTable, void* displayData, int x, int y, int width, int height, int fontSize) {
+Widget* widgetCreate(const char* className, WidgetVTable* vTable, void* displayData, Rect rect, int fontSize) {
     HINSTANCE hInst = GetModuleHandle(NULL);
     WNDCLASSA wc;
     memset(&wc, 0, sizeof(wc));
@@ -452,8 +478,8 @@ Widget* widgetCreate(const char* className, const char* windowTitle, WidgetVTabl
     Widget* wgt = (Widget*)calloc(1, sizeof(Widget));
     if (!wgt) return NULL;
 
-    wgt->render.w = width;
-    wgt->render.h = height;
+    wgt->render.w = rect.w;
+    wgt->render.h = rect.h;
     wgt->running = 1;
     wgt->vTable = vTable;
     wgt->displayData = displayData;
@@ -467,15 +493,17 @@ Widget* widgetCreate(const char* className, const char* windowTitle, WidgetVTabl
 
     wgt->win.hwnd = CreateWindowExA(
         WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT,
-        className, windowTitle,
+        className, NULL,
         WS_POPUP,
-        x, y, width, height,
+        rect.x, rect.y, rect.w, rect.h,
         NULL, NULL, hInst, NULL);
 
     if (!wgt->win.hwnd) {
         free(wgt);
         return NULL;
     }
+
+    ShowWindow(wgt->win.hwnd, 0);
 
     SetWindowLongPtr(wgt->win.hwnd, GWLP_USERDATA, (LONG_PTR)wgt);
 
@@ -532,6 +560,7 @@ void widgetDrawText(Widget* wgt, const char* text) {
 }
 
 void widgetUpdateLayeredWindow(Widget* wgt, HDC hdc_win) {
+    if (!IsWindowVisible(wgt->win.hwnd)) return;
     // Create DIB section for reading GL framebuffer
     BITMAPINFO bmi;
     initBitmapInfo(&bmi, wgt->render.w, wgt->render.h);

@@ -61,7 +61,7 @@ struct Widget {
 	void* displayData;
 };
 
-Widget* widgetCreate(const char* className, const char* windowTitle, WidgetVTable* vTable, void* displayData, int x, int y, int width, int height, int fontSize);
+Widget* widgetCreate(const char* className, WidgetVTable* vTable, void* displayData, Rect rect, int fontSize);
 void widgetDrawText(Widget* wgt, const char* text);
 void widgetUpdateLayeredWindow(Widget* wgt, HDC hdc_win);
 

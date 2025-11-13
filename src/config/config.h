@@ -49,6 +49,9 @@ typedef struct {
     char font[256];
     Color textColor;
     bool hideOnDefault;
+    // Non-reseteable props
+    Rect rect;
+    int fontSize;
 } WidgetConfig;
 
 typedef struct {

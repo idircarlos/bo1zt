@@ -12,6 +12,12 @@ typedef struct {
 
 Color colorCreate(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
+typedef struct {
+    uint32_t x, y, w, h;
+} Rect;
+
+Rect rectCreate(uint32_t x, uint32_t y, uint32_t w, uint32_t h);
+
 typedef uint32_t Flags;
 
 void flagsAdd(Flags *flags, Flags mask);

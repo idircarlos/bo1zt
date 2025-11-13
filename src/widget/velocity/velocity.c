@@ -45,10 +45,9 @@ static WidgetVTable velocityVTable = {
     .destroy = velocityDestroy
 };
 
-Widget* velocityWidgetCreate(int x, int y) {
+Widget* velocityWidgetCreate() {
     VelocityData* data = (VelocityData*)calloc(1, sizeof(VelocityData));
-    data->speed = 123.0;
-    return widgetCreate("VelocityFloat", "Velocity", &velocityVTable, data, x, y, 175, 50, 36);
+    return widgetCreate("VelocityFloat", &velocityVTable, data, WIDGET_VELOCITY_RECT, WIDGET_VELOCITY_FONT_SIZE);
 }
 
 void velocityWidgetSetSpeed(Widget* velocity, float speed) {
