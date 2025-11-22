@@ -448,7 +448,7 @@ bool apiIsGameReady(Api *api) {
     return ready > 0; // This value starts getting populated when the initial loading screen ends. Semms like a timer tho.
 }
 
-bool apiIsZombiesGameRunning(Api *api) {
+bool apiIsZombiesGameOngoing(Api *api) {
     if (!api || !api->controller) {
         LOG_ERROR("Api or Controller is null\n");
         return false;
@@ -460,9 +460,29 @@ bool apiIsZombiesGameRunning(Api *api) {
         return false;
     }
     uint32_t active;
-    bool success = processRead(process, GAME_CHEAT.isZombiesGameActiveOffset, &active, sizeof(uint32_t));
+    bool success = processRead(process, GAME_CHEAT.isZombiesGameOngoingOffset, &active, sizeof(uint32_t));
     if (!success) {
         printf("Failed to read Is Zombies Game Active value\n");
+        return false;
+    }
+    return active == 1;
+}
+
+bool apiIsZombiesGamePaused(Api *api) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return false;
+    }
+    
+    Process *process = controllerGetProcess(api->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return false;
+    }
+    uint32_t active;
+    bool success = processRead(process, GAME_CHEAT.isZombiesGamePausedOffset, &active, sizeof(uint32_t));
+    if (!success) {
+        printf("Failed to read Is Game Paused value\n");
         return false;
     }
     return active == 1;

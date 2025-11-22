@@ -67,11 +67,13 @@ bool controllerAttachGame(Controller *controller) {
     if (!controller->api) controller->api = apiCreate(controller);
     bool isGameAttached = controllerIsGameAttached(controller);
     bool isTimRunning = controllerIsTimRunning(controller);
-    bool isZombiesActive = apiIsZombiesGameRunning(controller->api);
+    bool isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
+    bool isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
     int gameResets = apiGetGameResets(controller->api);
     stateSetGameAttached(controller->state, isGameAttached);
     stateSetTimRunning(controller->state, isTimRunning);
-    stateSetZombiesGameActive(controller->state, isZombiesActive);
+    stateSetZombiesGameOngoing(controller->state, isZombiesGameOngoing);
+    stateSetZombiesGamePaused(controller->state, isZombiesGamePaused);
     stateSetGameResets(controller->state, gameResets);
     return true;
 }
@@ -188,8 +190,12 @@ void controllerUpdateState(Controller *controller) {
         return;
     };
     stateSetGameAttached(controller->state, controllerIsGameWindowAttached(controller));
-    stateSetZombiesGameActive(controller->state, apiIsZombiesGameRunning(controller->api));
+    bool isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
+    bool isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
+    stateSetZombiesGameOngoing(controller->state, isZombiesGameOngoing);
+    stateSetZombiesGamePaused(controller->state, isZombiesGamePaused);
     stateSetGameResets(controller->state, apiGetGameResets(controller->api));
+    // TODO: Update timers
 }
 
 void controllerInitTrainerConfig(Controller *controller) {
@@ -268,7 +274,7 @@ void controllerUpdateTrainerConfig(Controller *controller) {
     controllerSetCheat(controller, CHEAT_NAME_SHOW_FPS, showFps);
     if (!controllerIsTimRunning(controller)) {
         // Only modify when there is an active game. This address gets mad when it gets modified outside a game.s
-        if (stateIsZombiesGameActive(controller->state)) {
+        if (stateIsZombiesGameOngoing(controller->state)) {
             char *hostname = uiGameGetHostname();
             controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, hostname);            
             uiFreeText(hostname);

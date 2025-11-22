@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define ARGV_DEFAULT_CAP 4
+#define ARGV_DEFAULT_CAP 2
 #define COMMAND_PREFIX '/'
 
 typedef enum {

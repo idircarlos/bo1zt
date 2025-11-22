@@ -6,6 +6,8 @@
 #include "../../../widget/fonts.h"
 #include "../../../map/map.h"
 #include "../../../logger/logger.h"
+#include "../../../timer/timer.h"
+#include "../../../state/state.h"
 #include "../../../../res/resource_ids.h"
 #include <ui.h>
 #include <string.h>
@@ -440,8 +442,13 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     fontsInit();
     fontsLoad(IDR_FONT_DIGITAL_7_MONO);
-    createWidgetObj(WIDGET_NAME_TIMER, timerWidgetCreate());
-    createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate());
+    
+    State *state = controllerGetState(controller);
+    Timer *timerInstance = stateGetTimer(state);
+    Timer *roundTimerInstance = stateGetRoundTimer(state);
+
+    createWidgetObj(WIDGET_NAME_TIMER, timerWidgetCreate(timerInstance));
+    createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate(roundTimerInstance));
     createWidgetObj(WIDGET_NAME_VELOCITY, velocityWidgetCreate());
     cache = mapCreate();
     mapPutBool(cache, WIDGET_TRANSFORMING, false);

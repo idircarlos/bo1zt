@@ -62,7 +62,7 @@ int updateGameThread(void *data) {
     while (true) {
         controllerUpdateState(controller);
         controllerUpdateTrainerConfig(controller);
-        threadSleep(1000);
+        threadSleep(1000/60); // 60 FPS
     }
 }
 
