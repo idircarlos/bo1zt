@@ -4,8 +4,6 @@
 
 struct Thread {
     HANDLE handle;
-    int (*entryPoint)(void *);
-    void *data;
 };
 
 typedef struct {
@@ -35,8 +33,6 @@ static int threadWatchdogRoutine(void *data) {
 Thread *threadCreate(int (*entryPoint)(void *), void *data) {
     Thread *thread = (Thread*)malloc(sizeof(Thread));
     thread->handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)entryPoint, data, 0, NULL);
-    thread->entryPoint = entryPoint;
-    thread->data = data;
     return thread;
 }
 
@@ -50,9 +46,28 @@ Thread *threadCreateWatchdog(Thread *targetThread, uint32_t timeoutMillis, int (
 
     Thread *thread = (Thread*)malloc(sizeof(Thread));
     thread->handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)threadWatchdogRoutine, props, 0, NULL);
-    thread->entryPoint = threadWatchdogRoutine;
-    thread->data = props;
     return thread;
+}
+
+Thread *threadCreateRemote(Process *process, uintptr_t remoteFunctionAddress, uintptr_t parameter) {
+    Thread *thread = (Thread*)malloc(sizeof(Thread));
+    thread->handle = CreateRemoteThread(_processGetHandle(process), NULL, 0, (LPTHREAD_START_ROUTINE)remoteFunctionAddress, (void*)parameter, 0, NULL);
+    return thread;
+}
+
+int threadGetExitCode(Thread *thread) {
+    if (!thread) return -1;
+    DWORD exitCode;
+    if (GetExitCodeThread(thread->handle, &exitCode)) {
+        return (int)exitCode;
+    }
+    return -1;
+}
+
+bool threadWait(Thread *thread, int millis) {
+    if (!thread) return false;
+    DWORD res = WaitForSingleObject(thread->handle, millis);
+    return res == WAIT_OBJECT_0;
 }
 
 bool threadClose(Thread *thread) {

@@ -459,7 +459,6 @@ void widgetSetTextColor(Widget* widget, Color color) {
     // Since it cannot be differentiated betwenn textColor and bgColor when displaying it.
     // For now, I am setting (1,0,0) which is still ~Pure Black 
     if (color.r == 0 && color.g == 0 && color.b == 0) color.r = 1;
-    printf("%d\n", color.a);
     widget->render.textColor = color;
     if (widget->win.hwnd) {
         PostMessageA(widget->win.hwnd, WM_USER + 1, 0, 0);

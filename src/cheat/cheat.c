@@ -19,6 +19,7 @@
 #define CHEAT_OFFSET_FIX_MOVEMENT_SPEED_BACKWARDS 0x00BCD0DC
 #define CHEAT_OFFSET_FIX_MOVEMENT_SPEED_STRAIF 0x00BCD1BC
 #define CHEAT_OFFSET_SHOW_FPS 0x02F67B68
+#define CHEAT_OFFSET_PATCH_CHAT 0x0079B7D6
 #define CHEAT_OFFSET_INVALID 0x00000000
 
 // Cheats Values
@@ -57,6 +58,8 @@
 #define CHEAT_VALUE_FIX_MOVEMENT_SPEED_STRAIF_OFF 0.8f
 #define CHEAT_VALUE_SHOW_FPS_ON 1
 #define CHEAT_VALUE_SHOW_FPS_OFF 0
+#define CHEAT_VALUE_PATCH_CHAT_ON 0
+#define CHEAT_VALUE_PATCH_CHAT_OFF 17
 #define CHEAT_VALUE_INVALID 0
 
 // Cheats Asm Instructions Addresses
@@ -112,8 +115,35 @@
 #define ROUND_CHANGE_PATTERN {  0x00, 0x00, 0x00, 0x00,   /* Current round uint32_t to be replaced */  \
                                 0x3F, 0x3F, 0x12, 0x00  } /* Wildcard 0x0012???? in Little Endian */   \
 
+// Server Cheats Asm Instruction Sets. Used for remote thread execution. 
+// These are injected into allocated memory pages in the game process.
+#define SERVER_CHEAT_SEND_COMMAND_INSTRUCTION_SET { 0x8B, 0xC4,                     /*    mov     eax, esp          */   \
+                                                    0x83, 0xC0, 0x04,               /*    add     eax, 4            */   \
+                                                    0x8B, 0x00,                     /*    mov     eax, [eax]        */   \
+                                                    0xFF, 0x30,                     /*    push    dword ptr [eax]   */   \
+                                                    0x83, 0xC0, 0x04,               /*    add     eax, 4            */   \
+                                                    0xFF, 0x30,                     /*    push    dword ptr [eax]   */   \
+                                                    0x83, 0xC0, 0x04,               /*    add     eax, 4            */   \
+                                                    0xFF, 0x30,                     /*    push    dword ptr [eax]   */   \
+                                                    0xE8, 0xFF, 0xFF, 0xFF, 0xFF,   /*    call    <placeholder>     */   \
+                                                    0x83, 0xC4, 0x0C,               /*    add     esp, 0Ch          */   \
+                                                    0xC3 }                          /*    ret                       */   \
+
+#define SERVER_CHEAT_SEND_COMMAND_INSTRUCTION_SET_SIZE 28
+
+#define SERVER_CHEAT_CBUF_ADDTEXT_INSTRUCTION_SET { 0x8B, 0x44, 0x24, 0x04,         /*    mov     eax, [esp + 4]     */  \
+                                                    0x50,                           /*    push    eax                */  \
+                                                    0x6A, 0x00,                     /*    push    0                  */  \
+                                                    0xE8, 0xFF, 0xFF, 0xFF, 0xFF,   /*    call    <placeholder>      */  \
+                                                    0x83, 0xC4, 0x08,               /*    add     esp, 8             */  \
+                                                    0xC3 }                          /*    ret                        */  \
+
+#define SERVER_CHEAT_CBUF_ADDTEXT_INSTRUCTION_SET_SIZE 16
+
+#define GAME_IS_GAME_READY_OFFSET 0x0286D014
 #define GAME_IS_ZOMBIES_GAME_ACTIVE_OFFSET 0x00BCB3AC
-#define GAME_N_RESETS 0x023A5598         
+#define GAME_N_RESETS_OFFSET 0x023A5598
+#define GAME_LAST_CHAT_MESSAGE_OFFSET 0x01A560C1    
 
 
 Cheat CHEAT_GOD_MODE = {
@@ -251,8 +281,10 @@ RoundCheat ROUND_CHEAT = {
 };
 
 GameCheat GAME_CHEAT = {
+    .isGameReady = GAME_IS_GAME_READY_OFFSET,
     .isZombiesGameActiveOffset = GAME_IS_ZOMBIES_GAME_ACTIVE_OFFSET,
-    .nResetsOffset = GAME_N_RESETS
+    .nResetsOffset = GAME_N_RESETS_OFFSET,
+    .lastChatMessage = GAME_LAST_CHAT_MESSAGE_OFFSET,
 };
 
 Cheat CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS = {
@@ -404,6 +436,27 @@ CustomizerCheat CUSTOMIZER_CHEAT_WARN_MIN = {
 CustomizerCheat CUSTOMIZER_CHEAT_WARN_MAX = {
     .baseOffset = SIMPLE_CHEAT_OFFSET_CUSTOMIZER_WARN_BASE,
     .offset = 0x168,
+};
+
+Cheat CHEAT_PATCH_CHAT = {
+    CHEAT_OFFSET_PATCH_CHAT,
+    {.byte = CHEAT_VALUE_PATCH_CHAT_ON},
+    {.byte = CHEAT_VALUE_PATCH_CHAT_OFF},
+};
+
+ServerCheat SERVER_CHEAT_SEND_COMMAND = {
+    .instructions = { SERVER_CHEAT_SEND_COMMAND_INSTRUCTION_SET, SERVER_CHEAT_SEND_COMMAND_INSTRUCTION_SET_SIZE },
+    .offset = 0x00543CF0,
+};
+
+ServerCheat SERVER_CHEAT_CBUF_ADDTEXT = {
+    .instructions = { SERVER_CHEAT_CBUF_ADDTEXT_INSTRUCTION_SET, SERVER_CHEAT_CBUF_ADDTEXT_INSTRUCTION_SET_SIZE },
+    .offset = 0x0049B930,
+};
+
+ServerCheat SERVER_CHEAT_GET_DVAR_PTR = {
+    .instructions = { {}, 0 }, // There is no remote code injection for this cheat
+    .offset = 0x005AE810,
 };
 
 

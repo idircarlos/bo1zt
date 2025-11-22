@@ -1,4 +1,5 @@
 #include "controller.h"
+#include "controller_internal.h"
 #include "../config/config.h"
 #include "../process/process.h"
 #include "../api/api.h"
@@ -13,13 +14,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-struct Controller {
-    Process *process;
-    Api *api;
-    State *state;
-    Config *config;
-};
 
 Controller* controllerCreate() {
     Controller *controller = (Controller*)malloc(sizeof(Controller));
@@ -104,6 +98,12 @@ bool controllerIsGameWindowAttached(Controller *controller) {
     if (!controller) return false;
     if (!controller->process) return false;
     return processIsWindowAttached(controller->process);
+}
+
+bool controllerIsGameReady(Controller *controller) {
+    if (!controller) return false;
+    if (!controller->process) return false;
+    return apiIsGameReady(controller->api);
 }
 
 bool controllerTryAttachGameWindow(Controller *controller) {
@@ -232,6 +232,9 @@ void controllerInitTrainerConfig(Controller *controller) {
     if (controllerIsGameWindowAttached(controller) && !processIsBorderless(controller->process) && makeBorderless) {
         controllerSetCheat(controller, CHEAT_NAME_MAKE_BORDERLESS, makeBorderless);
     }
+
+    // --- Other non-gui Config ---
+    controllerSetCheat(controller, CHEAT_NAME_PATCH_CHAT, true);
 }
 
 void controllerUpdateTrainerConfig(Controller *controller) {
@@ -264,9 +267,12 @@ void controllerUpdateTrainerConfig(Controller *controller) {
     controllerSetCheat(controller, CHEAT_NAME_FIX_MOVEMENT_SPEED, fixMovementSpeed);
     controllerSetCheat(controller, CHEAT_NAME_SHOW_FPS, showFps);
     if (!controllerIsTimRunning(controller)) {
-        char *hostname = uiGameGetHostname();
-        controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, hostname);
-        uiFreeText(hostname);
+        // Only modify when there is an active game. This address gets mad when it gets modified outside a game.s
+        if (stateIsZombiesGameActive(controller->state)) {
+            char *hostname = uiGameGetHostname();
+            controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, hostname);            
+            uiFreeText(hostname);
+        }
     }
 }
 
@@ -373,4 +379,9 @@ void controllerResetConfig(Controller *controller, ConfigType type) {
 void controllerWidgetResetConfig(Controller *controller, int index) {
     if (!controller) return;
     configResetWidget(controller->config, index);
+}
+
+Api *_controllerGetApi(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->api;
 }

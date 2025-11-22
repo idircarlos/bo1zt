@@ -4,7 +4,7 @@
 #include "controller/controller.h"
 #include "logger/logger.h"
 #include "thread/thread.h"
-#include <windows.h>
+#include "command/command.h"
 
 static Controller *controller = NULL;
 
@@ -33,6 +33,19 @@ int processRunningThread(void *data) {
         }
         if (processExited) continue;
         LOG_INFO("Window attached!\n");
+        while (!controllerIsGameReady(controller)) {
+            // This can happen if the game exits before being ready
+            processExited = !controllerIsGameRunning(controller);
+            if (processExited) {
+                LOG_INFO("Game exited before being ready\n");
+                controllerDetachGame(controller);
+                break;
+            }
+            
+            threadSleep(200);
+        }
+        if (processExited) continue;
+        LOG_INFO("Game ready!\n");
         controllerInitTrainerConfig(controller);
         controllerWaitUntilGameCloses(controller);
         LOG_INFO("Game has been closed\n");
@@ -43,10 +56,28 @@ int processRunningThread(void *data) {
 
 int updateGameThread(void *data) {
     (void)data;
+    // For some reason, there is a bug that UI components are return random values from others threads immediately after the building the UI.
+    // Waiting a bit as a workaround.
+    threadSleep(1000);
     while (true) {
         controllerUpdateState(controller);
         controllerUpdateTrainerConfig(controller);
         threadSleep(1000);
+    }
+}
+
+int commandHandlerThread(void *data) {
+    (void)data;
+    while (!controllerIsGameReady(controller)) {
+        threadSleep(200);
+    }
+    Server *server = serverCreate(controller);
+    commandInit(controller, server);
+    while (true) {
+        if (!controllerIsGameReady(controller)) continue;
+        Command *command = commandPoll();   // Blocking call. Waits until a command is available.
+        commandHandle(command);
+        commandFree(command);
     }
 }
 
@@ -57,6 +88,7 @@ int main(void) {
     guiInit(controller);
     threadCreate(processRunningThread, NULL);
     threadCreate(updateGameThread, NULL);
+    threadCreate(commandHandlerThread, NULL);
     guiRun();
     guiCleanup();
     return 0;

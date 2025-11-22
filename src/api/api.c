@@ -5,11 +5,13 @@
 #include "../map/map.h"
 #include "../hook/hook.h"
 #include "../process/process.h"
+#include "../thread/thread.h"
 #include "../gui/graphics/customizer/customizer.h"
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <windows.h>
 
 struct Api {
     Controller *controller;
@@ -72,6 +74,9 @@ bool _apiSetColorized(Process *process, bool enabled);
 
 bool _apiGetFixMovementSpeed(Process *process);
 bool _apiSetFixMovementSpeed(Process *process, bool enabled);
+
+bool _apiGetPatchChat(Process *process);
+bool _apiSetPatchChat(Process *process, bool enabled);
 
 bool _apiGetShowFps(Process *process);
 bool _apiSetShowFps(Process *process, bool enabled);
@@ -159,6 +164,8 @@ bool apiIsCheatEnabled(Api *api, CheatName cheatName) {
             return _apiGetFixMovementSpeed(process);
         case CHEAT_NAME_SHOW_FPS:
             return _apiGetShowFps(process);
+        case CHEAT_NAME_PATCH_CHAT:
+            return _apiGetPatchChat(process);
         
         default:
             LOG_WARN("Unkwown cheatName %d\n", cheatName);
@@ -219,6 +226,8 @@ bool apiSetCheatEnabled(Api *api, CheatName cheatName, bool enabled) {
             return _apiSetFixMovementSpeed(process, enabled);
         case CHEAT_NAME_SHOW_FPS:
             return _apiSetShowFps(process, enabled);
+        case CHEAT_NAME_PATCH_CHAT:
+            return _apiSetPatchChat(process, enabled);
         default:
             LOG_WARN("Unknown cheatName %d\n", cheatName);
             return false;
@@ -419,6 +428,26 @@ bool apiSetRound(Api *api, int currentRound, int nextRound) {
     return true;
 }
 
+bool apiIsGameReady(Api *api) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return false;
+    }
+    
+    Process *process = controllerGetProcess(api->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return false;
+    }
+    uint32_t ready;
+    bool success = processRead(process, GAME_CHEAT.isGameReady, &ready, sizeof(ready));
+    if (!success) {
+        printf("Failed to read Is Game Ready value\n");
+        return false;
+    }
+    return ready > 0; // This value starts getting populated when the initial loading screen ends. Semms like a timer tho.
+}
+
 bool apiIsZombiesGameRunning(Api *api) {
     if (!api || !api->controller) {
         LOG_ERROR("Api or Controller is null\n");
@@ -461,6 +490,150 @@ int apiGetGameResets(Api *api) {
     
     resets = resets == 0 ? resets : resets - 1;
     return (int)resets; 
+}
+
+char* apiPollLastChatMessage(Api *api) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return NULL;
+    }
+    
+    Process *process = controllerGetProcess(api->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return NULL;
+    }
+    char *message = (char*)malloc(API_CHAT_MESSAGE_LENGTH*sizeof(char)); // Assume chat length message is < 64
+    bool success = processRead(process, GAME_CHEAT.lastChatMessage, message, API_CHAT_MESSAGE_LENGTH);
+    if (!success) {
+        printf("Failed to read Last Chat Message value\n");
+        return NULL;
+    }
+    // After reading the last message we have to clean the buffer so we can detect the same command next time.
+    char *empty = (char*)calloc(64, sizeof(char));
+    success = processWrite(process, GAME_CHEAT.lastChatMessage - 1, empty, 64); // Write empty string
+    free(empty);
+    if (!success) {
+        printf("Failed to clear Last Chat Message value\n");
+        return NULL;
+    }
+    return message;
+}
+
+bool apiSVSendServerCommand(Api *api, int commandType, int clientNumber, const char *commands) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return NULL;
+    }
+    
+    Process *process = controllerGetProcess(api->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return NULL;
+    }
+
+    ServerCheat sendCommand = SERVER_CHEAT_SEND_COMMAND;
+    CheatAsmInstructionSet asmSet = sendCommand.instructions;
+    size_t offset = sendCommand.offset;
+    uint8_t *bytes = (uint8_t*)malloc(asmSet.size * sizeof(uint8_t));
+    memcpy(bytes, asmSet.instructions, asmSet.size);
+
+    uintptr_t commandsAddr;
+    size_t pageSize = sizeof(commandsAddr) + sizeof(commandType) + sizeof(clientNumber) + asmSet.size + (strlen(commands) + 1);
+    
+    uintptr_t addr;
+    processAllocatePage(process, pageSize, &addr);
+    uintptr_t relativeAddr = offset - (addr + 4 + 4 + 4 + 24);
+    memcpy(bytes + 20, &relativeAddr, 4);    
+    
+    size_t commandOffset = 4 + 4 + 4 + asmSet.size + 1;
+    commandsAddr = addr + commandOffset;
+    processWrite(process, addr, &commandsAddr, sizeof(commandsAddr));
+    processWrite(process, addr + 4, &commandType, sizeof(commandType));
+    processWrite(process, addr + 8, &clientNumber, sizeof(clientNumber));
+    processWrite(process, addr + 12, bytes, asmSet.size);
+    processWrite(process, addr + commandOffset, commands, strlen(commands)+1);
+
+    Thread *thread = threadCreateRemote(process, addr + 12, addr);
+    bool success = true;
+    if (!threadWait(thread, 100)) {
+        LOG_ERROR("Thread wait timed out! Could not execute remote SV_SendServerCommand.\n");
+        success = false;
+    }
+    threadClose(thread);
+    free(bytes);
+    processFreePage(process, addr);
+    return success;
+}
+
+bool apiCBuffAddText(Api *api, const char *commands) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return NULL;
+    }
+    
+    Process *process = controllerGetProcess(api->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return NULL;
+    }
+
+    ServerCheat cbuffAddText = SERVER_CHEAT_CBUF_ADDTEXT;
+    CheatAsmInstructionSet asmSet = cbuffAddText.instructions;
+    size_t offset = cbuffAddText.offset;
+    uint8_t *bytes = (uint8_t*)malloc(asmSet.size * sizeof(uint8_t));
+    memcpy(bytes, asmSet.instructions, asmSet.size);
+
+    size_t pageSize = asmSet.size + (strlen(commands) + 1);
+    
+    uintptr_t addr;
+    processAllocatePage(process, pageSize, &addr);
+    uintptr_t relativeAddr = offset - (addr + 12);
+    memcpy(bytes + 8, &relativeAddr, 4);    
+    
+    processWrite(process, addr, bytes, asmSet.size);
+    processWrite(process, addr + asmSet.size + 1, commands, strlen(commands)+1);
+    Thread *thread = threadCreateRemote(process, addr, addr + asmSet.size + 1);
+    bool success = true;
+    if (!threadWait(thread, 100)) {
+        LOG_ERROR("Thread wait timed out! Could not execute remote Cbuf_AddText.\n");
+        success = false;
+    }
+    threadClose(thread);
+    processFreePage(process, addr);
+    free(bytes);
+    return success;
+}
+
+uintptr_t apiGetDVarPointer(Api *api, const char *dVar) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return 0;
+    }
+    
+    Process *process = controllerGetProcess(api->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return 0;
+    }
+
+    ServerCheat getDVarPtr = SERVER_CHEAT_GET_DVAR_PTR;
+    size_t offset = getDVarPtr.offset;
+
+    size_t pageSize = strlen(dVar) + 1;
+    uintptr_t addr;
+    processAllocatePage(process, pageSize, &addr);
+    processWrite(process, addr, dVar, strlen(dVar)+1);
+    Thread *thread = threadCreateRemote(process, offset, addr);
+    bool success = true;
+    if (!threadWait(thread, 100)) {
+        LOG_ERROR("Thread wait timed out! Could not execute remote GetDVarPointer.\n");
+        success = false;
+    }
+    int exitCode = success ? threadGetExitCode(thread) : 0;
+    threadClose(thread);
+    processFreePage(process, addr);
+    return (uintptr_t)exitCode;
 }
 
 bool _apiGetGodMode(Process *process) {
@@ -910,6 +1083,25 @@ bool _apiSetFixMovementSpeed(Process *process, bool enabled) {
     float backwardsValue = enabled ? CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.on.f32 : CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.off.f32;
     float straifValue = enabled ? CHEAT_FIX_MOVEMENT_SPEED_STRAIF.on.f32 : CHEAT_FIX_MOVEMENT_SPEED_STRAIF.off.f32;
     return processWrite(process, backwardsAddress1 + 0x18, &backwardsValue, sizeof(backwardsValue)) && processWrite(process, straifAddress1 + 0x18, &straifValue, sizeof(straifValue));
+}
+
+bool _apiGetPatchChat(Process *process) {
+    uint8_t value = 0;
+    bool success = processRead(process, CHEAT_PATCH_CHAT.offset, &value, sizeof(value));
+    if (!success) {
+        printf("Failed to read Patch Chat value\n");
+        return false;
+    }
+    return value == CHEAT_PATCH_CHAT.on.byte;
+}
+
+bool _apiSetPatchChat(Process *process, bool enabled) {
+    uint8_t value = enabled ? CHEAT_PATCH_CHAT.on.byte : CHEAT_PATCH_CHAT.off.byte;
+    uint32_t oldProtect;
+    processVirtualProtect(process, CHEAT_PATCH_CHAT.offset, sizeof(value), PAGE_EXECUTE_READWRITE, &oldProtect);
+    bool success = processWrite(process, CHEAT_PATCH_CHAT.offset, &value, sizeof(value));
+    processVirtualProtect(process, CHEAT_PATCH_CHAT.offset, sizeof(value), oldProtect, &oldProtect);
+    return success;
 }
 
 

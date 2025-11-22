@@ -25,4 +25,11 @@ void flagsRemove(Flags *flags, Flags mask);
 bool flagsContains(Flags flags, Flags mask);
 void flagsClear(Flags *flags);
 
+typedef enum {
+    CT_INT,
+    CT_FLOAT,
+    CT_STRING,
+    CT_BOOL,
+} CType;
+
 #endif // COMMON_H_

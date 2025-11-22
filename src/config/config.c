@@ -122,7 +122,6 @@ Config* configCreate() {
         config->widgets[i].rect = uiWidgetsGetDefaultRect(i);
         config->widgets[i].fontSize = uiWidgetsGetDefaultFontSize(i);
     }
-    LOG_INFO("rect = %d %d\n", config->widgets[0].rect.x, config->widgets[0].rect.y);
     configSave(config);
     return config;
 }

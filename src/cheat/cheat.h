@@ -8,6 +8,7 @@
 #define MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE 1024 // 1KB max size for flexibility
 #define NUM_WEAPON_IDS 81
 #define ROUND_CHANGE_PATTERN_SIZE 8
+#define MAX_COMMANDS_LENGTH 256
 
 typedef enum {
     CHEAT_NAME_GOD_MODE,
@@ -30,6 +31,7 @@ typedef enum {
     CHEAT_NAME_COLORIZED,
     CHEAT_NAME_FIX_MOVEMENT_SPEED,   // this cheat is divided into two SimpleCheat (backwards + straif velocities)
     CHEAT_NAME_SHOW_FPS,
+    CHEAT_NAME_PATCH_CHAT,
 } CheatName;
 
 typedef union {
@@ -208,15 +210,22 @@ typedef struct {
 } RoundCheat;
 
 typedef struct {
-    // Read-only. We only want to read from these addresses
+    // Read-only. We only want to read from these addresse
+    uintptr_t isGameReady; // Check if game is ready to be modified
     uintptr_t isZombiesGameActiveOffset;
     uintptr_t nResetsOffset;
+    uintptr_t lastChatMessage;
 } GameCheat;
 
 typedef struct {
     uintptr_t baseOffset;
     uint32_t offset;
 } CustomizerCheat;
+
+typedef struct {
+    CheatAsmInstructionSet instructions;
+    uintptr_t offset;
+} ServerCheat;
 
 // Cheats box
 extern Cheat CHEAT_GOD_MODE;
@@ -287,6 +296,12 @@ extern CustomizerCheat CUSTOMIZER_CHEAT_WARN_NO_AMMO_SECONDARY;
 extern CustomizerCheat CUSTOMIZER_CHEAT_WARN_FREQUENCY;
 extern CustomizerCheat CUSTOMIZER_CHEAT_WARN_MIN;
 extern CustomizerCheat CUSTOMIZER_CHEAT_WARN_MAX;
+
+// Others non-ui cheats
+extern Cheat CHEAT_PATCH_CHAT;
+extern ServerCheat SERVER_CHEAT_SEND_COMMAND;
+extern ServerCheat SERVER_CHEAT_CBUF_ADDTEXT;
+extern ServerCheat SERVER_CHEAT_GET_DVAR_PTR;
 
 SimpleCheat cheatGetSimpleCheat(SimpleCheatName cheatName);
 const char *cheatGetWeaponName(WeaponName weapon);

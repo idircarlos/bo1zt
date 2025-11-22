@@ -6,6 +6,8 @@
 #include "../process/process.h"
 #include "../controller/controller.h"
 
+#define API_CHAT_MESSAGE_LENGTH 64
+
 typedef struct Api Api;
 
 Api *apiCreate(Controller *controller);
@@ -18,7 +20,12 @@ WeaponName apiGetPlayerWeapon(Api *api, int slot);
 bool apiSetPlayerWeapon(Api *api, WeaponName weapon, int slot);
 bool apiGivePlayerAmmo(Api *api);
 bool apiSetRound(Api *api, int currentRound, int nextRound);
+bool apiIsGameReady(Api *api);
 bool apiIsZombiesGameRunning(Api *api);
 int apiGetGameResets(Api *api);
+char* apiPollLastChatMessage(Api *api);
+bool apiSVSendServerCommand(Api *api, int commandType, int clientNumber, const char *commands);
+bool apiCBuffAddText(Api *api, const char *commands);
+uintptr_t apiGetDVarPointer(Api *api, const char *dVar);
 
 #endif // API_H_

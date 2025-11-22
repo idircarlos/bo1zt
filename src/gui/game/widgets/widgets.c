@@ -452,16 +452,18 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
 static void update() {
     // For some reason uiTableSelectionModeOne does not work properly when clicking on an empty area of the table, having 0 row selected.
-    // As a workaround, if user is deselecting any row, keep focusing to that one.
-    uiTableSelection *selection = uiTableGetSelection(widgetTable);
-    if (!selection->Rows) {
-        uiTableSelection currentSelection;
-        int indexes[] = {selectedWidgetIndex};
-        currentSelection.NumRows = 1;      // Preselect only one row
-        currentSelection.Rows = indexes;   // The current index
-        uiTableSetSelection(widgetTable, &currentSelection);
+    // As a workaround, if user is deselecting any row, keep focusing to that one. Do it only when the window is visible.
+    if (uiControlVisible(uiControl(parent))) {
+        uiTableSelection *selection = uiTableGetSelection(widgetTable);
+        if (!selection->Rows) {
+            uiTableSelection currentSelection;
+            int indexes[] = {selectedWidgetIndex};
+            currentSelection.NumRows = 1;      // Preselect only one row
+            currentSelection.Rows = indexes;   // The current index
+            uiTableSetSelection(widgetTable, &currentSelection);
+        }
+        if (selection) uiFreeTableSelection(selection);
     }
-    if (selection) uiFreeTableSelection(selection);
     
     // Save widget Rect and Font size if its being transformed. This is not handled by the Widgets Config UI.
     // We only care if one the widgets is veing moved/resized.

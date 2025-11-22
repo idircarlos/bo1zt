@@ -1,24 +1,10 @@
 #include "process.h"
+#include "process_internal.h"
 #include "../logger/logger.h"
 #include <windows.h>
 #include <tlhelp32.h>
 #include <string.h>
 #include <stdlib.h>
-
-typedef struct {
-    HWND hwnd;
-    char *windowTitle;
-    LONG_PTR originalStyle;
-    LONG_PTR originalExStyle;
-    bool hasSavedStyle;
-} WindowInfo;
-
-struct Process {
-    HANDLE handle;
-    DWORD pid;
-    char executableName[256];
-    WindowInfo windowInfo;
-};
 
 static BOOL CALLBACK _EnumWindowsProc(HWND hWnd, LPARAM lParam);
 static bool _tryMakeBorderless(Process *process);
@@ -165,6 +151,10 @@ bool processAllocatePage(Process *process, size_t size, uintptr_t *address) {
     return address != NULL;
 }
 
+bool processFreePage(Process *process, uintptr_t address) {
+    return VirtualFreeEx(process->handle, (LPVOID)(uintptr_t)address, 0, MEM_RELEASE);
+}
+
 bool processFindPattern(Process *process, uintptr_t startAddress, size_t regionSize, const uint8_t *pattern, size_t patternSize, uintptr_t *outAddress) {
     if (!process || !pattern || patternSize == 0 || regionSize == 0 || !outAddress)
         return false;
@@ -198,6 +188,10 @@ bool processFindPattern(Process *process, uintptr_t startAddress, size_t regionS
 
     free(buffer);
     return false;
+}
+
+HANDLE _processGetHandle(Process *process) {
+    return process->handle;
 }
 
 static BOOL CALLBACK _EnumWindowsProc(HWND hWnd, LPARAM lParam) {
