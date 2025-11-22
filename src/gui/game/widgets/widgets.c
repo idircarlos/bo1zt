@@ -455,18 +455,19 @@ static void update() {
     // As a workaround, if user is deselecting any row, keep focusing to that one. Do it only when the window is visible.
     if (uiControlVisible(uiControl(parent))) {
         uiTableSelection *selection = uiTableGetSelection(widgetTable);
-        if (!selection->Rows) {
-            uiTableSelection currentSelection;
-            int indexes[] = {selectedWidgetIndex};
-            currentSelection.NumRows = 1;      // Preselect only one row
-            currentSelection.Rows = indexes;   // The current index
-            uiTableSetSelection(widgetTable, &currentSelection);
+        
+        if (selection != NULL) {
+            if (selection->NumRows == 0 || selection->Rows == NULL) {
+                uiTableSelection currentSelection;
+                int indexes[] = {selectedWidgetIndex};
+                currentSelection.NumRows = 1;
+                currentSelection.Rows = indexes;
+                uiTableSetSelection(widgetTable, &currentSelection);
+            }
+            uiFreeTableSelection(selection);
         }
-        if (selection) uiFreeTableSelection(selection);
     }
     
-    // Save widget Rect and Font size if its being transformed. This is not handled by the Widgets Config UI.
-    // We only care if one the widgets is veing moved/resized.
     bool wasTransforming = mapGetBool(cache, WIDGET_TRANSFORMING);
     bool isTransformingNow = false;
     for (int i = 0; i < N_WIDGETS; i++) {

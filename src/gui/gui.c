@@ -35,6 +35,12 @@ static int onClosing(uiWindow *window, void *data) {
     exit(0);
 }
 
+static int onTimerUpdate(void *data) {
+    (void)data;
+    guiUpdate();
+    return 1;
+}
+
 void guiUpdate() {
     for (int i = 0; i < UI_CONTROL_GROUP_SIZE; i++) {
         controlGroups[i]->update();
@@ -136,9 +142,8 @@ void guiInit(Controller *controllerInstance) {
 
 void guiRun(void) {
     uiControlShow(uiControl(window));
-    while (uiMainStep(0)) {
-        guiUpdate();
-    }
+    uiTimer(1000/60, onTimerUpdate, NULL); // ~60 FPS
+    uiMain();
 }
 
 void guiCleanup(void) {
