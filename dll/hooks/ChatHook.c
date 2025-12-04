@@ -23,7 +23,7 @@ static void __cdecl ChatHookFunction(int clientId, const char *message);
 
 // Hook instance
 Hook chatHook = {
-    .name = "ChatHook",
+    .name = CHAT_HOOK_NAME,
     .install = ChatHookInstallImpl
 };
 
