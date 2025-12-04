@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "../../shared/event.h"
 
 typedef struct Process Process;
 
@@ -22,5 +23,10 @@ bool processAllocatePage(Process *process, size_t size, uintptr_t *address);
 bool processFreePage(Process *process, uintptr_t address);
 bool processVirtualProtect(Process *process, uint32_t address, size_t size, uint32_t protect, uint32_t *oldProtect);
 bool processFindPattern(Process *process, uintptr_t startAddress, size_t regionSize, const uint8_t *pattern, size_t patternSize, uintptr_t *outAddress);
+bool processInjectDll(Process *process, const char *dllName);
+bool processHasDll(Process *process, const char *dllName);
+void processConnectPipe(Process *process);
+bool processIsPipeConnected(Process *process);
+Event processPollFromPipe(Process *process);
 
 #endif // PROCESS_H_

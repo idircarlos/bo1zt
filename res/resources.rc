@@ -8,3 +8,5 @@ IDI_ICON1 ICON "icon.ico"
 // Embedded fonts
 IDR_FONT_DIGITAL_7_MONO RCDATA "fonts/digital-7-mono.ttf"
 
+// Embedded DLL
+IDR_CHAT_HOOK_DLL RCDATA "../build/bo1zt.dll"

@@ -520,7 +520,7 @@ char* apiPollLastChatMessage(Api *api) {
     
     Process *process = controllerGetProcess(api->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        //LOG_ERROR("Process is null\n");
         return NULL;
     }
     char *message = (char*)malloc(API_CHAT_MESSAGE_LENGTH*sizeof(char)); // Assume chat length message is < 64

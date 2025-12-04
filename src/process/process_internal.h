@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include "process.h"
+#include "../../shared/pipe.h"
 
 typedef struct {
     HWND hwnd;
@@ -14,6 +15,7 @@ typedef struct {
 
 struct Process {
     HANDLE handle;
+    Pipe pipe;
     DWORD pid;
     char executableName[256];
     WindowInfo windowInfo;

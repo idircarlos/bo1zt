@@ -1,10 +1,13 @@
 #include <stdio.h>
+#include <sys/stat.h>
 #include "gui/gui.h"
 #include "process/process.h"
 #include "controller/controller.h"
 #include "logger/logger.h"
 #include "thread/thread.h"
 #include "command/command.h"
+#include "resources/resources.h"
+#include "../res/resource_ids.h"
 
 static Controller *controller = NULL;
 
@@ -46,6 +49,13 @@ int processRunningThread(void *data) {
         }
         if (processExited) continue;
         LOG_INFO("Game ready!\n");
+        Process *process = controllerGetProcess(controller);
+        if (!processInjectDll(process, DLL_NAME)) {
+            LOG_ERROR("Failed to inject DLL into game process. Events won't be received.\n");
+        } else {
+            Sleep(500); // Wait a bit to let the DLL initialize the pipe
+            processConnectPipe(process);
+        }
         controllerInitTrainerConfig(controller);
         controllerWaitUntilGameCloses(controller);
         LOG_INFO("Game has been closed\n");
@@ -81,14 +91,36 @@ int commandHandlerThread(void *data) {
     }
 }
 
+int eventHandlerThread(void *data) {
+    (void)data;
+    Process *process = NULL;
+    while (true) {
+        process = controllerGetProcess(controller);
+        if (!controllerIsGameReady(controller) || !processIsPipeConnected(process)) {
+            threadSleep(200);
+            continue;
+        }
+        Event event = processPollFromPipe(process); // Blocking call. Waits until an event is available.
+        LOG_INFO("Event received of type %d. %s\n", event.type, event.data);
+    }
+    return 0;
+}
+
+static void setupResources() {
+    resourcesInit();
+    resourcesLoadFont(IDR_FONT_DIGITAL_7_MONO);
+}
+
 
 int main(void) {
     loggerInit(NULL);
     controller = controllerCreate();
+    setupResources();
     guiInit(controller);
     threadCreate(processRunningThread, NULL);
     threadCreate(updateGameThread, NULL);
     threadCreate(commandHandlerThread, NULL);
+    threadCreate(eventHandlerThread, NULL);
     guiRun();
     guiCleanup();
     return 0;

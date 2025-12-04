@@ -3,12 +3,10 @@
 #include "../../../common/common.h"
 #include "../../../widget/timer/timer.h"
 #include "../../../widget/velocity/velocity.h"
-#include "../../../widget/fonts.h"
 #include "../../../map/map.h"
 #include "../../../logger/logger.h"
 #include "../../../timer/timer.h"
 #include "../../../state/state.h"
-#include "../../../../res/resource_ids.h"
 #include <ui.h>
 #include <string.h>
 #include <stdio.h>
@@ -439,10 +437,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiBoxSetPadded(outerBox, 1);
     uiBoxAppend(outerBox, uiControl(mainBox), 1);
     uiBoxAppend(outerBox, uiControl(btnSave), 0);
-
-    fontsInit();
-    fontsLoad(IDR_FONT_DIGITAL_7_MONO);
-    
+ 
     State *state = controllerGetState(controller);
     Timer *timerInstance = stateGetTimer(state);
     Timer *roundTimerInstance = stateGetRoundTimer(state);

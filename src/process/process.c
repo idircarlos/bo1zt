@@ -1,10 +1,14 @@
 #include "process.h"
 #include "process_internal.h"
 #include "../logger/logger.h"
+#include "../resources/resources.h"
+#include "../thread/thread.h"
+#include "../../res/resource_ids.h"
 #include <windows.h>
 #include <tlhelp32.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 static BOOL CALLBACK _EnumWindowsProc(HWND hWnd, LPARAM lParam);
 static bool _tryMakeBorderless(Process *process);
@@ -23,6 +27,8 @@ Process *processOpen(const char *executableName) {
                 process = (Process*)malloc(sizeof(Process));
                 process->pid = pe.th32ProcessID;
                 process->handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pe.th32ProcessID);
+                process->pipe.handle = INVALID_HANDLE_VALUE;
+                process->pipe.connected = false;
                 strcpy(process->executableName, executableName);
                 WindowInfo windowInfo = { .hwnd = NULL, .windowTitle = NULL, .originalStyle = 0, .originalExStyle = 0, .hasSavedStyle = false };
                 process->windowInfo = windowInfo;
@@ -125,7 +131,11 @@ void processWaitUntilExits(Process *process) {
 
 void processClose(Process *process) {
     if (process->handle) {
+        CloseHandle(process->handle);
         process->handle = NULL;
+        CloseHandle(process->pipe.handle);
+        process->pipe.handle = INVALID_HANDLE_VALUE;
+        process->pipe.connected = false;
         process->pid = 0;
         process->windowInfo.hwnd = NULL;
     }
@@ -272,4 +282,173 @@ static bool _tryMakeNonBorderless(Process *process) {
 
     return SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
                                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+}
+
+bool processInjectDll(Process *process, const char *dllName) {
+    if (!process || !process->handle) {
+        LOG_ERROR("processInjectDll: Invalid process\n");
+        return false;
+    }
+
+    if (processHasDll(process, dllName)) {
+        LOG_INFO("DLL already injected in process %lu\n", (unsigned long)process->pid);
+        return true;
+    }
+
+    // Extract DLL from resources to current directory
+    if (!resourcesExtractToFile(IDR_CHAT_HOOK_DLL, dllName)) {
+        LOG_ERROR("processInjectDll: Failed to extract DLL from resources\n");
+        return false;
+    }
+    
+    // Get the full path to the DLL
+    char fullDllPath[MAX_PATH];
+    if (GetFullPathNameA(dllName, MAX_PATH, fullDllPath, NULL) == 0) {
+        LOG_ERROR("processInjectDll: Failed to get full path for DLL\n");
+        return false;
+    }
+    
+    // Allocate memory in the target process for the DLL path
+    size_t pathLen = strlen(fullDllPath) + 1;
+    uintptr_t remoteString;
+    
+    if (!processAllocatePage(process, pathLen, &remoteString)) {
+        LOG_ERROR("processInjectDll: Failed to allocate memory in target process\n");
+        return false;
+    }
+
+    // Write the DLL path into the target process
+    if (!processWrite(process, (uint32_t)remoteString, fullDllPath, pathLen)) {
+        LOG_ERROR("processInjectDll: Failed to write DLL path to target process\n");
+        processFreePage(process, remoteString);
+        return false;
+    }
+    
+    // Get the address of LoadLibraryA
+    HMODULE kernel32 = GetModuleHandleA("kernel32.dll");
+    if (!kernel32) {
+        LOG_ERROR("processInjectDll: Failed to get kernel32.dll handle\n");
+        processFreePage(process, remoteString);
+        return false;
+    }
+    
+    uintptr_t loadLibraryAddr = (uintptr_t)GetProcAddress(kernel32, "LoadLibraryA");
+    if (!loadLibraryAddr) {
+        LOG_ERROR("processInjectDll: Failed to get LoadLibraryA address\n");
+        processFreePage(process, remoteString);
+        return false;
+    }
+    
+    // Create a remote thread to load the DLL
+    LOG_INFO("Creating remote thread to inject DLL into process %lu\n", (unsigned long)process->pid);
+    Thread *remoteThread = threadCreateRemote(process, loadLibraryAddr, remoteString);
+    
+    if (!remoteThread) {
+        LOG_ERROR("processInjectDll: Failed to create remote thread (Error: %lu)\n", GetLastError());
+        processFreePage(process, remoteString);
+        return false;
+    }
+    
+    // Wait for the thread to finish
+    threadWait(remoteThread, INFINITE);
+    
+    int exitCode = threadGetExitCode(remoteThread);
+    
+    threadClose(remoteThread);
+    processFreePage(process, remoteString);
+    
+    if (exitCode == 0) {
+        LOG_ERROR("processInjectDll: LoadLibraryA failed in target process\n");
+        return false;
+    }
+    
+    LOG_INFO("DLL successfully injected!\n");
+    return true;
+}
+
+bool processHasDll(Process *process, const char *dllName) {
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, process->pid);
+    if (snapshot == INVALID_HANDLE_VALUE)
+        return false;
+
+    MODULEENTRY32 me;
+    me.dwSize = sizeof(MODULEENTRY32);
+
+    if (Module32First(snapshot, &me)) {
+        do {
+            if (_stricmp(me.szModule, dllName) == 0 || _stricmp(me.szExePath, dllName) == 0) {
+                CloseHandle(snapshot);
+                return true;
+            }
+        } while (Module32Next(snapshot, &me));
+    }
+
+    CloseHandle(snapshot);
+    return false;
+}
+
+void processConnectPipe(Process *process) {
+    if (process->pipe.handle != INVALID_HANDLE_VALUE) {
+        LOG_WARN("processConnectPipe: Pipe already created\n");
+        return;
+    }
+
+    HANDLE hPipe = CreateFileA(
+        PIPE_NAME,
+        GENERIC_READ,
+        0,
+        NULL,
+        OPEN_EXISTING,
+        0,
+        NULL
+    );
+
+    if (hPipe == INVALID_HANDLE_VALUE) {
+        LOG_ERROR("processConnectPipe: Failed to connect to named pipe. Error: %d\n", GetLastError());
+        process->pipe.handle = INVALID_HANDLE_VALUE;
+        process->pipe.connected = false;
+        return;
+    }
+
+    process->pipe.handle = hPipe;
+    process->pipe.connected = true;
+
+    LOG_INFO("Pipe connected successfully!\n");
+}
+
+bool processIsPipeConnected(Process *process) {
+    return process && process->pipe.handle != INVALID_HANDLE_VALUE && process->pipe.connected;
+}
+
+Event processPollFromPipe(Process *process) {
+    Event event;
+    if (process->pipe.handle == INVALID_HANDLE_VALUE) {
+        LOG_ERROR("processPollFromPipe: Pipe not created\n");
+        event.type = EVENT_INVALID;
+        return event;
+    }
+
+    DWORD bytesRead = 0;
+    bool result = ReadFile(process->pipe.handle, &event, sizeof(Event), &bytesRead, NULL);
+    
+    if (!result) {
+        DWORD error = GetLastError();
+        LOG_ERROR("processPollFromPipe: Reading from pipe failed (%d)\n", error);
+        
+        // If pipe is broken, mark as disconnected
+        if (error == ERROR_BROKEN_PIPE || error == ERROR_PIPE_NOT_CONNECTED) {
+            process->pipe.connected = false;
+        }
+        
+        event.type = EVENT_INVALID;
+        return event;
+    }
+    
+    if (bytesRead != sizeof(Event)) {
+        LOG_ERROR("processPollFromPipe: Incomplete read (expected %zu, got %lu bytes)\n", sizeof(Event), bytesRead);
+        event.type = EVENT_INVALID;
+        return event;
+    }
+
+    return event;
 }
