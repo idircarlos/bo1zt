@@ -29,13 +29,13 @@ This tool is being created just for fun while learning reverse engineering funda
 |   Set Speed     |   No Recoil            |   Make Borderless           |   Change to any round                  |
 |   Set Kills     |   Infinite Ammo        |   Disable HUD               |   Game info                            |
 |   Set Headshots |   Box Never Moves      |   Disable FOG               |   Fix Movement Speed PC Issue          |
-|                 |                        |                             |   Commands                             |
-|                 |   Instant Kill         |   Fullbright mode           |   Show FPS                             |
-|                 |   Fast Gameplay        |   Colorized mode            |   TIM Compatibility                    |
-|                 |   Third Person         |   Customize UI              |   Setup Camos (*soon!*)                |
+|                 |   Small Crosshair      |   Fullbright mode           |   Commands                             |
+|                 |   Instant Kill         |   Colorized mode            |   Show FPS                             |
+|                 |   Fast Gameplay        |   Customize UI              |   TIM Compatibility                    |
+|                 |   Third Person         |                             |   Setup Camos (*soon!*)                |
 |                 |   No Shellshock        |                             |   Add Floating Widgets                 |
 |                 |   Increase Knife Range |                             |   Open/Close Game                      |
-|                 |   Small Crosshair      |                             |   Persisted Settings                   |
+|                 |                        |                             |   Persisted Settings                   |
 
 ## Requirements
 
