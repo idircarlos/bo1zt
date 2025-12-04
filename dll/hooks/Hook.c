@@ -29,12 +29,14 @@ static void PatchCriticalAddresses(void);
 extern Hook chatHook;
 extern Hook mapRestartHook;
 extern Hook mapChangeHook;
+extern Hook vmNotifyHook;
 
 // Global array of all registered hooks
 Hook* hooks[] = {
     &chatHook,
     &mapRestartHook,
     &mapChangeHook,
+    &vmNotifyHook,
 };
 
 int hooksCount = sizeof(hooks) / sizeof(hooks[0]);
