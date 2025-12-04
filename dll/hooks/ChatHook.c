@@ -4,8 +4,6 @@
  */
 
 #include <windows.h>
-#include <stdio.h>
-#include <string.h>
 #include <stdbool.h>
 #include "Hook.h"
 #include "../../shared/event.h"
@@ -37,9 +35,9 @@ static bool ChatHookInstallImpl(void) {
     // Hook location
     DWORD* pCallOffset = (DWORD*)CHAT_HOOK_OFFSET;
     VirtualProtect(pCallOffset, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
-    DWORD callInstructionAddr = (DWORD)pCallOffset + 4;
-    newOffset = (DWORD)ChatHookTrampoline - callInstructionAddr; // Calculate first offset: target_function - (call_instruction_addr)
-    *pCallOffset = newOffset;    
+    DWORD_PTR callInstructionAddr = (DWORD_PTR)pCallOffset + 4;
+    newOffset = (DWORD)((DWORD_PTR)ChatHookTrampoline - callInstructionAddr); // Calculate first offset: target_function - (call_instruction_addr)
+    *pCallOffset = newOffset;
     VirtualProtect(pCallOffset, 4, oldProtect, &dummy);
     
     return true;

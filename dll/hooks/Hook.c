@@ -27,10 +27,12 @@ static void PatchCriticalAddresses(void);
 
 // Forward declarations for all hooks
 extern Hook chatHook;
+extern Hook mapRestartHook;
 
 // Global array of all registered hooks
 Hook* hooks[] = {
     &chatHook,
+    &mapRestartHook,
 };
 
 int hooksCount = sizeof(hooks) / sizeof(hooks[0]);
