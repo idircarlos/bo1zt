@@ -49,16 +49,6 @@ bool serverSendServerCommand(Server *server, const char *command) {
     return result;
 }
 
-char *serverPollLastChatMessage(Server *server) {
-    if (!server) return NULL;
-    char *message = NULL;
-    while ((message = apiPollLastChatMessage(server->api)) != NULL && strcmp(message, "") == 0) {
-        free(message);
-        Sleep(50);
-    }
-    return message;
-}
-
 bool serverCenterMessage(Server *server, const char *message) {
     if (!server) return false;
     char *command = serverBuildMessage(SV_CMD_MSG_CENTER_KEY, message);

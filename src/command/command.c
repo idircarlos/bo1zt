@@ -40,10 +40,7 @@ static void commandParseMessage(const char *message, int *argc, char ***argv) {
 }
 
 static bool isCommand(const char *message) {
-    bool xd = message[0] == COMMAND_PREFIX;
-    LOG_INFO("XD = %d\n", xd);
-    LOG_INFO("%c == %c ? %d\n", message[1], COMMAND_PREFIX, xd);
-    return xd;
+    return message[0] == COMMAND_PREFIX;
 }
 
 static Map* createCommandsMap() {
@@ -80,12 +77,10 @@ void commandInit(Controller *controllerInstance) {
 }
 
 Command commandBuild(const char *message) {
-    LOG_INFO("%s\n", message);
     int argc;
     char **argv;
     Command command = commandCreate(COMMAND_NONE, 0, NULL);
     if (message == NULL || strcmp(message, "") == 0 || !isCommand(message)) return command;
-    LOG_INFO("2 %s\n", message);
     
     commandParseMessage(message, &argc, &argv);
     char *cmdWithoutPrefix = strdup(argv[0] + 1); // Remove the '/' prefix
@@ -103,7 +98,6 @@ Command commandBuild(const char *message) {
 }
 
 bool commandHandle(Command command) {
-    LOG_INFO("command %d %p\n", command.name, command.argv);
     char buffer[64];
     switch (command.name) {
         case COMMAND_NOCLIP:

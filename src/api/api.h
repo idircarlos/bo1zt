@@ -24,7 +24,6 @@ bool apiIsGameReady(Api *api);
 bool apiIsZombiesGameOngoing(Api *api);
 bool apiIsZombiesGamePaused(Api *api);
 int apiGetGameResets(Api *api);
-char* apiPollLastChatMessage(Api *api);
 bool apiSVSendServerCommand(Api *api, int commandType, int clientNumber, const char *commands);
 bool apiCBuffAddText(Api *api, const char *commands);
 uintptr_t apiGetDVarPointer(Api *api, const char *dVar);

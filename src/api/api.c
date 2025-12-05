@@ -512,34 +512,6 @@ int apiGetGameResets(Api *api) {
     return (int)resets; 
 }
 
-char* apiPollLastChatMessage(Api *api) {
-    if (!api || !api->controller) {
-        LOG_ERROR("Api or Controller is null\n");
-        return NULL;
-    }
-    
-    Process *process = controllerGetProcess(api->controller);
-    if (!process) {
-        //LOG_ERROR("Process is null\n");
-        return NULL;
-    }
-    char *message = (char*)malloc(API_CHAT_MESSAGE_LENGTH*sizeof(char)); // Assume chat length message is < 64
-    bool success = processRead(process, GAME_CHEAT.lastChatMessage, message, API_CHAT_MESSAGE_LENGTH);
-    if (!success) {
-        printf("Failed to read Last Chat Message value\n");
-        return NULL;
-    }
-    // After reading the last message we have to clean the buffer so we can detect the same command next time.
-    char *empty = (char*)calloc(64, sizeof(char));
-    success = processWrite(process, GAME_CHEAT.lastChatMessage - 1, empty, 64); // Write empty string
-    free(empty);
-    if (!success) {
-        printf("Failed to clear Last Chat Message value\n");
-        return NULL;
-    }
-    return message;
-}
-
 bool apiSVSendServerCommand(Api *api, int commandType, int clientNumber, const char *commands) {
     if (!api || !api->controller) {
         LOG_ERROR("Api or Controller is null\n");

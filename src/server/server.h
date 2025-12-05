@@ -10,7 +10,6 @@ Server *serverCreate(Controller *controller);
 
 bool serverExecuteCommand(Server *server, const char *command);
 bool serverSendServerCommand(Server *server, const char *command);
-char *serverPollLastChatMessage(Server *server);
 
 bool serverCenterMessage(Server *server, const char *message);
 bool serverChatMessage(Server *server, const char *message);
