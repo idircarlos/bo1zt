@@ -22,6 +22,7 @@ Controller* controllerCreate() {
     controller->process = NULL;
     controller->state = NULL;
     controller->api = NULL;
+    controller->server = NULL;
     controllerAttachGame(controller);
     return controller;
 }
@@ -65,6 +66,7 @@ bool controllerAttachGame(Controller *controller) {
     if (!controller->process) controller->process = processOpen(GAME_EXECUTABLE_NAME);
     if (!controller->process) return false;
     if (!controller->api) controller->api = apiCreate(controller);
+    if (!controller->server) controller->server = serverCreate(controller);
     bool isGameAttached = controllerIsGameAttached(controller);
     bool isTimRunning = controllerIsTimRunning(controller);
     bool isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
@@ -390,4 +392,9 @@ void controllerWidgetResetConfig(Controller *controller, int index) {
 Api *_controllerGetApi(Controller *controller) {
     if (!controller) return NULL;
     return controller->api;
+}
+
+Server *_controllerGetServer(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->server;
 }

@@ -18,5 +18,6 @@ struct Controller {
 };
 
 Api *_controllerGetApi(Controller *controller);
+Server *_controllerGetServer(Controller *controller);
 
 #endif // CONTROLLER_INTERNAL_H_

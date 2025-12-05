@@ -132,9 +132,9 @@ bool serverSetDVarFloat(Server *server, const char *dVar, float value) {
     return result;
 }
 
-bool serverSetDVarString(Server *server, const char *dVar, char* value) {
+bool serverSetDVarString(Server *server, const char *dVar, const char* value) {
     if (!server) return false;
-    char *message = serverBuildDVar(dVar, value, CT_STRING);
+    char *message = serverBuildDVar(dVar, (void*)value, CT_STRING);
     bool result = serverSendServerCommand(server, message);
     free(message);
     return result;

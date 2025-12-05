@@ -1,6 +1,7 @@
 #include "command.h"
 #include "../logger/logger.h"
 #include "../server/server.h"
+#include "../controller/controller_internal.h"
 #include "../map/map.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -95,9 +96,9 @@ Command *commandCreate(CommandName name, int argc, char **argv) {
     return command;
 }
 
-void commandInit(Controller *controllerInstance, Server *serverInstance) {
+void commandInit(Controller *controllerInstance) {
     controller = controllerInstance;
-    server = serverInstance;
+    server = _controllerGetServer(controller);
     commandsMap = createCommandsMap();
 }
 

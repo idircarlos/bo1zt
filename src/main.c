@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <sys/stat.h>
 #include "gui/gui.h"
 #include "process/process.h"
@@ -6,6 +5,7 @@
 #include "logger/logger.h"
 #include "thread/thread.h"
 #include "command/command.h"
+#include "event/event.h"
 #include "resources/resources.h"
 #include "../res/resource_ids.h"
 
@@ -81,8 +81,7 @@ int commandHandlerThread(void *data) {
     while (!controllerIsGameReady(controller)) {
         threadSleep(200);
     }
-    Server *server = serverCreate(controller);
-    commandInit(controller, server);
+    commandInit(controller);
     while (true) {
         if (!controllerIsGameReady(controller)) continue;
         Command *command = commandPoll();   // Blocking call. Waits until a command is available.
@@ -94,14 +93,19 @@ int commandHandlerThread(void *data) {
 int eventHandlerThread(void *data) {
     (void)data;
     Process *process = NULL;
+    while (!controllerIsGameReady(controller)) {
+        threadSleep(200);
+    }
+    
+    eventInit(controller);
     while (true) {
         process = controllerGetProcess(controller);
         if (!controllerIsGameReady(controller) || !processIsPipeConnected(process)) {
             threadSleep(200);
             continue;
         }
-        Event event = processPollFromPipe(process); // Blocking call. Waits until an event is available.
-        LOG_INFO("Event received of type %d. %s\n", event.type, event.data);
+        Event event = eventPoll();  // Blocking call. Waits until an event is available.
+        eventHandle(event);
     }
     return 0;
 }
