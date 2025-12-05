@@ -4,7 +4,6 @@
 #include "controller/controller.h"
 #include "logger/logger.h"
 #include "thread/thread.h"
-#include "command/command.h"
 #include "event/event.h"
 #include "resources/resources.h"
 #include "../res/resource_ids.h"
@@ -76,20 +75,6 @@ int updateGameThread(void *data) {
     }
 }
 
-int commandHandlerThread(void *data) {
-    (void)data;
-    while (!controllerIsGameReady(controller)) {
-        threadSleep(200);
-    }
-    commandInit(controller);
-    while (true) {
-        if (!controllerIsGameReady(controller)) continue;
-        Command *command = commandPoll();   // Blocking call. Waits until a command is available.
-        commandHandle(command);
-        commandFree(command);
-    }
-}
-
 int eventHandlerThread(void *data) {
     (void)data;
     Process *process = NULL;
@@ -123,7 +108,6 @@ int main(void) {
     guiInit(controller);
     threadCreate(processRunningThread, NULL);
     threadCreate(updateGameThread, NULL);
-    threadCreate(commandHandlerThread, NULL);
     threadCreate(eventHandlerThread, NULL);
     guiRun();
     guiCleanup();

@@ -10,7 +10,6 @@ typedef struct Hook {
 } Hook;
 
 void HookInstallAll(void);
-int HookGetTimestamp(void);
-Event HookBuildEvent(EventType type, const char* format, ...);
+unsigned int HookGetTimestamp(void);
 
 #endif // DLL_HOOK_H

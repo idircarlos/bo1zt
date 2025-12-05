@@ -67,7 +67,10 @@ static void __attribute__((naked)) __attribute__((cdecl)) MapRestartHookTrampoli
 
 // Our hook function called on map restart
 static void __cdecl MapRestartHookFunction(void) {
-    Event ev = HookBuildEvent(EVENT_MAP_RESTART, "%d", HookGetTimestamp());
+    Event ev = {0};
+    ev.type = EVENT_MAP_RESTART;
+    ev.timestamp = HookGetTimestamp();
+    
     if (!SendEvent(&ev)) {
         LOG_ERROR("Failed to send map restart event");
     }

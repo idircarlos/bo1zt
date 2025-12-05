@@ -90,7 +90,12 @@ static void IDUpdateHookFunction(int eventData, int unused, int* pEventValue) {
     // Skip if: flag bit 0 is set, eventId is zero, or event is not monitored
     if ((flags & 0x01) || (eventId == 0x000000) || !EventIsBeingMonitored(eventId)) return;
 
-    Event ev = HookBuildEvent(EVENT_ID_UPDATE, "%d:%d:%d", HookGetTimestamp(), eventId, pEventValue);
+    Event ev = {0};
+    ev.type = EVENT_ID_UPDATE;
+    ev.timestamp = HookGetTimestamp();
+    ev.data.idUpdate.eventId = eventId;
+    ev.data.idUpdate.pEventValue = pEventValue;
+    
     if (!SendEvent(&ev)) {
         LOG_ERROR("Failed to send ID update event");
     }

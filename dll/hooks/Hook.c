@@ -1,9 +1,6 @@
 #include "Hook.h"
 #include "../utils/Log.h"
 #include <windows.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include "../../shared/event.h"
 
 #define TIMESTAMP_OFFSET 0x286D014
 
@@ -88,21 +85,9 @@ void HookInstallAll(void) {
     }
 }
 
-int HookGetTimestamp(void) {
-    int *timestampPtr = (int*)(TIMESTAMP_OFFSET);
+unsigned int HookGetTimestamp(void) {
+    unsigned int *timestampPtr = (unsigned int*)(TIMESTAMP_OFFSET);
     return *timestampPtr;
-}
-
-// Build an event with formatted data
-Event HookBuildEvent(EventType type, const char* format, ...) {
-    Event ev;
-    ev.type = type;
-    
-    va_list args;
-    va_start(args, format);
-    vsnprintf(ev.data, EVENT_DATA_MAX_SIZE, format, args);
-    va_end(args);
-    return ev;
 }
 
 /*

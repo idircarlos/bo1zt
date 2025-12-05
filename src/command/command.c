@@ -10,36 +10,11 @@
 #define ARGV_DEFAULT_CAP 2
 #define COMMAND_PREFIX '/'
 
-typedef enum {
-    COMMAND_NONE = -2,
-    COMMAND_UNKNOWN = -1,
-    COMMAND_NOCLIP,
-    COMMAND_GOD,
-    COMMAND_DEMIGOD,
-    COMMAND_INVISIBLE,
-    COMMAND_UFO,
-    COMMAND_GIVE,
-    COMMAND_FOV,
-    COMMAND_FOVSCALE,
-    COMMAND_FPS,
-    COMMAND_NDOGS,
-    COMMAND_INSTA,
-    COMMAND_INFAMMO,
-    COMMAND_TP,
-    COMMAND_UWU,
-} CommandName;
-
-struct Command {
-    CommandName name;
-    int argc;
-    char **argv;
-};
-
 static Controller *controller;
 static Server *server;
 static Map *commandsMap;
 
-static void commandParseMessage(char *message, int *argc, char ***argv) {
+static void commandParseMessage(const char *message, int *argc, char ***argv) {
     char *msg_copy = strdup(message);  
     char *token;
     int count = 0;
@@ -65,7 +40,10 @@ static void commandParseMessage(char *message, int *argc, char ***argv) {
 }
 
 static bool isCommand(const char *message) {
-    return message[0] == COMMAND_PREFIX;
+    bool xd = message[0] == COMMAND_PREFIX;
+    LOG_INFO("XD = %d\n", xd);
+    LOG_INFO("%c == %c ? %d\n", message[1], COMMAND_PREFIX, xd);
+    return xd;
 }
 
 static Map* createCommandsMap() {
@@ -87,12 +65,11 @@ static Map* createCommandsMap() {
     return map;
 }
 
-Command *commandCreate(CommandName name, int argc, char **argv) {
-    Command *command = (Command*)malloc(sizeof(Command));
-    if (!command) return NULL;
-    command->name = name;
-    command->argc = argc;
-    command->argv = argv;
+Command commandCreate(CommandName name, int argc, char **argv) {
+    Command command;
+    command.name = name;
+    command.argc = argc;
+    command.argv = argv;
     return command;
 }
 
@@ -102,61 +79,51 @@ void commandInit(Controller *controllerInstance) {
     commandsMap = createCommandsMap();
 }
 
-Command *commandPoll() {
-    char *message = NULL;
+Command commandBuild(const char *message) {
+    LOG_INFO("%s\n", message);
     int argc;
     char **argv;
-    
-    while (true) {
-        message = serverPollLastChatMessage(server);
-        if (message != NULL && strcmp(message, "") != 0) {
-            if (isCommand(message)) {
-                break;  // Command found
-            }
-            free(message);
-            message = NULL;
-        }
-    }
+    Command command = commandCreate(COMMAND_NONE, 0, NULL);
+    if (message == NULL || strcmp(message, "") == 0 || !isCommand(message)) return command;
+    LOG_INFO("2 %s\n", message);
     
     commandParseMessage(message, &argc, &argv);
     char *cmdWithoutPrefix = strdup(argv[0] + 1); // Remove the '/' prefix
     free(argv[0]);
     argv[0] = cmdWithoutPrefix;
-    Command *command;
 
     if (!mapContains(commandsMap, argv[0])) {
-        free(message);
         command = commandCreate(COMMAND_UNKNOWN, argc, argv);
         return command;
     }
 
     CommandName name = (CommandName)mapGetInt(commandsMap, argv[0]);
     command = commandCreate(name, argc, argv);
-    free(message);
     return command;
 }
 
-bool commandHandle(Command *command) {
+bool commandHandle(Command command) {
+    LOG_INFO("command %d %p\n", command.name, command.argv);
     char buffer[64];
-    switch (command->name) {
+    switch (command.name) {
         case COMMAND_NOCLIP:
         case COMMAND_GOD:
         case COMMAND_DEMIGOD:
         case COMMAND_UFO:
-            serverExecuteCommand(server, command->argv[0]);
+            serverExecuteCommand(server, command.argv[0]);
             break;
         case COMMAND_INVISIBLE:
             serverExecuteCommand(server, "notarget");
             break;
         case COMMAND_GIVE:
-            if (command->argc < 2) {
+            if (command.argc < 2) {
                 serverChatMessage(server, "/give must receive an argument! Usage:\n/give ammo\n/give <weapon>");
                 return false;
             }
             // This method specifically for some reason writes the arguments in the same address
             // where the game reads the last chat message. This is not a problem since it will be detected
             // as a usual chat message next time, so it will be ignored, but something to keep in mind.
-            snprintf(buffer, 64, "give %s", command->argv[1]);
+            snprintf(buffer, 64, "give %s", command.argv[1]);
             serverExecuteCommand(server, buffer);
             break;
         case COMMAND_FOV:
@@ -165,13 +132,4 @@ bool commandHandle(Command *command) {
             return false;
     }
     return true;
-}
-
-void commandFree(Command *command) {
-    if (!command) return;
-    for (int i = 0; i < command->argc; i++) {
-        free(command->argv[i]);
-    }
-    free(command->argv);
-    free(command);
 }

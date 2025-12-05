@@ -5,6 +5,7 @@
 
 #include <windows.h>
 #include <stdbool.h>
+#include <string.h>
 #include "Hook.h"
 #include "../../shared/event.h"
 #include "../utils/Log.h"
@@ -62,7 +63,11 @@ static void __attribute__((naked)) __attribute__((cdecl)) MapChangeHookTrampolin
 
 // Our hook function called on map change
 static void __cdecl MapChangeHookFunction(const char *map) {
-    Event ev = HookBuildEvent(EVENT_MAP_CHANGE, "%d:%s", HookGetTimestamp(), map);
+    Event ev = {0};
+    ev.type = EVENT_MAP_CHANGE;
+    ev.timestamp = HookGetTimestamp();
+    strncpy(ev.data.mapChange.mapName, map, EVENT_MAP_NAME_MAX_SIZE - 1);
+    
     if (!SendEvent(&ev)) {
         LOG_ERROR("Failed to send map change event");
     }

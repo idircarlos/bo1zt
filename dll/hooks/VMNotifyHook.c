@@ -82,7 +82,7 @@ static void __attribute__((naked)) VMNotifyHookTrampoline(void) {
         );
 }
 
-// Our hook function called on chat message
+// Our hook function called on VM notify
 static void __cdecl VMNotifyHookFunction(int invalidEvent, int unused, int eventId, int *pEventValue) {
     (void)unused; // Unused parameter (not referenced in assembly)
     if (invalidEvent || !eventId) return;
@@ -93,7 +93,12 @@ static void __cdecl VMNotifyHookFunction(int invalidEvent, int unused, int event
     for (int i = 0; i < eventNamesCount; i++) {
         if (strcmp(eventName, eventNames[i]) != 0) continue;
 
-        Event ev = HookBuildEvent(EVENT_VM_NOTIFY, "%d:%s:%d", HookGetTimestamp(), eventName, pEventValue ? *pEventValue : 0);
+        Event ev = {0};
+        ev.type = EVENT_VM_NOTIFY;
+        ev.timestamp = HookGetTimestamp();
+        strncpy(ev.data.vmNotify.eventName, eventName, EVENT_NAME_MAX_SIZE - 1);
+        ev.data.vmNotify.eventValue = pEventValue ? *pEventValue : 0;
+        
         if (!SendEvent(&ev)) {
             LOG_ERROR("Failed to send VM notify event");
         }

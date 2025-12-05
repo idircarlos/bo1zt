@@ -5,6 +5,7 @@
 
 #include <windows.h>
 #include <stdbool.h>
+#include <string.h>
 #include "Hook.h"
 #include "../../shared/event.h"
 #include "../utils/Log.h"
@@ -63,7 +64,13 @@ static void __attribute__((naked)) __attribute__((cdecl)) ChatHookTrampoline(voi
 
 // Our hook function called on chat message
 static void __cdecl ChatHookFunction(int clientId, const char *message) {
-    Event ev = HookBuildEvent(EVENT_CHAT_MESSAGE, "%d:%d:%s", HookGetTimestamp(), clientId, message);
+    Event ev = {0};
+    ev.type = EVENT_CHAT_MESSAGE;
+    ev.timestamp = HookGetTimestamp();
+    ev.data.chat.clientId = clientId;
+    // Messages starts with a non-printable character. Copying from index 1.
+    strncpy(ev.data.chat.message, &message[1], EVENT_MESSAGE_MAX_SIZE - 1);
+    
     if (!SendEvent(&ev)) {
         LOG_ERROR("Failed to send chat event");
     }
