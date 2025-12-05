@@ -21,7 +21,7 @@ extern bool SendEvent(const Event* ev);
 // Internal Black Ops function to get Event Name from Event ID
 static const char* (__cdecl *getEventNameById)(int, int) = (const char* (__cdecl *)(int, int))GET_EVENT_NAME_BY_ID_OFFSET;
 
-// Event event names
+// Event names
 static const char* eventNames[] = { "start_of_round", "end_of_round", "end_game" };
 static const int eventNamesCount = sizeof(eventNames) / sizeof(eventNames[0]);
 
@@ -93,7 +93,7 @@ static void __cdecl VMNotifyHookFunction(int invalidEvent, int unused, int event
     for (int i = 0; i < eventNamesCount; i++) {
         if (strcmp(eventName, eventNames[i]) != 0) continue;
 
-        Event ev = HookBuildEvent(EVENT_VM_NOTIFY, "%s:%d:%d", eventName, HookGetTimestamp(), pEventValue ? *pEventValue : 0);
+        Event ev = HookBuildEvent(EVENT_VM_NOTIFY, "%d:%s:%d", HookGetTimestamp(), eventName, pEventValue ? *pEventValue : 0);
         if (!SendEvent(&ev)) {
             LOG_ERROR("Failed to send VM notify event");
         }

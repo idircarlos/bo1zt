@@ -30,6 +30,7 @@ extern Hook chatHook;
 extern Hook mapRestartHook;
 extern Hook mapChangeHook;
 extern Hook vmNotifyHook;
+extern Hook idUpdateHook;
 
 // Global array of all registered hooks
 Hook* hooks[] = {
@@ -37,6 +38,7 @@ Hook* hooks[] = {
     &mapRestartHook,
     &mapChangeHook,
     &vmNotifyHook,
+    &idUpdateHook,
 };
 
 int hooksCount = sizeof(hooks) / sizeof(hooks[0]);

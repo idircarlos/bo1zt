@@ -12,7 +12,6 @@
 #define CHAT_HOOK_NAME "ChatHook"
 #define CHAT_HOOK_OFFSET 0x4AF7FC
 
-
 // External function to send events
 extern bool SendEvent(const Event* ev);
 
