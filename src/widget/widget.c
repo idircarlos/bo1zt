@@ -1,8 +1,5 @@
-#include "widget_internal.h"
-#include "timer/timer.h"
-#include "velocity/velocity.h"
-#include "../thread/thread.h"
-#include <stdio.h>
+#include "widget/widget_internal.h"
+#include "win/thread.h"
 #include <stdlib.h>
 #include <string.h>
 #include <malloc.h>

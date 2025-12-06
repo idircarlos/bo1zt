@@ -6,7 +6,7 @@
 #include <windows.h>
 #include <stdbool.h>
 #include "Hook.h"
-#include "../../shared/event.h"
+#include "ipc/event.h"
 #include "../utils/Log.h"
 
 #define MAP_RESTART_HOOK_NAME "MapRestartHook"

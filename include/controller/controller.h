@@ -1,0 +1,53 @@
+#ifndef CONTROLLER_H_
+#define CONTROLLER_H_
+
+#include "win/process.h"
+#include "logic/cheat.h"
+#include "logic/state.h"
+#include "logic/config.h"
+
+#define GAME_EXECUTABLE_NAME "BlackOps.exe"
+#define TIM_EXECUTABLE_NAME "Black Ops TIM.exe"
+#define GAME_WINDOW_NAME_PREFIX "Call of Duty"
+#define DLL_NAME "bo1zt.dll"
+
+typedef struct Controller Controller;
+
+Controller* controllerCreate();
+Process* controllerGetProcess(Controller *controller);
+bool controllerLaunchGame(Controller *controller);
+bool controllerCloseGame(Controller *controller);
+bool controllerIsGameAttached(Controller *controller);
+bool controllerAttachGame(Controller *controller);
+bool controllerDetachGame(Controller *controller);
+bool controllerIsGameRunning(Controller *controller);
+bool controllerIsTimRunning(Controller *controller);
+void controllerWaitUntilGameCloses(Controller *controller); // This method should be called from a different thread to not block the main thread (UI)
+bool controllerIsGameWindowAttached(Controller *controller);
+bool controllerIsGameReady(Controller *controller);
+bool controllerTryAttachGameWindow(Controller *controller);
+bool controllerGetCheat(Controller *controller, CheatName cheat);
+bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled);
+bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, void *value);
+bool controllerIsCheatCheckboxChecked(Controller *controller, CheatName cheat);
+int controllerUiGraphicsGetFpsCap(Controller *controller);
+TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller);
+WeaponName controllerGetPlayerCurrentWeapon(Controller *controller);
+WeaponName controllerGetPlayerWeapon(Controller *controller, int slot);
+bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int slot);
+bool controllerGivePlayerAmmo(Controller *controller);
+bool controllerSetRound(Controller *controller, int currentRound, int nextRound);
+State *controllerGetState(Controller *controller);
+void controllerUpdateState(Controller *controller);
+void controllerInitTrainerConfig(Controller *controller);
+void controllerUpdateTrainerConfig(Controller *controller);
+GameConfig controllerGetGameConfig(Controller *controller);
+GraphicsConfig controllerGetGraphicsConfig(Controller *controller);
+CustomizerConfig controllerGetCustomizerConfig(Controller *controller);
+WidgetConfig controllerGetWidgetConfig(Controller *controller, int index);
+void controllerUpdateConfig(Controller *controller, ConfigType type);
+void controllerResetConfig(Controller *controller, ConfigType type);
+void controllerWidgetResetConfig(Controller *controller, int index);
+void controllerDestroy(Controller *controller);
+
+#endif // CONTROLLER_H_

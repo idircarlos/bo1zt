@@ -1,6 +1,6 @@
 # === Compiler and flags ===
 CC = g++
-CFLAGS = -std=c++20 -Wall -Wextra -pedantic -Iexternal/libui -Iexternal/iniparser/src -Ires -Ishared -m32
+CFLAGS = -std=c++20 -Wall -Wextra -pedantic -Iinclude -Iexternal/libui -Iexternal/iniparser/src -Ires -Ishared -m32
 LDFLAGS = -Llib -lui -liniparser -lole32 -luuid -lcomctl32 -lgdi32 -lmsimg32 -loleaut32 -ld2d1 -ldwrite -static-libgcc -static-libstdc++ -static -luxtheme -lopengl32 -m32
 
 # === DLL Compiler (32-bit) ===

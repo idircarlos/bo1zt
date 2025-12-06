@@ -5,8 +5,8 @@
 #include <windows.h>
 #include <stdbool.h>
 #include "utils/Log.h"
-#include "../shared/event.h"
-#include "../shared/pipe.h"
+#include "ipc/event.h"
+#include "ipc/pipe.h"
 #include "hooks/Hook.h"
 
 bool SendEvent(const Event* ev);

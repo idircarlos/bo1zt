@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include "Hook.h"
 #include "../utils/Log.h"
-#include "../../shared/event.h"
+#include "ipc/event.h"
 
 #define ID_UPDATE_HOOK_NAME "IDUpdateHook"
 #define ID_UPDATE_HOOK_OFFSET 0x483E2F

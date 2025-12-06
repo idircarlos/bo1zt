@@ -1,12 +1,12 @@
 #include <sys/stat.h>
 #include "gui/gui.h"
-#include "process/process.h"
+#include "win/process.h"
 #include "controller/controller.h"
 #include "logger/logger.h"
-#include "thread/thread.h"
-#include "event/event.h"
-#include "resources/resources.h"
-#include "../res/resource_ids.h"
+#include "win/thread.h"
+#include "logic/event.h"
+#include "win/resources.h"
+#include "resource_ids.h"
 
 static Controller *controller = NULL;
 

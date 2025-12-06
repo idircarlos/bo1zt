@@ -1,17 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <ui.h>
-#include "gui.h"
-#include "../logger/logger.h"
-#include "../../res/resource_ids.h"
-#include "player/player.h"
-#include "round/round.h"
-#include "weapons/weapons.h"
-#include "teleport/teleport.h"
-#include "hacks/hacks.h"
-#include "graphics/graphics.h"
-#include "game/game.h"
+#include "gui/gui.h"
+#include "logger/logger.h"
+#include "resource_ids.h"
+#include "gui/player.h"
+#include "gui/round.h"
+#include "gui/weapons.h"
+#include "gui/teleport.h"
+#include "gui/hacks.h"
+#include "gui/graphics.h"
+#include "gui/game.h"
 
 #define WINDOW_WIDTH 100
 #define WINDOW_HEIGHT 540

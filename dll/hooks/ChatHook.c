@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "Hook.h"
-#include "../../shared/event.h"
+#include "ipc/event.h"
 #include "../utils/Log.h"
 
 #define CHAT_HOOK_NAME "ChatHook"

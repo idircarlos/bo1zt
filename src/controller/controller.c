@@ -1,18 +1,16 @@
-#include "controller.h"
-#include "controller_internal.h"
-#include "../config/config.h"
-#include "../process/process.h"
-#include "../api/api.h"
-#include "../gui/gui.h"
-#include "../logger/logger.h"
-#include "../state/state.h"
-#include "../gui/hacks/hacks.h"
-#include "../gui/graphics/graphics.h"
-#include "../gui/graphics/customizer/customizer.h"
-#include "../gui/game/game.h"
-#include "../gui/game/widgets/widgets.h"
+#include "controller/controller.h"
+#include "controller/controller_internal.h"
+#include "logic/config.h"
+#include "win/process.h"
+#include "api/api.h"
+#include "logger/logger.h"
+#include "logic/state.h"
+#include "gui/hacks.h"
+#include "gui/graphics.h"
+#include "gui/customizer.h"
+#include "gui/game.h"
+#include "gui/widgets.h"
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 
 Controller* controllerCreate() {

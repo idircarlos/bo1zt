@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "Hook.h"
-#include "../../shared/event.h"
+#include "ipc/event.h"
 #include "../utils/Log.h"
 
 #define VM_NOTIFY_HOOK_NAME "VMNotifyHook"
@@ -22,7 +22,7 @@ extern bool SendEvent(const Event* ev);
 static const char* (__cdecl *getEventNameById)(int, int) = (const char* (__cdecl *)(int, int))GET_EVENT_NAME_BY_ID_OFFSET;
 
 // Event names
-static const char* eventNames[] = { "start_of_round", "end_of_round", "end_game" };
+static const char* eventNames[] = { "start_of_round", "end_of_round", "end_game", "powerup_grabbed", "powerup_dropped" };
 static const int eventNamesCount = sizeof(eventNames) / sizeof(eventNames[0]);
 
 // Function prototypes

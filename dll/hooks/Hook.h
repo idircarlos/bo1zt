@@ -2,7 +2,6 @@
 #define DLL_HOOK_H
 
 #include <stdbool.h>
-#include "../../shared/event.h"
 
 typedef struct Hook {
     const char* name;

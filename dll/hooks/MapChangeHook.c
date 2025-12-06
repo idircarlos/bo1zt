@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "Hook.h"
-#include "../../shared/event.h"
+#include "ipc/event.h"
 #include "../utils/Log.h"
 
 #define MAP_CHANGE_HOOK_NAME "MapChangeHook"
