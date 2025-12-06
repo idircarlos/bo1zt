@@ -2,7 +2,6 @@
 #define SERVER_H_
 
 #include "../controller/controller.h"
-#include "../api/api.h"
 
 typedef struct Server Server;
 

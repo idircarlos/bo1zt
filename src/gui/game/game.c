@@ -388,7 +388,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
 static void update() {
     State *state = controllerGetState(controller);
-    bool gameAttached = stateIsGameAttached(state);
+    bool gameAttached = state->isGameAttached;
     // Avoid redrawing the area and modifying components constantly
     if (gameAttached != mapGetBool(cache, CACHE_GAME_ATTACHED)) {
         statusCurrentText = gameAttached ? statusRunningText : statusNotRunningText;
@@ -408,7 +408,7 @@ static void update() {
         statusCurrentText = statusClosingText;
         uiAreaQueueRedrawAll(statusArea);
     }
-    bool timRunning = stateIsTimRunning(state);
+    bool timRunning = state->isTimRunning;
     if (timRunning != mapGetBool(cache, CACHE_TIM_RUNNING)) {
         timCurrentText = timRunning ? timRunningText : timNotRunningText;
         uiAreaQueueRedrawAll(timArea);
@@ -421,7 +421,7 @@ static void update() {
             uiControlEnable(uiControl(hostnameEntry));
         }
     }
-    int resets = stateGetGameResets(state);
+    int resets = state->gameResets;
     if (resets != mapGetInt(cache, CACHE_RESETS)) {
         char resetsStr[4];
         sprintf(resetsStr, "%d", resets);

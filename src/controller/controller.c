@@ -67,16 +67,11 @@ bool controllerAttachGame(Controller *controller) {
     if (!controller->process) return false;
     if (!controller->api) controller->api = apiCreate(controller);
     if (!controller->server) controller->server = serverCreate(controller);
-    bool isGameAttached = controllerIsGameAttached(controller);
-    bool isTimRunning = controllerIsTimRunning(controller);
-    bool isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
-    bool isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
-    int gameResets = apiGetGameResets(controller->api);
-    stateSetGameAttached(controller->state, isGameAttached);
-    stateSetTimRunning(controller->state, isTimRunning);
-    stateSetZombiesGameOngoing(controller->state, isZombiesGameOngoing);
-    stateSetZombiesGamePaused(controller->state, isZombiesGamePaused);
-    stateSetGameResets(controller->state, gameResets);
+    controller->state->isGameAttached = controllerIsGameAttached(controller);
+    controller->state->isTimRunning = controllerIsTimRunning(controller);
+    controller->state->isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
+    controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
+    controller->state->gameResets = apiGetGameResets(controller->api);
     return true;
 }
 
@@ -186,17 +181,15 @@ State *controllerGetState(Controller *controller) {
 }
 
 void controllerUpdateState(Controller *controller) {
-    stateSetTimRunning(controller->state, controllerIsTimRunning(controller));
+    controller->state->isTimRunning = controllerIsTimRunning(controller);
     if (!controllerIsGameAttached(controller)) {
         stateGameClear(controller->state);
         return;
     };
-    stateSetGameAttached(controller->state, controllerIsGameWindowAttached(controller));
-    bool isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
-    bool isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
-    stateSetZombiesGameOngoing(controller->state, isZombiesGameOngoing);
-    stateSetZombiesGamePaused(controller->state, isZombiesGamePaused);
-    stateSetGameResets(controller->state, apiGetGameResets(controller->api));
+    controller->state->isGameAttached = controllerIsGameWindowAttached(controller);
+    controller->state->isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
+    controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
+    controller->state->gameResets = apiGetGameResets(controller->api);
     // TODO: Update timers
 }
 
@@ -276,7 +269,7 @@ void controllerUpdateTrainerConfig(Controller *controller) {
     controllerSetCheat(controller, CHEAT_NAME_SHOW_FPS, showFps);
     if (!controllerIsTimRunning(controller)) {
         // Only modify when there is an active game. This address gets mad when it gets modified outside a game.s
-        if (stateIsZombiesGameOngoing(controller->state)) {
+        if (controller->state->isZombiesGameOngoing) {
             char *hostname = uiGameGetHostname();
             controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, hostname);            
             uiFreeText(hostname);

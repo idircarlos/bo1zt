@@ -439,8 +439,8 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiBoxAppend(outerBox, uiControl(btnSave), 0);
  
     State *state = controllerGetState(controller);
-    Timer *timerInstance = stateGetTimer(state);
-    Timer *roundTimerInstance = stateGetRoundTimer(state);
+    Timer *timerInstance = state->timer;
+    Timer *roundTimerInstance = state->roundTimer;
 
     createWidgetObj(WIDGET_NAME_TIMER, timerWidgetCreate(timerInstance));
     createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate(roundTimerInstance));

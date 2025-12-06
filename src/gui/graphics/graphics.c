@@ -180,7 +180,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
 static void update() {
     State *state = controllerGetState(controller);
-    bool timRunning = stateIsTimRunning(state);
+    bool timRunning = state->isTimRunning;
     if (timRunning != mapGetBool(cache, CACHE_TIM_RUNNING)) {
         if (timRunning) {
             uiDisableSpinbox(fovSpin);
