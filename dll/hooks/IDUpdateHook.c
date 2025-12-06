@@ -95,7 +95,6 @@ static void IDUpdateHookFunction(int eventData, int unused, int* pEventValue) {
     ev.timestamp = HookGetTimestamp();
     ev.data.idUpdate.eventId = eventId;
     ev.data.idUpdate.pEventValue = pEventValue;
-    
     if (!SendEvent(&ev)) {
         LOG_ERROR("Failed to send ID update event");
     }

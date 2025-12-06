@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define READ_STRING_MAX_SIZE 8192
+
 static BOOL CALLBACK _EnumWindowsProc(HWND hWnd, LPARAM lParam);
 static bool _tryMakeBorderless(Process *process);
 static bool _tryMakeNonBorderless(Process *process);
@@ -28,6 +30,8 @@ Process *processOpen(const char *executableName) {
                 process->pid = pe.th32ProcessID;
                 process->handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pe.th32ProcessID);
                 process->pipe.handle = INVALID_HANDLE_VALUE;
+                process->pipe.readEvent = NULL;
+                process->pipe.writeEvent = NULL;
                 process->pipe.connected = false;
                 strcpy(process->executableName, executableName);
                 WindowInfo windowInfo = { .hwnd = NULL, .windowTitle = NULL, .originalStyle = 0, .originalExStyle = 0, .hasSavedStyle = false };
@@ -133,6 +137,10 @@ void processClose(Process *process) {
     if (process->handle) {
         CloseHandle(process->handle);
         process->handle = NULL;
+        if (process->pipe.readEvent != NULL) {
+            CloseHandle(process->pipe.readEvent);
+            process->pipe.readEvent = NULL;
+        }
         CloseHandle(process->pipe.handle);
         process->pipe.handle = INVALID_HANDLE_VALUE;
         process->pipe.connected = false;
@@ -399,12 +407,21 @@ void processConnectPipe(Process *process) {
         0,
         NULL,
         OPEN_EXISTING,
-        0,
+        FILE_FLAG_OVERLAPPED,  // Match server's overlapped mode
         NULL
     );
 
     if (hPipe == INVALID_HANDLE_VALUE) {
         LOG_ERROR("processConnectPipe: Failed to connect to named pipe. Error: %d\n", GetLastError());
+        process->pipe.handle = INVALID_HANDLE_VALUE;
+        process->pipe.connected = false;
+        return;
+    }
+
+    process->pipe.readEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (process->pipe.readEvent == NULL) {
+        LOG_ERROR("processConnectPipe: Failed to create read event. Error: %d\n", GetLastError());
+        CloseHandle(hPipe);
         process->pipe.handle = INVALID_HANDLE_VALUE;
         process->pipe.connected = false;
         return;
@@ -422,26 +439,47 @@ bool processIsPipeConnected(Process *process) {
 
 Event processPollFromPipe(Process *process) {
     Event event;
+    event.type = EVENT_INVALID;
+    
     if (process->pipe.handle == INVALID_HANDLE_VALUE) {
         LOG_ERROR("processPollFromPipe: Pipe not created\n");
-        event.type = EVENT_INVALID;
         return event;
     }
 
+    OVERLAPPED ov;
+    memset(&ov, 0, sizeof(ov));
+    ov.hEvent = process->pipe.readEvent;
+    ResetEvent(process->pipe.readEvent);
+
     DWORD bytesRead = 0;
-    bool result = ReadFile(process->pipe.handle, &event, sizeof(Event), &bytesRead, NULL);
+    BOOL result = ReadFile(process->pipe.handle, &event, sizeof(Event), &bytesRead, &ov);
     
     if (!result) {
         DWORD error = GetLastError();
-        LOG_ERROR("processPollFromPipe: Reading from pipe failed (%d)\n", error);
-        
-        // If pipe is broken, mark as disconnected
-        if (error == ERROR_BROKEN_PIPE || error == ERROR_PIPE_NOT_CONNECTED) {
-            process->pipe.connected = false;
+        if (error == ERROR_IO_PENDING) {
+            // Wait with short timeout (non-blocking poll)
+            DWORD waitResult = WaitForSingleObject(process->pipe.readEvent, PIPE_TIMEOUT_MS);
+            if (waitResult == WAIT_TIMEOUT) {
+                CancelIo(process->pipe.handle);
+                event.type = EVENT_INVALID;
+                return event;
+            }
+            // Get result after completion
+            if (!GetOverlappedResult(process->pipe.handle, &ov, &bytesRead, FALSE)) {
+                error = GetLastError();
+                LOG_ERROR("processPollFromPipe: Overlapped read failed (%d)\n", error);
+                if (error == ERROR_BROKEN_PIPE || error == ERROR_PIPE_NOT_CONNECTED) {
+                    process->pipe.connected = false;
+                }
+                return event;
+            }
+        } else {
+            LOG_ERROR("processPollFromPipe: Reading from pipe failed (%d)\n", error);
+            if (error == ERROR_BROKEN_PIPE || error == ERROR_PIPE_NOT_CONNECTED) {
+                process->pipe.connected = false;
+            }
+            return event;
         }
-        
-        event.type = EVENT_INVALID;
-        return event;
     }
     
     if (bytesRead != sizeof(Event)) {

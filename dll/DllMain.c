@@ -9,32 +9,33 @@
 #include "ipc/pipe.h"
 #include "hooks/Hook.h"
 
+#define PIPE_MAX_EVENTS 128
+
 bool SendEvent(const Event* ev);
 
 // Global pipe instance
-static Pipe pipe = {INVALID_HANDLE_VALUE, false};
+static Pipe pipe = {INVALID_HANDLE_VALUE, NULL, NULL, false};
 static CRITICAL_SECTION pipeLock;
 
 // Create the named pipe for trainer communication
-static Pipe CreateTrainerPipe() {
-    Pipe pipe;
-    pipe.handle = CreateNamedPipeA(
+static HANDLE CreateTrainerPipeHandle() {
+    HANDLE handle = CreateNamedPipeA(
         PIPE_NAME,
-        PIPE_ACCESS_DUPLEX, // Needed for dissconnection detection from Trainer side
+        PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, // Overlapped for async writes
         PIPE_TYPE_MESSAGE |
         PIPE_READMODE_MESSAGE |
         PIPE_WAIT,
         1,
-        sizeof(Event),
-        sizeof(Event),
+        sizeof(Event)*PIPE_MAX_EVENTS,
+        sizeof(Event)*PIPE_MAX_EVENTS,
         0,
         NULL);
 
-    if (pipe.handle == INVALID_HANDLE_VALUE) {
+    if (handle == INVALID_HANDLE_VALUE) {
         LOG_ERROR("Failed to create named pipe. Error: %d", GetLastError());
     }
 
-    return pipe;
+    return handle;
 }
 
 // Monitor pipe connection and detect disconnections
@@ -74,7 +75,7 @@ static void WaitForTrainerConnection(void) {
         }
         
         // Create new pipe
-        pipe = CreateTrainerPipe();
+        pipe.handle = CreateTrainerPipeHandle();
         
         if (pipe.handle == INVALID_HANDLE_VALUE) {
             LeaveCriticalSection(&pipeLock);
@@ -109,7 +110,8 @@ static void WaitForTrainerConnection(void) {
     }
 }
 
-// Function to send events safely with reconnection support
+// Function to send events safely with reconnection support (non-blocking with timeout)
+
 bool SendEvent(const Event* ev) {
     if (!ev) return false;
     
@@ -120,13 +122,43 @@ bool SendEvent(const Event* ev) {
         return false;
     }
     
-    DWORD bytesWritten;
-    BOOL result = WriteFile(pipe.handle, ev, sizeof(Event), &bytesWritten, NULL);
+    OVERLAPPED ov;
+    memset(&ov, 0, sizeof(ov));
+    ov.hEvent = pipe.writeEvent;
+    ResetEvent(pipe.writeEvent);
     
-    if (!result || bytesWritten != sizeof(Event)) {
+    DWORD bytesWritten = 0;
+    BOOL result = WriteFile(pipe.handle, ev, sizeof(Event), &bytesWritten, &ov);
+    
+    if (!result) {
         DWORD error = GetLastError();
-        LOG_ERROR("Failed to send event. Error: %d. Triggering reconnection...", error);
-        pipe.connected = false;
+        if (error == ERROR_IO_PENDING) {
+            // Wait with timeout
+            DWORD waitResult = WaitForSingleObject(pipe.writeEvent, PIPE_TIMEOUT_MS);
+            if (waitResult == WAIT_TIMEOUT) {
+                LOG_WARN("Write timed out, cancelling...");
+                CancelIo(pipe.handle);
+                LeaveCriticalSection(&pipeLock);
+                return false;
+            }
+            // Get result after completion
+            if (!GetOverlappedResult(pipe.handle, &ov, &bytesWritten, FALSE)) {
+                error = GetLastError();
+                LOG_ERROR("Failed to send event (overlapped). Error: %d", error);
+                pipe.connected = false;
+                LeaveCriticalSection(&pipeLock);
+                return false;
+            }
+        } else {
+            LOG_ERROR("Failed to send event. Error: %d. Triggering reconnection...", error);
+            pipe.connected = false;
+            LeaveCriticalSection(&pipeLock);
+            return false;
+        }
+    }
+        
+    if (bytesWritten != sizeof(Event)) {
+        LOG_ERROR("Incomplete write: %lu/%zu bytes", bytesWritten, sizeof(Event));
         LeaveCriticalSection(&pipeLock);
         return false;
     }
@@ -140,6 +172,7 @@ static bool InitBO1ZT() {
     LOG_INFO("Initializing hooks...");
 
     InitializeCriticalSection(&pipeLock);
+    pipe.writeEvent = CreateEvent(NULL, TRUE, FALSE, NULL);  // Manual reset event for overlapped writes
 
     // Pipe and reconnection thread
     CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)WaitForTrainerConnection, NULL, 0, NULL);
@@ -162,6 +195,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
             
         case DLL_PROCESS_DETACH:
             DeleteCriticalSection(&pipeLock);
+            if (pipe.writeEvent != NULL) {
+                CloseHandle(pipe.writeEvent);
+            }
             if (pipe.handle != INVALID_HANDLE_VALUE) {
                 CloseHandle(pipe.handle);
             }
