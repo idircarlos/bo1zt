@@ -1,23 +1,24 @@
 #include "logic/event.h"
 #include "controller/controller.h"
 #include "logic/game.h"
-#include "logic/server.h"
 #include "logger/logger.h"
 #include "win/process.h"
 #include "logic/command.h"
-#include "controller/controller_internal.h"
+#include <stdint.h>
 #include <string.h>
 
 static Controller *controller;
-static Server *server;
 
 static bool eventHandleChatMessage(Event event);
+static bool eventHandleMapChange(Event event);
 static bool eventHandleMapRestart(Event event);
 static bool eventHandleVMNotify(Event event);
+static bool eventHandleIDUpdate(Event event);
+
+static bool _eventValidIDUpdate(int eventId, int *pEventValue);
 
 void eventInit(Controller *controllerInstance) {
     controller = controllerInstance;
-    server = _controllerGetServer(controller);
     commandInit(controller);
 }
 
@@ -30,25 +31,27 @@ Event eventPoll() {
 bool eventHandle(Event event) {
     switch (event.type) {
         case EVENT_CHAT_MESSAGE: return eventHandleChatMessage(event);
-        case EVENT_MAP_CHANGE:
-            LOG_INFO("Map changed to: %s\n", event.data.mapChange.mapName);
-            break;
+        case EVENT_MAP_CHANGE: return eventHandleMapChange(event);
         case EVENT_MAP_RESTART: return eventHandleMapRestart(event);
-            break;
         case EVENT_VM_NOTIFY: return eventHandleVMNotify(event);
-        case EVENT_ID_UPDATE:
-            LOG_INFO("ID updated: %u = %d\n", event.data.idUpdate.eventId, event.data.idUpdate.pEventValue);
-            break;
+        case EVENT_ID_UPDATE: return eventHandleIDUpdate(event);
         case EVENT_INVALID:
         default:
             return false;
     }
-    return true;
 }
 
 static bool eventHandleChatMessage(Event event) {
     Command command = commandBuild(event.data.chat.message);
     return commandHandle(command);
+}
+
+static bool eventHandleMapChange(Event event) {
+    State *state = controllerGetState(controller);
+    Game *game = state->activeGame;
+    gameEnd(game, event.timestamp);
+    gameClear(game);
+    return true;
 }
 
 static bool eventHandleMapRestart(Event event) {
@@ -69,4 +72,28 @@ static bool eventHandleVMNotify(Event event) {
         return roundStart(game->currentRound, event.timestamp);
     }
     return true;
+}
+
+static bool eventHandleIDUpdate(Event event) {
+    Process *process = controllerGetProcess(controller);
+    State *state = controllerGetState(controller);
+    Game *game = state->activeGame;
+    int eventId = event.data.idUpdate.eventId;
+    int *pEventValue =  event.data.idUpdate.pEventValue;
+    if (!_eventValidIDUpdate(eventId, pEventValue)) return true;
+    switch (eventId) {
+        // Round
+        case 4748:
+            return processRead(process, (uint32_t)pEventValue + 0x4, &(game->currentRound->number), sizeof(int));
+        default:
+            return true;
+    }
+}
+
+static bool _eventValidIDUpdate(int eventId, int *pEventValue) {
+    Process *process = controllerGetProcess(controller);
+    int value;
+    processRead(process, (uint32_t)pEventValue + 0x8, &value, sizeof(int));
+    // Some ID Updates are sent multiple times with invalid values. The event contains its ID on the value so we must check it's the same.
+    return value >> 0x8 == eventId;
 }
