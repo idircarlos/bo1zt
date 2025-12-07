@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "win/process.h"
 #include "controller/controller.h"
+#include "logic/game/level.h"
 
 #define API_CHAT_MESSAGE_LENGTH 64
 
@@ -21,6 +21,8 @@ bool apiSetPlayerWeapon(Api *api, WeaponName weapon, int slot);
 bool apiGivePlayerAmmo(Api *api);
 bool apiSetRound(Api *api, int currentRound, int nextRound);
 bool apiIsGameReady(Api *api);
+Level apiGetLevelName(Api *api);
+double apiGetLevelElapsedTime(Api *api);
 bool apiIsZombiesGameOngoing(Api *api);
 bool apiIsZombiesGamePaused(Api *api);
 int apiGetGameResets(Api *api);

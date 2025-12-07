@@ -2,7 +2,7 @@
 #define EVENT_H_
 
 #include "controller/controller.h"
-#include "event.h"
+#include "ipc/event.h"
 
 void eventInit(Controller *controller);
 Event eventPoll();

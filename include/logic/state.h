@@ -2,16 +2,15 @@
 #define STATE_H_
 
 #include <stdbool.h>
-#include "timer.h"
+#include "logic/game.h"
 
 typedef struct State {
+    Game *activeGame;
     bool isGameAttached;
     bool isTimRunning;
     bool isZombiesGameOngoing;
     bool isZombiesGamePaused;
     int gameResets;
-    Timer *timer;
-    Timer *roundTimer;
 } State;
 
 State *stateCreate(void);

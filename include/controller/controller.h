@@ -25,6 +25,8 @@ bool controllerIsTimRunning(Controller *controller);
 void controllerWaitUntilGameCloses(Controller *controller); // This method should be called from a different thread to not block the main thread (UI)
 bool controllerIsGameWindowAttached(Controller *controller);
 bool controllerIsGameReady(Controller *controller);
+int controllerGetLevelElapsedTime(Controller *controller);
+Level controllerGetLevelName(Controller *controller);
 bool controllerTryAttachGameWindow(Controller *controller);
 bool controllerGetCheat(Controller *controller, CheatName cheat);
 bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled);

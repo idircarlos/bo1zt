@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include <errno.h>
 
 #define INI_FILE_NAME "BO1ZT.ini"
 #define STRFMT_BUFF_SIZE 1024

@@ -2,6 +2,7 @@
 #include "logic/cheat.h"
 #include "controller/controller.h"
 #include "logger/logger.h"
+#include "logic/game/level.h"
 #include "utils/map.h"
 #include "win/hook.h"
 #include "win/process.h"
@@ -428,6 +429,45 @@ bool apiSetRound(Api *api, int currentRound, int nextRound) {
 }
 
 bool apiIsGameReady(Api *api) {
+    return apiGetLevelElapsedTime(api) > 0;
+}
+
+Level apiGetLevelName(Api *api) {
+    if (!api || !api->controller) {
+        LOG_ERROR("Api or Controller is null\n");
+        return LEVEL_INVALID;
+    }
+
+    Process *process = controllerGetProcess(api->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return LEVEL_INVALID;
+    }
+
+    uint32_t address1;
+    bool success = processRead(process, GAME_CHEAT.levelName, &address1, sizeof(address1));
+    if (!success) {
+        printf("Failed to read Level Name address1\n");
+        return LEVEL_INVALID;
+    }
+
+    uint32_t address2;
+    success = processRead(process, address1 + 0x18, &address2, sizeof(address2));
+    if (!success) {
+        printf("Failed to read Level Name address2\n");
+        return LEVEL_INVALID;
+    }
+
+    char levelId[64];
+    success = processReadString(process, address2, levelId);
+    if (!success) {
+        printf("Failed to read Level Id value\n");
+        return LEVEL_INVALID;
+    }
+    return levelGetFromId(levelId);
+}
+
+double apiGetLevelElapsedTime(Api *api) {
     if (!api || !api->controller) {
         LOG_ERROR("Api or Controller is null\n");
         return false;
@@ -438,13 +478,13 @@ bool apiIsGameReady(Api *api) {
         LOG_ERROR("Process is null\n");
         return false;
     }
-    uint32_t ready;
-    bool success = processRead(process, GAME_CHEAT.isGameReady, &ready, sizeof(ready));
+    uint32_t elapsed;
+    bool success = processRead(process, GAME_CHEAT.levelElapsed, &elapsed, sizeof(elapsed));
     if (!success) {
-        printf("Failed to read Is Game Ready value\n");
+        printf("Failed to read Game Level Elapsed Time Ready value\n");
         return false;
     }
-    return ready > 0; // This value starts getting populated when the initial loading screen ends. Semms like a timer tho.
+    return elapsed;
 }
 
 bool apiIsZombiesGameOngoing(Api *api) {

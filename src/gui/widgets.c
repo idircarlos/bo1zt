@@ -5,7 +5,6 @@
 #include "widget/velocity.h"
 #include "utils/map.h"
 #include "logger/logger.h"
-#include "logic/timer.h"
 #include "logic/state.h"
 #include <ui.h>
 #include <string.h>
@@ -441,11 +440,10 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiBoxAppend(outerBox, uiControl(btnSave), 0);
  
     State *state = controllerGetState(controller);
-    Timer *timerInstance = state->timer;
-    Timer *roundTimerInstance = state->roundTimer;
+    Game *activeGame = state->activeGame;
 
-    createWidgetObj(WIDGET_NAME_TIMER, timerWidgetCreate(timerInstance));
-    createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate(roundTimerInstance));
+    createWidgetObj(WIDGET_NAME_TIMER, timerWidgetCreate(&(activeGame->elapsed)));
+    createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate(&(activeGame->currentRound->elapsed)));
     createWidgetObj(WIDGET_NAME_VELOCITY, velocityWidgetCreate());
     cache = mapCreate();
     mapPutBool(cache, WIDGET_TRANSFORMING, false);

@@ -211,7 +211,8 @@ typedef struct {
 
 typedef struct {
     // Read-only. We only want to read from these addresse
-    uintptr_t isGameReady; // Check if game is ready to be modified
+    uintptr_t levelName;
+    uintptr_t levelElapsed;
     uintptr_t isZombiesGameOngoingOffset;
     uintptr_t isZombiesGamePausedOffset;
     uintptr_t nResetsOffset;

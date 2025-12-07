@@ -18,6 +18,7 @@ bool processMakeBorderless(Process *process, bool enabled);
 void processWaitUntilExits(Process *process);
 void processClose(Process *process);
 bool processRead(Process *process, uint32_t address, void *buffer, size_t size);
+bool processReadString(Process *process, uint32_t address, char *buffer);
 bool processWrite(Process *process, uint32_t address, const void *buffer, size_t size);
 bool processAllocatePage(Process *process, size_t size, uintptr_t *address);
 bool processFreePage(Process *process, uintptr_t address);

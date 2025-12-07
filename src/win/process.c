@@ -150,6 +150,21 @@ void processClose(Process *process) {
     free(process);
 }
 
+bool processReadString(Process *process, uint32_t address, char *buffer) {
+    char temp[READ_STRING_MAX_SIZE];
+    for (size_t i = 0; i < READ_STRING_MAX_SIZE; i++) {
+        if (!processRead(process, address + i, &temp[i], 1)) {
+            return false;
+        }
+        if (temp[i] == '\0') {
+            memcpy(buffer, temp, i + 1);
+            return true;
+        }
+    }
+    LOG_ERROR("Couldn't find null terminator in string at 0x%08X\n", address);
+    return false;
+}
+
 bool processRead(Process *process, uint32_t address, void *buffer, size_t size) {
     SIZE_T bytesRead;
     return ReadProcessMemory(process->handle, (LPCVOID)(uintptr_t)address, buffer, size, &bytesRead) && bytesRead == size;

@@ -1,6 +1,9 @@
 #include "controller/controller.h"
 #include "controller/controller_internal.h"
 #include "logic/config.h"
+#include "logic/game.h"
+#include "logic/game/level.h"
+#include "logic/game/round.h"
 #include "win/process.h"
 #include "api/api.h"
 #include "logger/logger.h"
@@ -70,6 +73,11 @@ bool controllerAttachGame(Controller *controller) {
     controller->state->isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
     controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
     controller->state->gameResets = apiGetGameResets(controller->api);
+    Game *activeGame = controller->state->activeGame;
+    if (activeGame && levelIsMonitored(activeGame->levelName)) {
+        activeGame->elapsed = controllerGetLevelElapsedTime(controller);
+        activeGame->levelName = controllerGetLevelName(controller);
+    }
     return true;
 }
 
@@ -101,6 +109,18 @@ bool controllerIsGameReady(Controller *controller) {
     if (!controller) return false;
     if (!controller->process) return false;
     return apiIsGameReady(controller->api);
+}
+
+int controllerGetLevelElapsedTime(Controller *controller) {
+    if (!controller) return 0;
+    if (!controller->process) return 0;
+    return apiGetLevelElapsedTime(controller->api);
+}
+
+Level controllerGetLevelName(Controller *controller) {
+    if (!controller) return LEVEL_INVALID;
+    if (!controller->process) return LEVEL_INVALID;
+    return apiGetLevelName(controller->api);
 }
 
 bool controllerTryAttachGameWindow(Controller *controller) {
@@ -184,10 +204,22 @@ void controllerUpdateState(Controller *controller) {
         stateGameClear(controller->state);
         return;
     };
+    // General state
     controller->state->isGameAttached = controllerIsGameWindowAttached(controller);
     controller->state->isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
     controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
     controller->state->gameResets = apiGetGameResets(controller->api);
+    
+    // Active game
+    Game *activeGame = controller->state->activeGame;
+    if (activeGame && gameRunning(activeGame) && levelIsMonitored(activeGame->levelName)) {
+        int levelElapsed = controllerGetLevelElapsedTime(controller);
+        activeGame->elapsed = levelElapsed - activeGame->startTimestamp;
+        Round *round = activeGame->currentRound;
+        if (roundRunning(round)) {
+            activeGame->currentRound->elapsed = levelElapsed - activeGame->currentRound->startTimestamp;
+        }
+    }
     // TODO: Update timers
 }
 

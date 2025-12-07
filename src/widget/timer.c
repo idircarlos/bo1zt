@@ -1,12 +1,11 @@
 #include "widget/timer.h"
 #include "widget/widget.h"
 #include "widget/widget_internal.h"
-#include "logic/timer.h"
 #include <stdio.h>
 #include <GL/gl.h>
 
 typedef struct {
-    Timer* timer;  // External timer object
+    int *millis;
 } TimerData;
 
 static void timerRender(Widget* widget) {
@@ -19,7 +18,7 @@ static void timerRender(Widget* widget) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Get elapsed time from timer (in milliseconds)
-    double elapsed_millis = timerGetElapsedMillis(data->timer);
+    double elapsed_millis = data->millis ? *(data->millis) : 0;
     double elapsed_seconds = elapsed_millis / 1000.0;
 
     // Format time as HH:MM:SS
@@ -51,12 +50,10 @@ static WidgetVTable timerVTable = {
     .destroy = timerDestroy
 };
 
-Widget* timerWidgetCreate(Timer* timer) {
-    if (!timer) return NULL;
-    
+Widget* timerWidgetCreate(int *elapsed) {    
     TimerData* data = (TimerData*)calloc(1, sizeof(TimerData));
     if (!data) return NULL;
     
-    data->timer = timer;
+    data->millis = elapsed;
     return widgetCreate("Timer", &timerVTable, data, WIDGET_TIMER_RECT, WIDGET_TIMER_FONT_SIZE);
 }
