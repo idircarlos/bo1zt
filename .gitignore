@@ -1,2 +1,17 @@
-.vscode
+// Editor
+.vscode/
+.kiro/
+.cache/
+compile_flags.txt
+
+// Build
 build/
+lib/
+
+// Cheat Engine
+*.scandata
+*.addresslist
+*.CT
+
+// Others
+*.ini
