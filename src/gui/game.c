@@ -1,10 +1,12 @@
 #include "gui/game.h"
+#include "gui/gui.h"
 #include "gui/widgets.h"
 #include "logger/logger.h"
 #include "logic/state.h"
 #include "win/thread.h"
 #include "utils/map.h"
 #include "resource_ids.h"
+#include <stdbool.h>
 #include <string.h>
 #include <ui.h>
 #include <stdio.h>
@@ -452,6 +454,35 @@ char *uiGameGetLocation() {
 
 char *uiGameGetHostname() {
     return uiEntryText(hostnameEntry);
+}
+
+void uiGameSetLocation(const char *location) {
+    if (locationEntry && location) {
+        uiEntrySetText(locationEntry, location);
+    }
+}
+
+bool uiGamePromptLocation(void) {    
+    bool validLocation = false;
+    int okPressed = uiMsgBoxOkCancel(parent, "Welcome to Black Ops 1 Zombies Trainer!", 
+             "Before training the be next Black Ops 1 Zombies hero...\nI need to know where your game is installed.\nPlease select the BlackOps.exe executable to continue.");
+
+    if (!okPressed) return false;
+
+    char *gamePath = uiOpenFile(parent);
+    if (!gamePath) return false;
+
+    while (!isValidExecutableName(gamePath)) {
+        uiFreeText(gamePath);
+        uiMsgBoxError(parent, "Invalid Selection", 
+                    "This doesn't appear to be BlackOps.exe. Please select the correct executable.");   
+        gamePath = uiOpenFile(parent);
+        if (!gamePath) return false;
+    }
+    
+    uiGameSetLocation(gamePath);
+    controllerUpdateConfig(controller, CONFIG_GAME);    
+    return true;
 }
 
 UIControlGroup *uiGameBuildControlGroup() {

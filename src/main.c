@@ -1,7 +1,11 @@
 #include <sys/stat.h>
 #include "gui/gui.h"
+#include "gui/game.h"
+#include "ipc/event.h"
+#include "logger/logger.h"
 #include "win/process.h"
 #include "controller/controller.h"
+#include "logic/config.h"
 #include "logger/logger.h"
 #include "win/thread.h"
 #include "logic/event.h"
@@ -49,7 +53,10 @@ int processRunningThread(void *data) {
         if (processExited) continue;
         LOG_INFO("Game ready!\n");
         Process *process = controllerGetProcess(controller);
-        if (!processInjectDll(process, DLL_NAME)) {
+        GameConfig gameConfig = controllerGetGameConfig(controller);
+        if (strlen(gameConfig.location) == 0) {
+            LOG_WARN("Game location not configured. DLL injection skipped. Use 'Launch Game' button to configure.\n");
+        } else if (!processInjectDll(process, DLL_NAME, gameConfig.location)) {
             LOG_ERROR("Failed to inject DLL into game process. Events won't be received.\n");
         } else {
             Sleep(500); // Wait a bit to let the DLL initialize the pipe
@@ -90,7 +97,9 @@ int eventHandlerThread(void *data) {
             continue;
         }
         Event event = eventPoll();  // Blocking call. Waits until an event is available.
-        eventHandle(event);
+        if (event.type != EVENT_INVALID) {
+            eventHandle(event);
+        }
     }
     return 0;
 }
@@ -100,12 +109,26 @@ static void setupResources() {
     resourcesLoadFont(IDR_FONT_DIGITAL_7_MONO);
 }
 
+static void promptGameLocationAware() {
+    GameConfig gameConfig = controllerGetGameConfig(controller);
+    if (strlen(gameConfig.location) == 0) {
+        if (!uiGamePromptLocation()) {
+            uiQuit();
+            exit(0);
+        }
+    }
+}
+
 
 int main(void) {
     loggerInit(NULL);
     controller = controllerCreate();
     setupResources();
     guiInit(controller);
+    
+    // Prompt game location MsgBox if first time using the app
+    promptGameLocationAware();
+    
     threadCreate(processRunningThread, NULL);
     threadCreate(updateGameThread, NULL);
     threadCreate(eventHandlerThread, NULL);
