@@ -307,7 +307,7 @@ static bool _tryMakeNonBorderless(Process *process) {
                                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 }
 
-bool processInjectDll(Process *process, const char *dllName) {
+bool processInjectDll(Process *process, const char *dllName, const char *gameLocation) {
     if (!process || !process->handle) {
         LOG_ERROR("processInjectDll: Invalid process\n");
         return false;
@@ -318,18 +318,42 @@ bool processInjectDll(Process *process, const char *dllName) {
         return true;
     }
 
-    // Extract DLL from resources to current directory
-    if (!resourcesExtractToFile(IDR_CHAT_HOOK_DLL, dllName)) {
+    // Build path to bo1zt folder next to game executable
+    char bo1ztFolder[MAX_PATH];
+    char fullDllPath[MAX_PATH];
+    
+    if (gameLocation && strlen(gameLocation) > 0) {
+        // Extract directory from game location
+        strncpy(bo1ztFolder, gameLocation, MAX_PATH - 1);
+        bo1ztFolder[MAX_PATH - 1] = '\0';
+        char *lastSlash = strrchr(bo1ztFolder, '\\');
+        if (!lastSlash) lastSlash = strrchr(bo1ztFolder, '/');
+        if (lastSlash) {
+            *lastSlash = '\0';
+        }
+        // Append bo1zt folder
+        strncat(bo1ztFolder, "\\bo1zt", MAX_PATH - strlen(bo1ztFolder) - 1);
+        
+        // Create the folder if it doesn't exist
+        CreateDirectoryA(bo1ztFolder, NULL);
+        
+        // Build full DLL path
+        snprintf(fullDllPath, MAX_PATH, "%s\\%s", bo1ztFolder, dllName);
+    } else {
+        // Fallback to current directory
+        if (GetFullPathNameA(dllName, MAX_PATH, fullDllPath, NULL) == 0) {
+            LOG_ERROR("processInjectDll: Failed to get full path for DLL\n");
+            return false;
+        }
+    }
+
+    // Extract DLL from resources to bo1zt folder
+    if (!resourcesExtractToFile(IDR_CHAT_HOOK_DLL, fullDllPath)) {
         LOG_ERROR("processInjectDll: Failed to extract DLL from resources\n");
         return false;
     }
     
-    // Get the full path to the DLL
-    char fullDllPath[MAX_PATH];
-    if (GetFullPathNameA(dllName, MAX_PATH, fullDllPath, NULL) == 0) {
-        LOG_ERROR("processInjectDll: Failed to get full path for DLL\n");
-        return false;
-    }
+    LOG_INFO("DLL extracted to: %s\n", fullDllPath);
     
     // Allocate memory in the target process for the DLL path
     size_t pathLen = strlen(fullDllPath) + 1;
