@@ -2,6 +2,7 @@
 #define DLL_LOG_H
 
 #include <stdbool.h>
+#include <windows.h>
 
 typedef enum {
     LOG_TRACE = 0,
@@ -12,6 +13,7 @@ typedef enum {
     LOG_FATAL
 } LogLevel;
 
+void LogSetModule(HMODULE hModule);
 bool LogInit(const char* filename);
 void LogSetLevel(LogLevel level);
 void LogWrite(LogLevel level, const char* file, int line, const char* format, ...);

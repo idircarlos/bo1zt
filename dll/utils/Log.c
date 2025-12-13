@@ -39,20 +39,27 @@ static const char* LogGetLevelString(LogLevel level) {
     }
 }
 
+// Store DLL module handle for getting its path
+static HMODULE dllModule = NULL;
+
+void LogSetModule(HMODULE hModule) {
+    dllModule = hModule;
+}
+
 bool LogInit(const char* filename) {
     if (logger.initialized) return true;
     if (!filename) return false;
     
-    // Get the current module's directory (where the DLL is located)
+    // Get the DLL's directory (where bo1zt.dll is located)
     char modulePath[MAX_PATH];
-    GetModuleFileNameA(NULL, modulePath, MAX_PATH);
+    GetModuleFileNameA(dllModule, modulePath, MAX_PATH);
     
     // Extract directory from full path
     char* lastSlash = strrchr(modulePath, '\\');
     if (lastSlash)
         *lastSlash = '\0';
     
-    // Build full log file path in the workspace
+    // Build full log file path in the bo1zt folder
     _snprintf(logger.logFilePath, MAX_PATH - 1, "%s\\%s", modulePath, filename);
     logger.logFilePath[MAX_PATH - 1] = '\0';
     
