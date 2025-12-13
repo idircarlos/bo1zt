@@ -235,8 +235,7 @@ void configResetGame(Config *config) {
     game.fixMovementSpeed = false;
     game.showFps = false;
     strcpy(game.hostname, "");
-    strcpy(game.location, "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Call of Duty Black Ops\\BlackOps.exe");
-
+    strcpy(game.location, "");
     config->game = game;
 }
 
