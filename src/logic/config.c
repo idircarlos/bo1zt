@@ -46,6 +46,21 @@ static bool iniFileExists() {
     return true;
 }
 
+// Normalize path: collapse multiple backslashes into single ones
+static void normalizePath(char *path) {
+    if (!path) return;
+    char *src = path;
+    char *dst = path;
+    while (*src) {
+        *dst++ = *src;
+        if (*src == '\\') {
+            while (*(src + 1) == '\\') src++;
+        }
+        src++;
+    }
+    *dst = '\0';
+}
+
 static bool configLoad(Config *config) {
     dictionary *dictionary = iniparser_load(INI_FILE_NAME);
     if (!dictionary) {
@@ -57,6 +72,7 @@ static bool configLoad(Config *config) {
     config->graphics.fov = iniparser_getint(dictionary, "Game:ShowFPS", config->game.showFps);
     strcpy(config->game.hostname, iniparser_getstring(dictionary, "Game:Hostname", config->game.hostname));
     strcpy(config->game.location, iniparser_getstring(dictionary, "Game:Location", config->game.location));
+    normalizePath(config->game.location);
     config->graphics.fov = iniparser_getint(dictionary, "Graphics:FOV", config->graphics.fov);
     config->graphics.fovScale = iniparser_getint(dictionary, "Graphics:FOVScale", config->graphics.fovScale);
     config->graphics.fpsCap = iniparser_getint(dictionary, "Graphics:FPSCap", config->graphics.fpsCap);
