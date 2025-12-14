@@ -1,7 +1,7 @@
 #ifndef UI_TELEPORT_H_
 #define UI_TELEPORT_H_
 
-#include "gui/gui.h"
+#include "gui.h"
 
 UIControlGroup *uiTeleportBuildControlGroup();
 

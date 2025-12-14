@@ -1,5 +1,5 @@
-#include "logger/logger.h"
-#include "controller/controller.h"
+#include "logger.h"
+#include "controller.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>

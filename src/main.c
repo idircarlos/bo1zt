@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <sys/stat.h>
-#include "gui/gui.h"
+#include "gui.h"
 #include "gui/game.h"
 #include "ipc/event.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include "win/process.h"
-#include "controller/controller.h"
+#include "controller.h"
 #include "logic/config.h"
-#include "logger/logger.h"
 #include "win/thread.h"
 #include "logic/event.h"
 #include "win/resources.h"

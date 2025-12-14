@@ -1,5 +1,5 @@
 #include "win/hook.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include <stdlib.h>
 #include <windows.h>
 

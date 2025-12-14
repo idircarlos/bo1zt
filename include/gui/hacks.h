@@ -1,7 +1,7 @@
 #ifndef UI_HACKS_H_
 #define UI_HACKS_H_
 
-#include "gui/gui.h"
+#include "gui.h"
 
 UIControlGroup *uiHacksBuildControlGroup();
 bool uiHacksIsChecked(CheatName cheat);

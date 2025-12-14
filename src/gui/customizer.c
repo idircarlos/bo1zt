@@ -1,5 +1,5 @@
 #include "gui/customizer.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include "logic/config.h"
 #include "gui/gui_internal.h"
 #include <ui.h>

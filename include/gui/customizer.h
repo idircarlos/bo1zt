@@ -1,7 +1,7 @@
 #ifndef UI_CUSTOMIZER_H_
 #define UI_CUSTOMIZER_H_
 
-#include "gui/gui.h"
+#include "gui.h"
 #include "utils/common.h"
 
 UIControlGroup *uiCustomizerBuildControlGroup();

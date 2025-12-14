@@ -1,5 +1,5 @@
 #include "widget/velocity.h"
-#include "widget/widget.h"
+#include "widget.h"
 #include "widget/widget_internal.h"
 #include <windows.h>
 #include <stdio.h>

@@ -1,7 +1,7 @@
 #ifndef COMMAND_H_
 #define COMMAND_H_
 
-#include "controller/controller.h"
+#include "controller.h"
 
 typedef enum {
     COMMAND_NONE = -2,

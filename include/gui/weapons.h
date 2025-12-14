@@ -1,7 +1,7 @@
 #ifndef UI_WEAPONS_H_
 #define UI_WEAPONS_H_
 
-#include "gui/gui.h"
+#include "gui.h"
 
 UIControlGroup *uiWeaponsBuildControlGroup();
 

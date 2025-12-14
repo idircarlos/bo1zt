@@ -1,6 +1,6 @@
 #include "win/thread.h"
 #include "win/process_internal.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include <windows.h>
 
 struct Thread {

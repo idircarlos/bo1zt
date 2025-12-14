@@ -1,5 +1,5 @@
 #include "logic/config.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include "gui/widgets.h"
 #include <iniparser.h>
 #include <stdlib.h>

@@ -1,7 +1,7 @@
 #ifndef LOGGER_H_
 #define LOGGER_H_
 
-#include "controller/controller.h"
+#include "controller.h"
 
 #define LOG_TRACE(fmt, ...) loggerLog(L_TRACE, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
 #define LOG_DEBUG(fmt, ...) loggerLog(L_DEBUG, __FILE__, __LINE__, fmt, ##__VA_ARGS__)

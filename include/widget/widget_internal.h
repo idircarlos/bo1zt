@@ -1,7 +1,7 @@
 #ifndef WIDGET_INTERNAL_H_
 #define WIDGET_INTERNAL_H_
 
-#include "widget/widget.h"
+#include "widget.h"
 #include <GL/gl.h>
 
 struct WidgetVTable {

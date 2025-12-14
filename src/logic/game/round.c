@@ -1,5 +1,5 @@
 #include "logic/game/round.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include <stdbool.h>
 
 #define MAX_ZOMBIES_PER_HORDE  24

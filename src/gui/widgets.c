@@ -4,7 +4,7 @@
 #include "widget/timer.h"
 #include "widget/velocity.h"
 #include "utils/map.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include "logic/state.h"
 #include <ui.h>
 #include <string.h>

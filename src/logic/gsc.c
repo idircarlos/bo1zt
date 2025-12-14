@@ -1,6 +1,6 @@
 #include "logic/gsc.h"
 #include "logic/gsc/pool.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include "logic/server.h"
 #include <stdlib.h>
 #include <stdio.h>

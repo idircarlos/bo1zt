@@ -1,7 +1,7 @@
 #ifndef UI_GAME_H_
 #define UI_GAME_H_
 
-#include "gui/gui.h"
+#include "gui.h"
 
 UIControlGroup *uiGameBuildControlGroup();
 bool uiGameIsChecked(CheatName cheat);

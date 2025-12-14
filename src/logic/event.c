@@ -1,9 +1,9 @@
 #include "logic/event.h"
 #include "logic/gsc.h"
-#include "controller/controller.h"
+#include "controller.h"
 #include "controller/controller_internal.h"
 #include "logic/game.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include "win/process.h"
 #include "logic/command.h"
 #include <stdint.h>

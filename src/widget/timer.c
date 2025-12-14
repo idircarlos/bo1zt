@@ -1,5 +1,5 @@
 #include "widget/timer.h"
-#include "widget/widget.h"
+#include "widget.h"
 #include "widget/widget_internal.h"
 #include <stdio.h>
 #include <GL/gl.h>

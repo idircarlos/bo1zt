@@ -1,7 +1,7 @@
 #ifndef GUI_INTERNAL_H_
 #define GUI_INTERNAL_H_
 
-#include "gui/gui.h"
+#include "gui.h"
 
 Color buildColor(uiColorButton *button);
 void setColorButton(uiColorButton *button, Color color);

@@ -1,5 +1,5 @@
 #include "gui/player.h"
-#include "logger/logger.h"
+#include "logger.h"
 
 // Controller instance
 static Controller *controller;

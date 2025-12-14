@@ -1,6 +1,6 @@
 #include "logic/command/perk.h"
 #include "api/gsc.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include "utils/list.h"
 #include <string.h>
 

@@ -1,7 +1,7 @@
 #ifndef SERVER_H_
 #define SERVER_H_
 
-#include "controller/controller.h"
+#include "controller.h"
 
 typedef struct Server Server;
 

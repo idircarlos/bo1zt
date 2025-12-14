@@ -1,7 +1,7 @@
 #ifndef EVENT_H_
 #define EVENT_H_
 
-#include "controller/controller.h"
+#include "controller.h"
 #include "ipc/event.h"
 
 void eventInit(Controller *controller);

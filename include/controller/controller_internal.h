@@ -2,9 +2,9 @@
 #define CONTROLLER_INTERNAL_H_
 
 #include <windows.h>
-#include "controller/controller.h"
+#include "controller.h"
 #include "win/process.h"
-#include "api/api.h"
+#include "api.h"
 #include "api/gsc.h"
 #include "logic/gsc.h"
 #include "logic/server.h"

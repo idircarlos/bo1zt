@@ -1,7 +1,7 @@
 #ifndef UI_WIDGETS_H_
 #define UI_WIDGETS_H_
 
-#include "gui/gui.h"
+#include "gui.h"
 
 UIControlGroup *uiWidgetsBuildControlGroup();
 const char *uiWidgetsGetName(int index);

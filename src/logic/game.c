@@ -1,5 +1,5 @@
 #include "logic/game.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include "logic/game/level.h"
 #include "logic/game/round.h"
 #include <string.h>

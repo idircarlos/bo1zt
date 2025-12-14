@@ -1,8 +1,8 @@
 #include "logic/server.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include "utils/common.h"
 #include "controller/controller_internal.h"
-#include "api/api.h"
+#include "api.h"
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -1,6 +1,6 @@
 #include "win/process.h"
 #include "win/process_internal.h"
-#include "logger/logger.h"
+#include "logger.h"
 #include "win/resources.h"
 #include "win/thread.h"
 #include "resource_ids.h"

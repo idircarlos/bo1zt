@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ui.h>
-#include "gui/gui.h"
-#include "logger/logger.h"
+#include "gui.h"
+#include "logger.h"
 #include "resource_ids.h"
 #include "gui/player.h"
 #include "gui/round.h"

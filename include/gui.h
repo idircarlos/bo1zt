@@ -2,7 +2,7 @@
 #define GUI_H_
 
 #include <ui.h>
-#include "controller/controller.h"
+#include "controller.h"
 
 typedef struct {
     uiControl *(*build)(Controller *, uiWindow *);

@@ -1,7 +1,7 @@
 #ifndef UI_PLAYER_H_
 #define UI_PLAYER_H_
 
-#include "gui/gui.h"
+#include "gui.h"
 
 UIControlGroup *uiPlayerBuildControlGroup();
 

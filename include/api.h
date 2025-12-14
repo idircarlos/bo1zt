@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "controller/controller.h"
+#include "controller.h"
 #include "logic/game/level.h"
 
 #define API_CHAT_MESSAGE_LENGTH 64
