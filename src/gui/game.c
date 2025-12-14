@@ -6,6 +6,7 @@
 #include "win/thread.h"
 #include "utils/map.h"
 #include "resource_ids.h"
+#include <windows.h>
 #include <stdbool.h>
 #include <string.h>
 #include <ui.h>
@@ -138,6 +139,15 @@ static bool isValidExecutableName(char *gamePath) {
     return strcmp(gamePath + gamePathLen - gameExecLen, GAME_EXECUTABLE_NAME) == 0;
 }
 
+// Extract directory from full executable path
+static void extractDirectory(const char *fullPath, char *dirOut, size_t dirOutSize) {
+    strncpy(dirOut, fullPath, dirOutSize - 1);
+    dirOut[dirOutSize - 1] = '\0';
+    char *lastSlash = strrchr(dirOut, '\\');
+    if (!lastSlash) lastSlash = strrchr(dirOut, '/');
+    if (lastSlash) *lastSlash = '\0';
+}
+
 // Listeners
 static void handlerUnusedDragBroken(uiAreaHandler *a, uiArea *area) {
     (void)a;
@@ -240,7 +250,10 @@ static void onLaunchButtonClick(uiButton *button, void *data) {
             uiMsgBoxError(parent, "Launch game", "This seems to not be Black Ops 1 executable! Make sure to select the correct executable \"BlackOps.exe\".");
             return;
         }
-        uiEntrySetText(locationEntry, gamePath);
+        // Store only the directory, not the full executable path
+        char gameDir[MAX_PATH];
+        extractDirectory(gamePath, gameDir, MAX_PATH);
+        uiEntrySetText(locationEntry, gameDir);
         controllerUpdateConfig(controller, CONFIG_GAME);
         uiFreeText(gamePath);
     }
@@ -463,7 +476,6 @@ void uiGameSetLocation(const char *location) {
 }
 
 bool uiGamePromptLocation(void) {    
-    bool validLocation = false;
     int okPressed = uiMsgBoxOkCancel(parent, "Welcome to Black Ops 1 Zombies Trainer!", 
              "Before training the be next Black Ops 1 Zombies hero...\nI need to know where your game is installed.\nPlease select the BlackOps.exe executable to continue.");
 
@@ -480,7 +492,11 @@ bool uiGamePromptLocation(void) {
         if (!gamePath) return false;
     }
     
-    uiGameSetLocation(gamePath);
+    // Store only the directory, not the full executable path
+    char gameDir[MAX_PATH];
+    extractDirectory(gamePath, gameDir, MAX_PATH);
+    uiGameSetLocation(gameDir);
+    uiFreeText(gamePath);
     controllerUpdateConfig(controller, CONFIG_GAME);    
     return true;
 }
