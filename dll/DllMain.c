@@ -8,6 +8,7 @@
 #include "ipc/event.h"
 #include "ipc/pipe.h"
 #include "hooks/Hook.h"
+#include "gsc/loader.h"
 
 #define PIPE_MAX_EVENTS 128
 
@@ -111,7 +112,6 @@ static void WaitForTrainerConnection(void) {
 }
 
 // Function to send events safely with reconnection support (non-blocking with timeout)
-
 bool SendEvent(const Event* ev) {
     if (!ev) return false;
     
@@ -179,6 +179,9 @@ static bool InitBO1ZT() {
 
     // Install all hooks
     HookInstallAll();
+
+    // Initialize GSC loader
+    GSCInit();
 
     return 0;
 }

@@ -10,4 +10,7 @@
 // DLL resources
 #define IDR_CHAT_HOOK_DLL 300
 
+// GSC resources
+#define IDR_GSC_ZIP 400
+
 #endif // RESOURCE_IDS_H_

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <sys/stat.h>
 #include "gui/gui.h"
 #include "gui/game.h"
@@ -56,11 +57,19 @@ int processRunningThread(void *data) {
         GameConfig gameConfig = controllerGetGameConfig(controller);
         if (strlen(gameConfig.location) == 0) {
             LOG_WARN("Game location not configured. DLL injection skipped. Use 'Launch Game' button to configure.\n");
-        } else if (!processInjectDll(process, DLL_NAME, gameConfig.location)) {
-            LOG_ERROR("Failed to inject DLL into game process. Events won't be received.\n");
         } else {
-            Sleep(500); // Wait a bit to let the DLL initialize the pipe
-            processConnectPipe(process);
+            // Extract GSC scripts to game directory
+            char gscPath[MAX_PATH + 16];
+            snprintf(gscPath, sizeof(gscPath), "%s\\bo1zt\\gsc", gameConfig.location);
+            resourcesExtractZip(IDR_GSC_ZIP, gscPath);
+            
+            // Inject DLL
+            if (!processInjectDll(process, DLL_NAME, gameConfig.location)) {
+                LOG_ERROR("Failed to inject DLL into game process. Events won't be received.\n");
+            } else {
+                Sleep(500); // Wait a bit to let the DLL initialize the pipe
+                processConnectPipe(process);
+            }
         }
         controllerInitTrainerConfig(controller);
         controllerWaitUntilGameCloses(controller);

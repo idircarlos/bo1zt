@@ -1,5 +1,8 @@
 #include "win/resources.h"
 #include <stdio.h>
+#include <direct.h>
+#include <string.h>
+#include "miniz.h"
 
 #define MAX_EMBEDDED_FONTS 16
 
@@ -12,7 +15,6 @@ void resourcesInit(void) {
         fontHandles[i] = NULL;
     }
 }
-
 
 void resourcesCleanup(void) {
     // Cleanup fonts
@@ -110,4 +112,63 @@ bool resourcesExtractToFile(int resourceId, const char* outputPath) {
     fclose(outputFile);
 
     return (written == resourceSize);
+}
+
+static void mkdirRecursive(const char* path) {
+    char tmp[MAX_PATH];
+    strncpy(tmp, path, MAX_PATH - 1);
+    tmp[MAX_PATH - 1] = '\0';
+    
+    for (char* p = tmp + 1; *p; p++) {
+        if (*p == '/' || *p == '\\') {
+            *p = '\0';
+            _mkdir(tmp);
+            *p = '/';
+        }
+    }
+}
+
+bool resourcesExtractZip(int resourceId, const char* outputDir) {
+    if (!outputDir) return false;
+
+    HMODULE hModule = GetModuleHandle(NULL);
+    if (!hModule) return false;
+
+    HRSRC hResource = FindResource(hModule, MAKEINTRESOURCE(resourceId), RT_RCDATA);
+    if (!hResource) return false;
+
+    HGLOBAL hLoadedResource = LoadResource(hModule, hResource);
+    if (!hLoadedResource) return false;
+
+    void* pResourceData = LockResource(hLoadedResource);
+    if (!pResourceData) return false;
+
+    DWORD resourceSize = SizeofResource(hModule, hResource);
+    if (resourceSize == 0) return false;
+
+    mz_zip_archive zip = {0};
+    if (!mz_zip_reader_init_mem(&zip, pResourceData, resourceSize, 0)) {
+        return false;
+    }
+
+    _mkdir(outputDir);
+
+    int numFiles = (int)mz_zip_reader_get_num_files(&zip);
+    for (int i = 0; i < numFiles; i++) {
+        mz_zip_archive_file_stat fileStat;
+        if (!mz_zip_reader_file_stat(&zip, i, &fileStat)) continue;
+
+        char fullPath[MAX_PATH];
+        snprintf(fullPath, MAX_PATH, "%s/%s", outputDir, fileStat.m_filename);
+
+        if (mz_zip_reader_is_file_a_directory(&zip, i)) {
+            _mkdir(fullPath);
+        } else {
+            mkdirRecursive(fullPath);
+            mz_zip_reader_extract_to_file(&zip, i, fullPath, 0);
+        }
+    }
+
+    mz_zip_reader_end(&zip);
+    return true;
 }
