@@ -440,10 +440,10 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiBoxAppend(outerBox, uiControl(btnSave), 0);
  
     State *state = controllerGetState(controller);
-    Game *activeGame = state->activeGame;
+    Game *activeGame = &state->activeGame;
 
     createWidgetObj(WIDGET_NAME_TIMER, timerWidgetCreate(&(activeGame->elapsed)));
-    createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate(&(activeGame->currentRound->elapsed)));
+    createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate(&(activeGame->currentRound.elapsed)));
     createWidgetObj(WIDGET_NAME_VELOCITY, velocityWidgetCreate());
     cache = mapCreate();
     mapPutBool(cache, WIDGET_TRANSFORMING, false);

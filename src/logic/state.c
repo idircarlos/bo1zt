@@ -4,7 +4,7 @@
 
 State *stateCreate(void) {
     State *state = (State *)malloc(sizeof(State));
-    state->activeGame = gameCreate();
+    gameInit(&state->activeGame, 1);
     state->isGameAttached = false;
     state->isTimRunning = false;
     state->isZombiesGameOngoing = false;
@@ -23,6 +23,5 @@ void stateGameClear(State *state) {
 
 void stateDestroy(State *state) {
     if (!state) return;
-    gameDestroy(state->activeGame);
     free(state);
 }

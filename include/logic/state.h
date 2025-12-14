@@ -5,7 +5,7 @@
 #include "logic/game.h"
 
 typedef struct State {
-    Game *activeGame;
+    Game activeGame;
     bool isGameAttached;
     bool isTimRunning;
     bool isZombiesGameOngoing;

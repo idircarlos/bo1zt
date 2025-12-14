@@ -2,18 +2,12 @@
 #include "logger/logger.h"
 #include "logic/game/level.h"
 #include "logic/game/round.h"
-#include <stdlib.h>
+#include <string.h>
 
-Game *gameCreate() {
-    Game *game = (Game*)malloc(sizeof(Game)); 
-    if (!game) {
-        LOG_ERROR("Couldn't create Game object\n");
-        return NULL;
-    }
-    game->currentRound = roundCreate();
+void gameInit(Game *game, int players) {
     game->levelName = LEVEL_INVALID;
+    game->players = players;
     gameClear(game);
-    return game;
 }
 
 bool gameStart(Game *game, Level level, int startTimestamp) {
@@ -42,8 +36,11 @@ bool gameClear(Game *game) {
     game->elapsed = 0;
     game->startTimestamp = 0;
     game->endTimestamp = 0;
+    game->zombiesTotal = 0;
     game->quickRevivesDrunk = 0;
-    roundClear(game->currentRound);
+    game->drops = 0;
+    memset(game->rounds, 0, sizeof(game->rounds));
+    roundClear(&game->currentRound);
     return true;
 }
 
@@ -52,8 +49,40 @@ bool gameEnd(Game *game, int endTimestamp) {
     return true;
 }
 
-void gameDestroy(Game *game) {
-    if (game) {
-        free(game);
-    }
+bool gameUpdateElapsed(Game *game, int levelElapsed) {
+    game->elapsed = levelElapsed - game->startTimestamp;
+    return true;
 }
+
+bool gameRoundStarted(Game *game, int startTimestamp) {
+    int nextNumber = game->currentRound.number + 1;
+    roundInit(&game->currentRound, nextNumber, game->players);
+    roundStart(&game->currentRound, startTimestamp);
+    return true;
+}
+
+bool gameRoundEnded(Game *game, int endTimestamp) {
+    roundEnd(&game->currentRound, endTimestamp);
+    game->rounds[game->currentRound.number - 1] = game->currentRound;
+    return true;
+}
+
+bool gameZombieKilled(Game *game) {
+    game->zombiesTotal++;
+    roundZombieKilled(&game->currentRound);
+    return true;
+}
+
+bool gamePowerupDropped(Game *game) {
+    game->drops++;
+    roundPowerupDropped(&game->currentRound);
+    return true;
+}
+
+void gamePrint(Game *game) {
+    LOG_INFO("Game { elapsed: %d, start: %d, end: %d, players: %d, qr: %d, zombies: %d, drops: %d, level: %d }\n",
+        game->elapsed, game->startTimestamp, game->endTimestamp, game->players,
+        game->quickRevivesDrunk, game->zombiesTotal, game->drops, game->levelName);
+}
+
+

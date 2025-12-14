@@ -82,8 +82,8 @@ bool controllerAttachGame(Controller *controller) {
     controller->state->isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
     controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
     controller->state->gameResets = apiGetGameResets(controller->api);
-    Game *activeGame = controller->state->activeGame;
-    if (activeGame && levelIsMonitored(activeGame->levelName)) {
+    Game *activeGame = &controller->state->activeGame;
+    if (levelIsMonitored(activeGame->levelName)) {
         activeGame->elapsed = controllerGetLevelElapsedTime(controller);
         activeGame->levelName = controllerGetLevelName(controller);
     }
@@ -220,13 +220,13 @@ void controllerUpdateState(Controller *controller) {
     controller->state->gameResets = apiGetGameResets(controller->api);
     
     // Active game
-    Game *activeGame = controller->state->activeGame;
-    if (activeGame && gameRunning(activeGame) && levelIsMonitored(activeGame->levelName)) {
+    Game *activeGame = &controller->state->activeGame;
+    if (gameRunning(activeGame) && levelIsMonitored(activeGame->levelName)) {
         int levelElapsed = controllerGetLevelElapsedTime(controller);
-        activeGame->elapsed = levelElapsed - activeGame->startTimestamp;
-        Round *round = activeGame->currentRound;
+        gameUpdateElapsed(activeGame, levelElapsed);
+        Round *round = &activeGame->currentRound;
         if (roundRunning(round)) {
-            activeGame->currentRound->elapsed = levelElapsed - activeGame->currentRound->startTimestamp;
+            roundUpdateElapsed(round, levelElapsed);
         }
     }
 }

@@ -8,18 +8,27 @@ typedef struct Game {
     int elapsed;
     int startTimestamp;
     int endTimestamp;
-    Level levelName;
-    Round *currentRound;
+    int players;
     int quickRevivesDrunk;
+    int zombiesTotal;
+    int drops; // TODO: Check how to recognize carpenter and sales drop to track cycles
+    Level levelName;
+    Round currentRound;
+    Round rounds[MAX_ROUNDS];
 } Game;
 
-Game *gameCreate();
+void gameInit(Game *game, int players);
 bool gameStart(Game *game, Level level, int startTimestamp);
 bool gameStarted(Game *game);
 bool gameEnded(Game *game);
 bool gameRunning(Game *game);
 bool gameClear(Game *game);
 bool gameEnd(Game *game, int endTimestamp);
-void gameDestroy(Game *game);
+bool gameUpdateElapsed(Game *game, int levelElapsed);
+bool gameRoundStarted(Game *game, int startTimestamp);
+bool gameRoundEnded(Game *game, int endTimestamp);
+bool gameZombieKilled(Game *game);
+bool gamePowerupDropped(Game *game);
+void gamePrint(Game *game);
 
 #endif // GAME_H_

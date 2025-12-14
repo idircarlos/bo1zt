@@ -54,7 +54,7 @@ static bool eventHandleChatMessage(Event event) {
 
 static bool eventHandleMapChange(Event event) {
     State *state = controllerGetState(controller);
-    Game *game = state->activeGame;
+    Game *game = &state->activeGame;
     gameEnd(game, event.timestamp);
     gameClear(game);
     return true;
@@ -62,7 +62,7 @@ static bool eventHandleMapChange(Event event) {
 
 static bool eventHandleMapRestart(Event event) {
     State *state = controllerGetState(controller);
-    Game *game = state->activeGame;
+    Game *game = &state->activeGame;
     gameEnd(game, event.timestamp);
     gameClear(game);
     return true;
@@ -70,9 +70,23 @@ static bool eventHandleMapRestart(Event event) {
 
 static bool eventHandleVMNotify(Event event) {
     State *state = controllerGetState(controller);
-    Game *game = state->activeGame;
+    Game *game = &state->activeGame;
     if (strcmp(event.data.vmNotify.eventName, "fade_in_complete") == 0) {
         return gameStart(game, controllerGetLevelName(controller), event.timestamp);
+    }
+    if (strcmp(event.data.vmNotify.eventName, "start_of_round") == 0) {
+        return gameRoundStarted(game, event.timestamp);
+    }
+    if (strcmp(event.data.vmNotify.eventName, "end_of_round") == 0) {
+        return gameRoundEnded(game, event.timestamp);
+    }
+    if (strcmp(event.data.vmNotify.eventName, "zom_kill") == 0) {
+        // TODO: This event is sent duplicated. Fix this through GSC.
+        // Update by calling gameZombieKilled()
+        return true;
+    }
+    if (strcmp(event.data.vmNotify.eventName, "powerup_dropped") == 0) {
+        return gamePowerupDropped(game);
     }
     if (strncmp(event.data.vmNotify.eventName, "bo1zt::Worker", 13) == 0) {
         int index;
@@ -88,14 +102,14 @@ static bool eventHandleVMNotify(Event event) {
 static bool eventHandleIDUpdate(Event event) {
     Process *process = controllerGetProcess(controller);
     State *state = controllerGetState(controller);
-    Game *game = state->activeGame;
+    Game *game = &state->activeGame;
     int eventId = event.data.idUpdate.eventId;
     int *pEventValue =  event.data.idUpdate.pEventValue;
     if (!_eventValidIDUpdate(eventId, pEventValue)) return true;
     switch (eventId) {
         // Round
         case 4748:
-            return processRead(process, (uint32_t)pEventValue + 0x4, &(game->currentRound->number), sizeof(int));
+            return processRead(process, (uint32_t)pEventValue + 0x4, &(game->currentRound.number), sizeof(int));
         default:
             return true;
     }
