@@ -307,7 +307,7 @@ static bool _tryMakeNonBorderless(Process *process) {
                                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 }
 
-bool processInjectDll(Process *process, const char *dllName, const char *gameLocation) {
+bool processInjectDll(Process *process, const char *dllName, const char *executablePath) {
     if (!process || !process->handle) {
         LOG_ERROR("processInjectDll: Invalid process\n");
         return false;
@@ -318,21 +318,13 @@ bool processInjectDll(Process *process, const char *dllName, const char *gameLoc
         return true;
     }
 
-    // Build path to bo1zt folder next to game executable
+    // Build path to bo1zt folder in game directory
     char bo1ztFolder[MAX_PATH];
     char fullDllPath[MAX_PATH];
     
-    if (gameLocation && strlen(gameLocation) > 0) {
-        // Extract directory from game location
-        strncpy(bo1ztFolder, gameLocation, MAX_PATH - 1);
-        bo1ztFolder[MAX_PATH - 1] = '\0';
-        char *lastSlash = strrchr(bo1ztFolder, '\\');
-        if (!lastSlash) lastSlash = strrchr(bo1ztFolder, '/');
-        if (lastSlash) {
-            *lastSlash = '\0';
-        }
-        // Append bo1zt folder
-        strncat(bo1ztFolder, "\\bo1zt", MAX_PATH - strlen(bo1ztFolder) - 1);
+    if (executablePath && strlen(executablePath) > 0) {
+        // Build bo1zt folder path directly from game directory
+        snprintf(bo1ztFolder, MAX_PATH, "%s\\bo1zt", executablePath);
         
         // Create the folder if it doesn't exist
         CreateDirectoryA(bo1ztFolder, NULL);
