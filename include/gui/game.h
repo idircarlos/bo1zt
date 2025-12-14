@@ -7,5 +7,6 @@ UIControlGroup *uiGameBuildControlGroup();
 bool uiGameIsChecked(CheatName cheat);
 char *uiGameGetLocation();
 char *uiGameGetHostname();
+bool uiGamePromptLocation(void);
 
 #endif // UI_GAME_H_
