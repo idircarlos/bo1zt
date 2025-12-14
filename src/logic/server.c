@@ -108,7 +108,6 @@ bool serverSetDVarBool(Server *server, const char *dVar, bool value) {
 bool serverSetDVarInt(Server *server, const char *dVar, int value) {
     if (!server) return false;
     char *message = serverBuildDVar(dVar, &value, CT_INT);
-    LOG_INFO("message: %s\n", message);
     bool result = serverSendServerCommand(server, message);
     free(message);
     return result;
