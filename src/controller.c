@@ -5,9 +5,9 @@
 #include "logic/game/level.h"
 #include "logic/game/round.h"
 #include "logic/gsc.h"
+#include "logic/server.h"
 #include "win/process.h"
 #include "api.h"
-#include "api/gsc.h"
 #include "logger.h"
 #include "logic/state.h"
 #include "gui/hacks.h"
@@ -26,7 +26,6 @@ Controller* controllerCreate() {
     controller->process = NULL;
     controller->state = NULL;
     controller->api = NULL;
-    controller->apiGsc = NULL;
     controller->server = NULL;
     controller->gsc = NULL;
     controllerAttachGame(controller);
@@ -76,7 +75,6 @@ bool controllerAttachGame(Controller *controller) {
     if (!controller->api) controller->api = apiCreate(controller);
     if (!controller->server) controller->server = serverCreate(controller);
     if (!controller->gsc) controller->gsc = gscCreate(controller->server);
-    if (!controller->apiGsc) controller->apiGsc = apiGscCreate(controller->gsc);
     controller->state->isGameAttached = controllerIsGameAttached(controller);
     controller->state->isTimRunning = controllerIsTimRunning(controller);
     controller->state->isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
@@ -423,11 +421,6 @@ void controllerWidgetResetConfig(Controller *controller, int index) {
 Api *_controllerGetApi(Controller *controller) {
     if (!controller) return NULL;
     return controller->api;
-}
-
-ApiGsc *_controllerGetApiGsc(Controller *controller) {
-    if (!controller) return NULL;
-    return controller->apiGsc;
 }
 
 GSC *_controllerGetGsc(Controller *controller) {

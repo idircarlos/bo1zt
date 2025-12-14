@@ -6,6 +6,7 @@
 typedef struct Server Server;
 
 Server *serverCreate(Controller *controller);
+void serverDestroy(Server *server);
 
 bool serverExecuteCommand(Server *server, const char *command);
 bool serverSendServerCommand(Server *server, const char *command);

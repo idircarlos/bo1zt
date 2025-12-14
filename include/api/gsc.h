@@ -2,15 +2,15 @@
 #define API_GSC_H_
 
 #include <stdbool.h>
-#include "logic/gsc.h"
+#include "controller.h"
 #include "utils/list.h"
 
-typedef struct ApiGsc ApiGsc;
+typedef struct GscApi GscApi;
 
-ApiGsc *apiGscCreate(GSC *gsc);
-void apiGscDestroy(ApiGsc *apiGsc);
+GscApi *gscApiCreate(Controller *controller);
+void gscApiDestroy(GscApi *gscApi);
 
-bool apiGscAddPerks(ApiGsc *apiGsc, List *perks);
-bool apiGscRemovePerks(ApiGsc *apiGsc, List *perks);
+bool gscApiAddPerks(GscApi *gscApi, List *perks);
+bool gscApiRemovePerks(GscApi *gscApi, List *perks);
 
 #endif // API_GSC_H_

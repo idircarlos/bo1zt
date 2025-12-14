@@ -1,11 +1,11 @@
 #include "logic/command/perk.h"
-#include "api/gsc.h"
+#include "api.h"
 #include "logger.h"
 #include "utils/list.h"
 #include <string.h>
 
 static Server *server;
-static ApiGsc *apiGsc;
+static Api *api;
 
 Perk commandPerkGetFromAbbreviation(const char *perkAbbreviation) {
     if (strcmp("qr", perkAbbreviation) == 0) return PERK_QUICK_REVIVE;
@@ -17,9 +17,9 @@ Perk commandPerkGetFromAbbreviation(const char *perkAbbreviation) {
     return PERK_INVALID;
 }
 
-void commandPerkInit(Server *serverInstance, ApiGsc *apiGscInstance) {
+void commandPerkInit(Server *serverInstance, Api *apiInstance) {
     server = serverInstance;
-    apiGsc = apiGscInstance;
+    api = apiInstance;
 }
 
 static List *buildPerkList(Command command) {
@@ -39,7 +39,7 @@ static List *buildPerkList(Command command) {
 
 bool commandPerkHandle(Command command) {
     if (command.argc < 3) {
-        serverChatMessage(server, "Usage: /perk <add | rm> <perk1> [perk2] ...");
+        serverChatMessage(server, "Usage: /perk <add | rm> <perk1> [perk2]...");
         serverChatMessage(server, "Perks: jg qr sc dt su mk");
         return false;
     }
@@ -53,9 +53,9 @@ bool commandPerkHandle(Command command) {
 
     bool success = false;
     if (strcmp(command.argv[1], "add") == 0) {
-        success = apiGscAddPerks(apiGsc, perks);
+        success = apiAddPerks(api, perks);
     } else if (strcmp(command.argv[1], "rm") == 0) {
-        success = apiGscRemovePerks(apiGsc, perks);
+        success = apiRemovePerks(api, perks);
     } else {
         serverChatMessage(server, "Unknown perk action. Use: add, rm");
     }

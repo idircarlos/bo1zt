@@ -17,7 +17,7 @@
 #define SV_CMD_RELIABLE 0
 #define SV_CMD_UNRELIABLE 1
 
-struct Server{
+struct Server {
     Controller *controller;
     Api *api;
 };
@@ -35,6 +35,11 @@ Server *serverCreate(Controller *controller) {
     server->controller = controller;
     server->api = _controllerGetApi(controller);
     return server;
+}
+
+void serverDestroy(Server *server) {
+    if (!server) return;
+    free(server);
 }
 
 bool serverExecuteCommand(Server *server, const char *command) {

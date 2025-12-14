@@ -5,12 +5,16 @@
 #include <stdbool.h>
 #include "controller.h"
 #include "logic/game/level.h"
+#include "utils/list.h"
 
 #define API_CHAT_MESSAGE_LENGTH 64
 
 typedef struct Api Api;
 
 Api *apiCreate(Controller *controller);
+void apiDestroy(Api *api);
+
+// Raw backend operations
 bool apiIsCheatEnabled(Api *api, CheatName cheatName);
 bool apiSetCheatEnabled(Api *api, CheatName cheatName, bool enabled);
 bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value);
@@ -29,5 +33,9 @@ int apiGetGameResets(Api *api);
 bool apiSVSendServerCommand(Api *api, int commandType, int clientNumber, const char *commands);
 bool apiCBuffAddText(Api *api, const char *commands);
 uintptr_t apiGetDVarPointer(Api *api, const char *dVar);
+
+// GSC backend operations
+bool apiAddPerks(Api *api, List *perks);
+bool apiRemovePerks(Api *api, List *perks);
 
 #endif // API_H_

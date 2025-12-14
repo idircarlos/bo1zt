@@ -75,7 +75,7 @@ void commandInit(Controller *controllerInstance) {
     controller = controllerInstance;
     server = _controllerGetServer(controller);
     commandsMap = createCommandsMap();
-    commandPerkInit(server, _controllerGetApiGsc(controller));
+    commandPerkInit(server, _controllerGetApi(controller));
 }
 
 Command commandBuild(const char *message) {

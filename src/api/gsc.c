@@ -1,51 +1,58 @@
 #include "api/gsc.h"
+#include "controller.h"
+#include "controller/controller_internal.h"
 #include "logic/gsc.h"
 #include "logic/gsc/misc.h"
 #include "logic/game/perk.h"
 #include "win/thread.h"
 #include <stdlib.h>
 
-struct ApiGsc {
-    GSC *gsc;
+struct GscApi {
+    Controller *controller;
 };
 
 typedef struct {
     GSC *gsc;
     GSCMethod method;
     GSCArgs *args;
-} ApiGscCallData;
+} GscApiCallData;
 
 static int _apiThreadHandler(void *data);
-static bool _apiGscCallPerks(ApiGsc *apiGsc, GSCMethod method, List *perks);
+static bool _gscApiCallPerks(GscApi *gscApi, GSCMethod method, List *perks);
 static GSCArgs *_buildPerkArgs(List *perks);
 
-ApiGsc *apiGscCreate(GSC *gsc) {
-    if (!gsc) return NULL;
+GscApi *gscApiCreate(Controller *controller) {
+    if (!controller) return NULL;
 
-    ApiGsc *apiGsc = (ApiGsc *)malloc(sizeof(ApiGsc));
-    if (!apiGsc) return NULL;
+    GscApi *gscApi = (GscApi *)malloc(sizeof(GscApi));
+    if (!gscApi) return NULL;
 
-    apiGsc->gsc = gsc;
-    return apiGsc;
+    gscApi->controller = controller;
+    return gscApi;
 }
 
-void apiGscDestroy(ApiGsc *apiGsc) {
-    if (apiGsc) {
-        free(apiGsc);
+void gscApiDestroy(GscApi *gscApi) {
+    if (gscApi) {
+        free(gscApi);
     }
 }
 
-bool apiGscAddPerks(ApiGsc *apiGsc, List *perks) {
-    return _apiGscCallPerks(apiGsc, GSC_ADD_PERKS, perks);
+bool gscApiAddPerks(GscApi *gscApi, List *perks) {
+    return _gscApiCallPerks(gscApi, GSC_ADD_PERKS, perks);
 }
 
-bool apiGscRemovePerks(ApiGsc *apiGsc, List *perks) {
-    return _apiGscCallPerks(apiGsc, GSC_REMOVE_PERKS, perks);
+bool gscApiRemovePerks(GscApi *gscApi, List *perks) {
+    return _gscApiCallPerks(gscApi, GSC_REMOVE_PERKS, perks);
 }
 
 // Aux
-static bool _apiGscCallPerks(ApiGsc *apiGsc, GSCMethod method, List *perks) {
-    if (!apiGsc || !apiGsc->gsc || listIsEmpty(perks)) {
+static bool _gscApiCallPerks(GscApi *gscApi, GSCMethod method, List *perks) {
+    if (!gscApi || !gscApi->controller || listIsEmpty(perks)) {
+        return false;
+    }
+
+    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    if (!gsc) {
         return false;
     }
 
@@ -58,14 +65,14 @@ static bool _apiGscCallPerks(ApiGsc *apiGsc, GSCMethod method, List *perks) {
         return false;
     }
 
-    ApiGscCallData *callData = (ApiGscCallData *)malloc(sizeof(ApiGscCallData));
+    GscApiCallData *callData = (GscApiCallData *)malloc(sizeof(GscApiCallData));
     if (!callData) {
         gscArgsFree(gscArgs);
         free(gscArgs);
         return false;
     }
 
-    callData->gsc = apiGsc->gsc;
+    callData->gsc = gsc;
     callData->method = method;
     callData->args = gscArgs;
     threadCreate(_apiThreadHandler, (void *)callData);
@@ -92,7 +99,7 @@ static GSCArgs *_buildPerkArgs(List *perks) {
 }
 
 static int _apiThreadHandler(void *data) {
-    ApiGscCallData *callData = (ApiGscCallData *)data;
+    GscApiCallData *callData = (GscApiCallData *)data;
     gscCall(callData->gsc, callData->method, *callData->args);
     gscArgsFree(callData->args);
     free(callData->args);
