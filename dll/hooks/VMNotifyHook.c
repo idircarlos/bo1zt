@@ -91,7 +91,7 @@ static void __cdecl VMNotifyHookFunction(int invalidEvent, int unused, int event
     if (!eventName) return;
 
     for (int i = 0; i < eventNamesCount; i++) {
-        if (strcmp(eventName, eventNames[i]) != 0) continue;
+        if (strcmp(eventName, eventNames[i]) != 0 && strncmp(eventName, "bo1zt::", 7)) continue;
         Event ev = {0};
         ev.type = EVENT_VM_NOTIFY;
         ev.timestamp = HookGetTimestamp();
