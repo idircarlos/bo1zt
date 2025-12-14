@@ -4,8 +4,10 @@
 #include "logic/game.h"
 #include "logic/game/level.h"
 #include "logic/game/round.h"
+#include "logic/gsc.h"
 #include "win/process.h"
 #include "api/api.h"
+#include "api/gsc.h"
 #include "logger/logger.h"
 #include "logic/state.h"
 #include "gui/hacks.h"
@@ -15,6 +17,7 @@
 #include "gui/widgets.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 Controller* controllerCreate() {
     Controller *controller = (Controller*)malloc(sizeof(Controller));
@@ -23,7 +26,9 @@ Controller* controllerCreate() {
     controller->process = NULL;
     controller->state = NULL;
     controller->api = NULL;
+    controller->apiGsc = NULL;
     controller->server = NULL;
+    controller->gsc = NULL;
     controllerAttachGame(controller);
     return controller;
 }
@@ -49,7 +54,9 @@ bool controllerIsGameAttached(Controller *controller) {
 
 bool controllerLaunchGame(Controller *controller) {
     if (!controller) return false;
-    return processExec(controller->config->game.location);
+    char execPath[MAX_PATH];
+    snprintf(execPath, MAX_PATH, "%s\\%s", controller->config->game.location, GAME_EXECUTABLE_NAME);
+    return processExec(execPath);
 }
 
 bool controllerCloseGame(Controller *controller) {
@@ -68,6 +75,8 @@ bool controllerAttachGame(Controller *controller) {
     if (!controller->process) return false;
     if (!controller->api) controller->api = apiCreate(controller);
     if (!controller->server) controller->server = serverCreate(controller);
+    if (!controller->gsc) controller->gsc = gscCreate(controller->server);
+    if (!controller->apiGsc) controller->apiGsc = apiGscCreate(controller->gsc);
     controller->state->isGameAttached = controllerIsGameAttached(controller);
     controller->state->isTimRunning = controllerIsTimRunning(controller);
     controller->state->isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
@@ -220,7 +229,6 @@ void controllerUpdateState(Controller *controller) {
             activeGame->currentRound->elapsed = levelElapsed - activeGame->currentRound->startTimestamp;
         }
     }
-    // TODO: Update timers
 }
 
 void controllerInitTrainerConfig(Controller *controller) {
@@ -415,6 +423,16 @@ void controllerWidgetResetConfig(Controller *controller, int index) {
 Api *_controllerGetApi(Controller *controller) {
     if (!controller) return NULL;
     return controller->api;
+}
+
+ApiGsc *_controllerGetApiGsc(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->apiGsc;
+}
+
+GSC *_controllerGetGsc(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->gsc;
 }
 
 Server *_controllerGetServer(Controller *controller) {

@@ -19,6 +19,7 @@ typedef enum {
     COMMAND_INSTA,
     COMMAND_INFAMMO,
     COMMAND_TP,
+    COMMAND_PERK,
     COMMAND_UWU,
 } CommandName;
 

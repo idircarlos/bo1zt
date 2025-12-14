@@ -1,13 +1,17 @@
 #include "logic/event.h"
+#include "logic/gsc.h"
 #include "controller/controller.h"
+#include "controller/controller_internal.h"
 #include "logic/game.h"
 #include "logger/logger.h"
 #include "win/process.h"
 #include "logic/command.h"
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 static Controller *controller;
+static GSC *gsc;
 
 static bool eventHandleChatMessage(Event event);
 static bool eventHandleMapChange(Event event);
@@ -19,6 +23,7 @@ static bool _eventValidIDUpdate(int eventId, int *pEventValue);
 
 void eventInit(Controller *controllerInstance) {
     controller = controllerInstance;
+    gsc = _controllerGetGsc(controller);
     commandInit(controller);
 }
 
@@ -37,6 +42,7 @@ bool eventHandle(Event event) {
         case EVENT_ID_UPDATE: return eventHandleIDUpdate(event);
         case EVENT_INVALID:
         default:
+            LOG_ERROR("Unknown event %d\n", event.type);
             return false;
     }
 }
@@ -68,8 +74,13 @@ static bool eventHandleVMNotify(Event event) {
     if (strcmp(event.data.vmNotify.eventName, "fade_in_complete") == 0) {
         return gameStart(game, controllerGetLevelName(controller), event.timestamp);
     }
-    if (strcmp(event.data.vmNotify.eventName, "start_of_round") == 0) {
-        return roundStart(game->currentRound, event.timestamp);
+    if (strncmp(event.data.vmNotify.eventName, "bo1zt::Worker", 13) == 0) {
+        int index;
+        char response[256];
+        if (sscanf(event.data.vmNotify.eventName, "bo1zt::Worker%d::%255s", &index, response) == 2) {
+            gscWriteResponse(gsc, index, response);
+        }
+        return true;
     }
     return true;
 }

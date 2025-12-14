@@ -1,4 +1,5 @@
 #include "logic/command.h"
+#include "logic/command/perk.h"
 #include "logic/server.h"
 #include "controller/controller_internal.h"
 #include "utils/map.h"
@@ -57,6 +58,7 @@ static Map* createCommandsMap() {
     mapPutInt(map, "insta", COMMAND_INSTA);
     mapPutInt(map, "infammo", COMMAND_INFAMMO);
     mapPutInt(map, "tp", COMMAND_TP);
+    mapPutInt(map, "perk", COMMAND_PERK);
     mapPutInt(map, "uwu", COMMAND_UWU);
     return map;
 }
@@ -73,6 +75,7 @@ void commandInit(Controller *controllerInstance) {
     controller = controllerInstance;
     server = _controllerGetServer(controller);
     commandsMap = createCommandsMap();
+    commandPerkInit(server, _controllerGetApiGsc(controller));
 }
 
 Command commandBuild(const char *message) {
@@ -110,17 +113,17 @@ bool commandHandle(Command command) {
             break;
         case COMMAND_GIVE:
             if (command.argc < 2) {
-                serverChatMessage(server, "/give must receive an argument! Usage:\n/give ammo\n/give <weapon>");
+                serverChatMessage(server, "/give must receive an argument!");
+                serverChatMessage(server, "Usage: /give ammo | <weapon>");
                 return false;
             }
-            // This method specifically for some reason writes the arguments in the same address
-            // where the game reads the last chat message. This is not a problem since it will be detected
-            // as a usual chat message next time, so it will be ignored, but something to keep in mind.
             snprintf(buffer, 64, "give %s", command.argv[1]);
             serverExecuteCommand(server, buffer);
             break;
         case COMMAND_FOV:
             // TODO: Implement rest of commands
+        case COMMAND_PERK:
+            return commandPerkHandle(command);
         default:
             return false;
     }
