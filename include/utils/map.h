@@ -11,10 +11,9 @@
 #define mapGetBool(map, key) ((bool)(intptr_t)mapGet(map, key))
 
 
-typedef struct MapEntry MapEntry;
 typedef struct Map Map;
 
-struct Map *mapCreate(void);
+Map *mapCreate(void);
 void mapDestroy(struct Map *hash_table);
 void mapPut(struct Map *hash_table, const char *key, void *val);
 void *mapGet(struct Map *hash_table, const char *key);

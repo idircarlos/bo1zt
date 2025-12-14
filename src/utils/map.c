@@ -6,6 +6,8 @@
 
 #define ZCOUNT_OF(arr) (sizeof(arr) / sizeof(*arr))
 
+typedef struct MapEntry MapEntry;
+
 struct MapEntry {
   char *key;
   void *val;
