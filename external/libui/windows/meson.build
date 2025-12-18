@@ -29,6 +29,7 @@ libui_sources += [
 	'windows/editablecombo.cpp',
 	'windows/entry.cpp',
 	'windows/events.cpp',
+	'windows/flexbox.cpp',
 	'windows/fontbutton.cpp',
 	'windows/fontdialog.cpp',
 	'windows/fontmatch.cpp',

@@ -4128,6 +4128,174 @@ _UI_EXTERN void uiDisableSpinbox(uiSpinbox *s);
  */
 _UI_EXTERN int uiMsgBoxOkCancel(uiWindow *parent, const char *title, const char *description);
 
+
+/**
+ * A container that allows placing controls at specific coordinates and sizes.
+ *
+ * Unlike uiBox or uiGrid, uiFlexBox does not use automatic layout.
+ * Controls are positioned using absolute pixel coordinates.
+ *
+ * @struct uiFlexBox
+ * @extends uiControl
+ * @ingroup container
+ */
+typedef struct uiFlexBox uiFlexBox;
+#define uiFlexBox(this) ((uiFlexBox *) (this))
+
+/**
+ * Appends a control to the flexbox at specific coordinates.
+ *
+ * @param f uiFlexBox instance.
+ * @param c Control instance to append.
+ * @param x X coordinate (pixels from left).
+ * @param y Y coordinate (pixels from top).
+ * @param width Width of the control in pixels.
+ * @param height Height of the control in pixels.
+ * @memberof uiFlexBox
+ */
+_UI_EXTERN void uiFlexBoxAppend(uiFlexBox *f, uiControl *c, int x, int y, int width, int height);
+
+/**
+ * Updates the position and size of a child control.
+ *
+ * @param f uiFlexBox instance.
+ * @param index Index of the child control.
+ * @param x New X coordinate.
+ * @param y New Y coordinate.
+ * @param width New width.
+ * @param height New height.
+ * @memberof uiFlexBox
+ */
+_UI_EXTERN void uiFlexBoxSetChildPosition(uiFlexBox *f, int index, int x, int y, int width, int height);
+
+/**
+ * Removes the control at @p index from the flexbox.
+ *
+ * @param f uiFlexBox instance.
+ * @param index Index of control to be removed.
+ * @note The control is neither destroyed nor freed.
+ * @memberof uiFlexBox
+ */
+_UI_EXTERN void uiFlexBoxDelete(uiFlexBox *f, int index);
+
+/**
+ * Returns the number of controls contained within the flexbox.
+ *
+ * @param f uiFlexBox instance.
+ * @returns Number of children.
+ * @memberof uiFlexBox
+ */
+_UI_EXTERN int uiFlexBoxNumChildren(uiFlexBox *f);
+
+/**
+ * Creates a new flexbox for absolute positioning.
+ *
+ * @returns A new uiFlexBox instance.
+ * @memberof uiFlexBox @static
+ */
+_UI_EXTERN uiFlexBox *uiNewFlexBox(void);
+
+
+/**
+ * Sets the button background color.
+ *
+ * The button will be drawn with a custom background color while maintaining
+ * the system's native border and look & feel.
+ *
+ * @param b uiButton instance.
+ * @param r Red component (0-255).
+ * @param g Green component (0-255).
+ * @param bl Blue component (0-255).
+ * @memberof uiButton
+ */
+_UI_EXTERN void uiButtonSetBackgroundColor(uiButton *b, int r, int g, int bl);
+
+/**
+ * Sets the button pressed/active color.
+ *
+ * The button will use this color when being pressed by the user.
+ *
+ * @param b uiButton instance.
+ * @param r Red component (0-255).
+ * @param g Green component (0-255).
+ * @param bl Blue component (0-255).
+ * @memberof uiButton
+ */
+_UI_EXTERN void uiButtonSetPressedColor(uiButton *b, int r, int g, int bl);
+
+/**
+ * Clears the custom background color.
+ *
+ * The button will revert to the default system appearance.
+ *
+ * @param b uiButton instance.
+ * @memberof uiButton
+ */
+_UI_EXTERN void uiButtonClearBackgroundColor(uiButton *b);
+
+/**
+ * Clears the custom pressed color.
+ *
+ * The button will revert to the default pressed appearance.
+ *
+ * @param b uiButton instance.
+ * @memberof uiButton
+ */
+_UI_EXTERN void uiButtonClearPressedColor(uiButton *b);
+
+/**
+ * Sets the button to flat style (square corners).
+ *
+ * When enabled, the button will be drawn with square corners instead of
+ * the system's default rounded corners. This also disables the focus cue.
+ *
+ * @param b uiButton instance.
+ * @param flat Non-zero to enable flat style, zero to disable.
+ * @memberof uiButton
+ */
+_UI_EXTERN void uiButtonSetFlat(uiButton *b, int flat);
+
+/**
+ * Sets the button border color (only applies when flat style is enabled).
+ *
+ * @param b uiButton instance.
+ * @param r Red component (0-255).
+ * @param g Green component (0-255).
+ * @param bl Blue component (0-255).
+ * @memberof uiButton
+ */
+_UI_EXTERN void uiButtonSetBorderColor(uiButton *b, int r, int g, int bl);
+
+/**
+ * Clears the custom border color.
+ *
+ * The button will use the default border color.
+ *
+ * @param b uiButton instance.
+ * @memberof uiButton
+ */
+_UI_EXTERN void uiButtonClearBorderColor(uiButton *b);
+
+/**
+ * Sets the button hover color (when mouse is over the button).
+ *
+ * @param b uiButton instance.
+ * @param r Red component (0-255).
+ * @param g Green component (0-255).
+ * @param bl Blue component (0-255).
+ * @memberof uiButton
+ */
+_UI_EXTERN void uiButtonSetHoverColor(uiButton *b, int r, int g, int bl);
+
+/**
+ * Clears the custom hover color.
+ *
+ * The button will use the default hover appearance.
+ *
+ * @param b uiButton instance.
+ * @memberof uiButton
+ */
+_UI_EXTERN void uiButtonClearHoverColor(uiButton *b);
 #ifdef __cplusplus
 }
 #endif
