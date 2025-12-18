@@ -12,6 +12,7 @@ libui_sources += [
 	'windows/attrstr.cpp',
 	'windows/box.cpp',
 	'windows/button.cpp',
+	'windows/custombutton.cpp',
 	'windows/checkbox.cpp',
 	'windows/colorbutton.cpp',
 	'windows/colordialog.cpp',

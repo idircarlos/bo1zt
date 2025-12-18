@@ -6,6 +6,7 @@
 #define uiBoxSignature 0x426F784C
 #define uiButtonSignature 0x42746F6E
 #define uiCheckboxSignature 0x43686B62
+#define uiCustomButtonSignature 0x43427574
 #define uiColorButtonSignature 0x436F6C42
 #define uiComboboxSignature 0x436F6D62
 #define uiDateTimePickerSignature 0x44545069

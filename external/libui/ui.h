@@ -4197,51 +4197,114 @@ _UI_EXTERN uiFlexBox *uiNewFlexBox(void);
 
 
 /**
+ * A customizable button with support for custom colors and flat style.
+ *
+ * This control extends the basic button functionality with:
+ * - Custom background, hover, and pressed colors
+ * - Flat style (square corners, no theme)
+ * - Custom border color
+ *
+ * @struct uiCustomButton
+ * @extends uiControl
+ * @ingroup button
+ */
+typedef struct uiCustomButton uiCustomButton;
+#define uiCustomButton(this) ((uiCustomButton *) (this))
+
+/**
+ * Returns the custom button label text.
+ *
+ * @param b uiCustomButton instance.
+ * @returns The text of the label.\n
+ *          A `NUL` terminated UTF-8 string.\n
+ *          Caller is responsible for freeing the data with `uiFreeText()`.
+ * @memberof uiCustomButton
+ */
+_UI_EXTERN char *uiCustomButtonText(uiCustomButton *b);
+
+/**
+ * Sets the custom button label text.
+ *
+ * @param b uiCustomButton instance.
+ * @param text Label text.\n
+ *             A valid, `NUL` terminated UTF-8 string.\n
+ *             Data is copied internally. Ownership is not transferred.
+ * @memberof uiCustomButton
+ */
+_UI_EXTERN void uiCustomButtonSetText(uiCustomButton *b, const char *text);
+
+/**
+ * Registers a callback for when the custom button is clicked.
+ *
+ * @param b uiCustomButton instance.
+ * @param f Callback function.\n
+ *          @p sender Back reference to the instance that triggered the callback.\n
+ *          @p senderData User data registered with the sender instance.
+ * @param data User data to be passed to the callback.
+ *
+ * @note Only one callback can be registered at a time.
+ * @memberof uiCustomButton
+ */
+_UI_EXTERN void uiCustomButtonOnClicked(uiCustomButton *b,
+	void (*f)(uiCustomButton *sender, void *senderData), void *data);
+
+/**
+ * Creates a new custom button.
+ *
+ * @param text Label text.\n
+ *             A valid, `NUL` terminated UTF-8 string.\n
+ *             Data is copied internally. Ownership is not transferred.
+ * @returns A new uiCustomButton instance.
+ * @memberof uiCustomButton @static
+ */
+_UI_EXTERN uiCustomButton *uiNewCustomButton(const char *text);
+
+/**
  * Sets the button background color.
  *
  * The button will be drawn with a custom background color while maintaining
  * the system's native border and look & feel.
  *
- * @param b uiButton instance.
+ * @param b uiCustomButton instance.
  * @param r Red component (0-255).
  * @param g Green component (0-255).
  * @param bl Blue component (0-255).
- * @memberof uiButton
+ * @memberof uiCustomButton
  */
-_UI_EXTERN void uiButtonSetBackgroundColor(uiButton *b, int r, int g, int bl);
+_UI_EXTERN void uiCustomButtonSetBackgroundColor(uiCustomButton *b, int r, int g, int bl);
 
 /**
  * Sets the button pressed/active color.
  *
  * The button will use this color when being pressed by the user.
  *
- * @param b uiButton instance.
+ * @param b uiCustomButton instance.
  * @param r Red component (0-255).
  * @param g Green component (0-255).
  * @param bl Blue component (0-255).
- * @memberof uiButton
+ * @memberof uiCustomButton
  */
-_UI_EXTERN void uiButtonSetPressedColor(uiButton *b, int r, int g, int bl);
+_UI_EXTERN void uiCustomButtonSetPressedColor(uiCustomButton *b, int r, int g, int bl);
 
 /**
  * Clears the custom background color.
  *
  * The button will revert to the default system appearance.
  *
- * @param b uiButton instance.
- * @memberof uiButton
+ * @param b uiCustomButton instance.
+ * @memberof uiCustomButton
  */
-_UI_EXTERN void uiButtonClearBackgroundColor(uiButton *b);
+_UI_EXTERN void uiCustomButtonClearBackgroundColor(uiCustomButton *b);
 
 /**
  * Clears the custom pressed color.
  *
  * The button will revert to the default pressed appearance.
  *
- * @param b uiButton instance.
- * @memberof uiButton
+ * @param b uiCustomButton instance.
+ * @memberof uiCustomButton
  */
-_UI_EXTERN void uiButtonClearPressedColor(uiButton *b);
+_UI_EXTERN void uiCustomButtonClearPressedColor(uiCustomButton *b);
 
 /**
  * Sets the button to flat style (square corners).
@@ -4249,53 +4312,53 @@ _UI_EXTERN void uiButtonClearPressedColor(uiButton *b);
  * When enabled, the button will be drawn with square corners instead of
  * the system's default rounded corners. This also disables the focus cue.
  *
- * @param b uiButton instance.
+ * @param b uiCustomButton instance.
  * @param flat Non-zero to enable flat style, zero to disable.
- * @memberof uiButton
+ * @memberof uiCustomButton
  */
-_UI_EXTERN void uiButtonSetFlat(uiButton *b, int flat);
+_UI_EXTERN void uiCustomButtonSetFlat(uiCustomButton *b, int flat);
 
 /**
  * Sets the button border color (only applies when flat style is enabled).
  *
- * @param b uiButton instance.
+ * @param b uiCustomButton instance.
  * @param r Red component (0-255).
  * @param g Green component (0-255).
  * @param bl Blue component (0-255).
- * @memberof uiButton
+ * @memberof uiCustomButton
  */
-_UI_EXTERN void uiButtonSetBorderColor(uiButton *b, int r, int g, int bl);
+_UI_EXTERN void uiCustomButtonSetBorderColor(uiCustomButton *b, int r, int g, int bl);
 
 /**
  * Clears the custom border color.
  *
  * The button will use the default border color.
  *
- * @param b uiButton instance.
- * @memberof uiButton
+ * @param b uiCustomButton instance.
+ * @memberof uiCustomButton
  */
-_UI_EXTERN void uiButtonClearBorderColor(uiButton *b);
+_UI_EXTERN void uiCustomButtonClearBorderColor(uiCustomButton *b);
 
 /**
  * Sets the button hover color (when mouse is over the button).
  *
- * @param b uiButton instance.
+ * @param b uiCustomButton instance.
  * @param r Red component (0-255).
  * @param g Green component (0-255).
  * @param bl Blue component (0-255).
- * @memberof uiButton
+ * @memberof uiCustomButton
  */
-_UI_EXTERN void uiButtonSetHoverColor(uiButton *b, int r, int g, int bl);
+_UI_EXTERN void uiCustomButtonSetHoverColor(uiCustomButton *b, int r, int g, int bl);
 
 /**
  * Clears the custom hover color.
  *
  * The button will use the default hover appearance.
  *
- * @param b uiButton instance.
- * @memberof uiButton
+ * @param b uiCustomButton instance.
+ * @memberof uiCustomButton
  */
-_UI_EXTERN void uiButtonClearHoverColor(uiButton *b);
+_UI_EXTERN void uiCustomButtonClearHoverColor(uiCustomButton *b);
 #ifdef __cplusplus
 }
 #endif
