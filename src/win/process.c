@@ -70,6 +70,12 @@ bool processExec(const char *executableName) {
     return success;
 }
 
+bool processIsWindowForeground(Process *process) {
+    if (!process || !process->windowInfo.hwnd) return false;
+    HWND foreground = GetForegroundWindow();
+    return foreground == process->windowInfo.hwnd;
+}
+
 bool processIsWindowAttached(Process *process) {
     return process->windowInfo.hwnd != NULL;
 }

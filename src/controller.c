@@ -106,6 +106,12 @@ void controllerWaitUntilGameCloses(Controller *controller) {
     processWaitUntilExits(controller->process);
 }
 
+bool controllerIsGameWindowFocused(Controller *controller) {
+    if (!controller || !controller->process) return false;
+    return processIsWindowForeground(controller->process);
+}
+
+
 bool controllerIsGameWindowAttached(Controller *controller) {
     if (!controller) return false;
     if (!controller->process) return false;
@@ -329,6 +335,10 @@ WidgetConfig controllerGetWidgetConfig(Controller *controller, int index) {
     return controller->config->widgets[index];
 }
 
+BindsConfig controllerGetBindsConfig(Controller *controller) {
+    return controller->config->binds;
+}
+
 void controllerUpdateConfig(Controller *controller, ConfigType type) {
     if (!controller) return;
     char *hostname;
@@ -413,9 +423,20 @@ void controllerResetConfig(Controller *controller, ConfigType type) {
     }
 }
 
-void controllerWidgetResetConfig(Controller *controller, int index) {
+void controllerResetWidgetConfig(Controller *controller, int index) {
     if (!controller) return;
     configResetWidget(controller->config, index);
+}
+
+void controllerResetBindsConfig(Controller *controller) {
+    if (!controller) return;
+    configResetBinds(controller->config);
+}
+
+void controllerUpdateBindsConfig(Controller *controller, BindsConfig *bindsConfig) {
+    if (!controller || !controller->config || !bindsConfig) return;
+    controller->config->binds = *bindsConfig;
+    configSave(controller->config);
 }
 
 Api *_controllerGetApi(Controller *controller) {

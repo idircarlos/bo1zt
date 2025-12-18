@@ -61,6 +61,39 @@ static void normalizePath(char *path) {
     *dst = '\0';
 }
 
+static void configLoadBinds(Config *config, dictionary *dict) {
+    configResetBinds(config);
+    
+    int nkeys = iniparser_getsecnkeys(dict, "Binds");
+    if (nkeys <= 0) return;
+    
+    const char **keys = (const char **)malloc(nkeys * sizeof(char *));
+    if (!keys) return;
+    
+    iniparser_getseckeys(dict, "Binds", keys);
+    
+    int bindCount = 0;
+    for (int i = 0; i < nkeys && bindCount < MAX_BINDS; i++) {
+        const char *fullKey = keys[i];
+        // fullKey is "Binds:KeyName", extract just the key name
+        const char *keyName = strchr(fullKey, ':');
+        if (!keyName) continue;
+        keyName++; // Skip the ':'
+        
+        const char *command = iniparser_getstring(dict, fullKey, "");
+        if (command && strlen(command) > 0) {
+            strncpy(config->binds.binds[bindCount].keyName, keyName, MAX_KEY_NAME_LENGTH - 1);
+            config->binds.binds[bindCount].keyName[MAX_KEY_NAME_LENGTH - 1] = '\0';
+            strncpy(config->binds.binds[bindCount].command, command, MAX_COMMAND_LENGTH - 1);
+            config->binds.binds[bindCount].command[MAX_COMMAND_LENGTH - 1] = '\0';
+            bindCount++;
+        }
+    }
+    config->binds.bindCount = bindCount;
+    
+    free(keys);
+}
+
 static bool configLoad(Config *config) {
     dictionary *dictionary = iniparser_load(INI_FILE_NAME);
     if (!dictionary) {
@@ -118,6 +151,9 @@ static bool configLoad(Config *config) {
         config->widgets[i].rect = rectFromString(iniparser_getstring(dictionary, keyRect, RECT_INI_DEFAULT));
         config->widgets[i].fontSize = iniparser_getint(dictionary, keyFontSize, config->widgets[i].fontSize);
     }
+    
+    // Load keybindings
+    configLoadBinds(config, dictionary);
 
     iniparser_freedict(dictionary);
     return true;
@@ -210,6 +246,16 @@ bool configSave(Config *config) {
         ret += iniparser_set(dictionary, keyRect, strfmt(valueBuffer, RECT_INI_FMT, config->widgets[i].rect.x, config->widgets[i].rect.y, config->widgets[i].rect.w, config->widgets[i].rect.h));
         ret += iniparser_set(dictionary, keyFontSize, strfmt(valueBuffer, "%d", config->widgets[i].fontSize));
     }
+    
+    // Save keybindings
+    ret += iniparser_set(dictionary, "Binds", NULL);
+    for (int i = 0; i < config->binds.bindCount; i++) {
+        if (config->binds.binds[i].keyName[0] != '\0' && config->binds.binds[i].command[0] != '\0') {
+            char bindKey[128];
+            snprintf(bindKey, sizeof(bindKey), "Binds:%s", config->binds.binds[i].keyName);
+            ret += iniparser_set(dictionary, bindKey, config->binds.binds[i].command);
+        }
+    }
 
     if (ret < 0) {
         LOG_ERROR("Error setting ini values\n");
@@ -228,6 +274,7 @@ void configReset(Config *config) {
     for (int i = 0; i < N_CONFIG_WIDGETS; i++) {
         configResetWidget(config, i);
     }
+    configResetBinds(config);
 }
 
 void configResetGame(Config *config) {
@@ -285,6 +332,14 @@ void configResetWidget(Config *config, int index) {
     widget.textColor = colorCreate(255, 255, 255, 255);
     widget.hideOnDefault = false;    
     config->widgets[index] = widget;
+}
+
+void configResetBinds(Config *config) {
+    config->binds.bindCount = 0;
+    for (int i = 0; i < MAX_BINDS; i++) {
+        config->binds.binds[i].keyName[0] = '\0';
+        config->binds.binds[i].command[0] = '\0';
+    }
 }
 
 void configDestroy(Config *config) {

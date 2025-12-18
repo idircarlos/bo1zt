@@ -301,7 +301,7 @@ static void onResetButtonClick(uiButton *button, void *data) {
     (void)data;
     WidgetObj *obj = widgets[selectedWidgetIndex];
     resetWidgetStatus(obj);
-    controllerWidgetResetConfig(controller, selectedWidgetIndex);
+    controllerResetWidgetConfig(controller, selectedWidgetIndex);
     uiComboboxSetSelected(widgetFontCombobox, 0);
     setColorButton(widgetColorBtn, colorCreate(255, 255, 255, 255));
     uiCheckboxSetChecked(hideOnDefaultCheckbox, false);

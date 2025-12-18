@@ -10,6 +10,7 @@ typedef struct Process Process;
 Process *processOpen(const char *executableName);
 bool processIsRunning(const char *executableName);
 bool processExec(const char *executableName);
+bool processIsWindowForeground(Process *process);
 bool processIsWindowAttached(Process *process);
 bool processTryAttachWindow(Process *process, const char *windowTitle);
 bool processTerminate(Process *process);

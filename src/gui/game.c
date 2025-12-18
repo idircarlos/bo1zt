@@ -1,6 +1,7 @@
 #include "gui/game.h"
 #include "gui.h"
 #include "gui/widgets.h"
+#include "gui/binds.h"
 #include "logger.h"
 #include "logic/state.h"
 #include "win/thread.h"
@@ -59,7 +60,7 @@ static uiCheckbox *patchMovementCheckbox = NULL;
 static uiCheckbox *showFpsCheckbox = NULL;
 static uiLabel *hostnameLabel = NULL;
 static uiEntry *hostnameEntry = NULL;
-static uiButton *camosButton = NULL;
+static uiButton *bindsButton = NULL;
 static uiButton *widgetsButton = NULL;
 static uiButton *launchButton = NULL;
 static uiButton *closeButton = NULL;
@@ -69,6 +70,10 @@ static uiEntry *locationEntry = NULL; // Using this conponent to act as another 
 // Widgets window
 static uiWindow *widgetsWindow = NULL;
 static UIControlGroup *widgetsControlGroup = NULL;
+
+// Binds window
+static uiWindow *bindsWindow = NULL;
+static UIControlGroup *bindsControlGroup = NULL;
 
 // Threads
 static int threadLaunchGame(void *data) {
@@ -124,6 +129,18 @@ static int onWidgetsWindowClose(uiWindow *window, void *data) {
         uiWidgetsReset();
     }
     uiControlHide(uiControl(widgetsWindow));
+    return 0;
+}
+
+static int onBindsWindowClose(uiWindow *window, void *data) {
+    (void)window;
+    (void)data;
+    if (uiBindsIsSavable()) {
+        int okPressed = uiMsgBoxOkCancel(parent, "Are you sure?", "You have pending changes.");
+        if (!okPressed) return 0;
+        uiBindsReset();
+    }
+    uiControlHide(uiControl(bindsWindow));
     return 0;
 }
 
@@ -262,6 +279,15 @@ static void onLaunchButtonClick(uiButton *button, void *data) {
     threadCreateWatchdog(gameLauncherThread, 15000, onLaunchGameError, NULL);
 }
 
+static void onBindsButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    uiWindowSetResizeable(bindsWindow, false);
+    uiWindowSetMargined(bindsWindow, true);
+    uiWindowSetIcon(bindsWindow, IDI_ICON1);
+    uiControlShow(uiControl(bindsWindow));
+}
+
 static void onWidgetsButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
@@ -305,6 +331,17 @@ static void buildWidgets() {
     uiWindowOnClosing(widgetsWindow, onWidgetsWindowClose, NULL);
     uiWindowSetMargined(widgetsWindow, 1);
     uiWindowSetChild(widgetsWindow, uiControl(widgetsGroup));
+}
+
+static void buildBinds() {
+    bindsControlGroup = uiBindsBuildControlGroup();
+    
+    bindsWindow = uiNewWindow("Bind Manager", 800, 350, 0);
+    uiControl *bindsGroup = bindsControlGroup->build(controller, bindsWindow);
+    
+    uiWindowOnClosing(bindsWindow, onBindsWindowClose, NULL);
+    uiWindowSetMargined(bindsWindow, 1);
+    uiWindowSetChild(bindsWindow, uiControl(bindsGroup));
 }
 
 static void init() {
@@ -358,7 +395,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     hostnameEntry = uiNewEntry();
     patchMovementCheckbox = uiNewCheckbox(" Fix Movement Speed");
     showFpsCheckbox = uiNewCheckbox(" Show FPS");
-    camosButton = uiNewButton("Setup Camos");
+    bindsButton = uiNewButton("Bind Keys");
     widgetsButton = uiNewButton("Add Widgets");
     launchButton = uiNewButton("Launch Game");
     closeButton = uiNewButton("Close Game");
@@ -372,6 +409,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiEntryOnChanged(hostnameEntry, onEntryChange, NULL);
 
+    uiButtonOnClicked(bindsButton, onBindsButtonClick, NULL);
     uiButtonOnClicked(widgetsButton, onWidgetsButtonClick, NULL);
     uiButtonOnClicked(launchButton, onLaunchButtonClick, NULL);
     uiButtonOnClicked(closeButton, onCloseButtonClick, NULL);
@@ -386,7 +424,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiGridAppend(grid, uiControl(hostnameEntry),            1, 3, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(patchMovementCheckbox),    0, 4, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(showFpsCheckbox),          1, 4, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(camosButton),              0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(bindsButton),              0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(widgetsButton),            1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(launchButton),             0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(closeButton),              1, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
@@ -398,6 +436,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     
     init();
     buildWidgets();
+    buildBinds();
 
     return uiControl(gameGroup);
 }
@@ -446,6 +485,7 @@ static void update() {
         mapPutInt(cache, CACHE_RESETS, resets);
     }
     widgetsControlGroup->update();
+    bindsControlGroup->update();
 }
 
 // External API for Controller

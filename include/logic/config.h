@@ -5,6 +5,9 @@
 #include <stdbool.h>
 
 #define N_CONFIG_WIDGETS 3
+#define MAX_BINDS 100
+#define MAX_KEY_NAME_LENGTH 32
+#define MAX_COMMAND_LENGTH 256
 
 typedef struct {
     bool fixMovementSpeed;
@@ -55,10 +58,21 @@ typedef struct {
 } WidgetConfig;
 
 typedef struct {
+    char keyName[MAX_KEY_NAME_LENGTH];
+    char command[MAX_COMMAND_LENGTH];
+} KeyBindConfig;
+
+typedef struct {
+    KeyBindConfig binds[MAX_BINDS];
+    int bindCount;
+} BindsConfig;
+
+typedef struct {
     GameConfig game;
     GraphicsConfig graphics;
     CustomizerConfig customizer;
     WidgetConfig widgets[N_CONFIG_WIDGETS];
+    BindsConfig binds;
 } Config;
 
 typedef enum {
@@ -66,6 +80,7 @@ typedef enum {
     CONFIG_GRAPHICS,
     CONFIG_CUSTOMIZER,
     CONFIG_WIDGETS,
+    CONFIG_BINDS,
 } ConfigType;
 
 Config* configCreate();
@@ -75,6 +90,7 @@ void configResetGame(Config *config);
 void configResetGraphics(Config *config);
 void configResetCustomizer(Config *config);
 void configResetWidget(Config *config, int index);
+void configResetBinds(Config *config);
 void configDestroy(Config *config);
 
 #endif // CONFIG_H_
