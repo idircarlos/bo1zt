@@ -18,7 +18,7 @@ typedef enum {
 } KeyBindState;
 
 typedef struct {
-    uiButton *button;
+    uiCustomButton *button;
     const char *keyName;
     char *command;
     KeyBindState state;
@@ -35,16 +35,16 @@ static uiFlexBox *flexBox;
 static uiEntry *entryCommand;
 static uiButton *btnReset;
 static uiButton *btnSave;
-static uiButton *selectedKey = NULL;
+static uiCustomButton *selectedKey = NULL;
 static bool hasUnsavedChanges = false;
 
-static void onKeyClick(uiButton *button, void *data);
+static void onKeyClick(uiCustomButton *button, void *data);
 static void onResetClick(uiButton *button, void *data);
 static void onSaveClick(uiButton *button, void *data);
 static void onEntryChanged(uiEntry *entry, void *data);
 static void init(void);
 static void loadBindingsFromConfig(void);
-static KeyBind *findKeyBindByButton(uiButton *button);
+static KeyBind *findKeyBindByButton(uiCustomButton *button);
 
 static inline bool isValidVKCode(int vkCode) {
     return vkCode > 0 && vkCode < 256;
@@ -71,21 +71,21 @@ static void updateKeyColor(KeyBind *kb) {
     
     switch (kb->state) {
         case KEYBIND_STATE_EMPTY:
-            uiButtonSetBackgroundColor(kb->button, COLOR_EMPTY.r, COLOR_EMPTY.g, COLOR_EMPTY.b);
-            uiButtonSetHoverColor(kb->button, COLOR_HOVER_EMPTY.r, COLOR_HOVER_EMPTY.g, COLOR_HOVER_EMPTY.b);
+            uiCustomButtonSetBackgroundColor(kb->button, COLOR_EMPTY.r, COLOR_EMPTY.g, COLOR_EMPTY.b);
+            uiCustomButtonSetHoverColor(kb->button, COLOR_HOVER_EMPTY.r, COLOR_HOVER_EMPTY.g, COLOR_HOVER_EMPTY.b);
             break;
         case KEYBIND_STATE_ASSIGNED:
-            uiButtonSetBackgroundColor(kb->button, COLOR_ASSIGNED.r, COLOR_ASSIGNED.g, COLOR_ASSIGNED.b);
-            uiButtonSetHoverColor(kb->button, COLOR_HOVER_ASSIGNED.r, COLOR_HOVER_ASSIGNED.g, COLOR_HOVER_ASSIGNED.b);
+            uiCustomButtonSetBackgroundColor(kb->button, COLOR_ASSIGNED.r, COLOR_ASSIGNED.g, COLOR_ASSIGNED.b);
+            uiCustomButtonSetHoverColor(kb->button, COLOR_HOVER_ASSIGNED.r, COLOR_HOVER_ASSIGNED.g, COLOR_HOVER_ASSIGNED.b);
             break;
         case KEYBIND_STATE_SELECTED:
-            uiButtonSetBackgroundColor(kb->button, COLOR_SELECTED.r, COLOR_SELECTED.g, COLOR_SELECTED.b);
-            uiButtonSetHoverColor(kb->button, COLOR_SELECTED.r, COLOR_SELECTED.g, COLOR_SELECTED.b);
+            uiCustomButtonSetBackgroundColor(kb->button, COLOR_SELECTED.r, COLOR_SELECTED.g, COLOR_SELECTED.b);
+            uiCustomButtonSetHoverColor(kb->button, COLOR_SELECTED.r, COLOR_SELECTED.g, COLOR_SELECTED.b);
             break;
     }
     
-    uiButtonSetPressedColor(kb->button, COLOR_PRESSED.r, COLOR_PRESSED.g, COLOR_PRESSED.b);
-    uiButtonSetBorderColor(kb->button, COLOR_BORDER.r, COLOR_BORDER.g, COLOR_BORDER.b);
+    uiCustomButtonSetPressedColor(kb->button, COLOR_PRESSED.r, COLOR_PRESSED.g, COLOR_PRESSED.b);
+    uiCustomButtonSetBorderColor(kb->button, COLOR_BORDER.r, COLOR_BORDER.g, COLOR_BORDER.b);
 }
 
 static void updateAllKeyStates(void) {
@@ -129,9 +129,9 @@ static void syncModifierCommand(KeyBind *kb, const char *command) {
     }
 }
 
-static uiButton *buildKey(const char *label, const char *keyName, int x, int y, int w, int h) {
-    uiButton *btn = uiNewButton(label);
-    uiButtonSetFlat(btn, 1);
+static uiCustomButton *buildKey(const char *label, const char *keyName, int x, int y, int w, int h) {
+    uiCustomButton *btn = uiNewCustomButton(label);
+    uiCustomButtonSetFlat(btn, 1);
     uiFlexBoxAppend(flexBox, uiControl(btn), x, y, w, h);
 
     if (keyBindCount < MAX_KEYS) {
@@ -141,7 +141,7 @@ static uiButton *buildKey(const char *label, const char *keyName, int x, int y, 
         keyBinds[keyBindCount].state = KEYBIND_STATE_EMPTY;
         keyBinds[keyBindCount].vkCode = keymapGetVKCode(keyName);
         updateKeyColor(&keyBinds[keyBindCount]);
-        uiButtonOnClicked(btn, onKeyClick, &keyBinds[keyBindCount]);
+        uiCustomButtonOnClicked(btn, onKeyClick, &keyBinds[keyBindCount]);
         keyBindCount++;
     }
 
@@ -183,24 +183,23 @@ static void updateKeyBindCommand(void) {
     }
 }
 
-static void onKeyClick(uiButton *button, void *data) {
+static void onKeyClick(uiCustomButton *button, void *data) {
     KeyBind *kb = (KeyBind *)data;
     
     if (selectedKey != NULL && selectedKey != button) {
         updateKeyBindCommand();
         
-        for (int i = 0; i < keyBindCount; i++) {
-            if (keyBinds[i].button == selectedKey) {
-                KeyBind *prevKb = &keyBinds[i];
-                KeyBind *prevPair = getModifierPair(prevKb);
-                if (prevPair != NULL) {
-                    updateKeyState(prevPair);
-                    updateKeyColor(prevPair);
-                }
-                updateKeyState(prevKb);
-                updateKeyColor(prevKb);
-                break;
+        KeyBind *prevKb = findKeyBindByButton(selectedKey);
+        selectedKey = NULL;  // Clear before updating state
+        
+        if (prevKb != NULL) {
+            KeyBind *prevPair = getModifierPair(prevKb);
+            if (prevPair != NULL) {
+                updateKeyState(prevPair);
+                updateKeyColor(prevPair);
             }
+            updateKeyState(prevKb);
+            updateKeyColor(prevKb);
         }
     }
     
@@ -224,7 +223,7 @@ static void onKeyClick(uiButton *button, void *data) {
     LOG_INFO("Key selected: %s\n", kb->keyName);
 }
 
-static KeyBind *findKeyBindByButton(uiButton *button) {
+static KeyBind *findKeyBindByButton(uiCustomButton *button) {
     for (int i = 0; i < keyBindCount; i++) {
         if (keyBinds[i].button == button) {
             return &keyBinds[i];
