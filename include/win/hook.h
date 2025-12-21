@@ -8,7 +8,7 @@
 
 typedef struct Hook Hook;
 
-Hook* hookCreate(Process *process, uintptr_t start, size_t size, uint8_t *shellCode, size_t shellCodeSize);
+Hook* hookCreate(Process *process, uintptr_t start, size_t size, uint8_t *shellCode, size_t shellCodeSize, uint8_t *expectedOriginalBytes);
 void hookDestroy(Hook *hook);
 bool hookIsActivated(Hook *hook);
 bool hookActivate(Hook *hook);

@@ -1,6 +1,7 @@
 #include "win/hook.h"
 #include "logger.h"
 #include <stdlib.h>
+#include <string.h>
 #include <windows.h>
 
 #define MIN_PAGE_SIZE 0x1000 // 4096 Bytes
@@ -22,7 +23,7 @@ struct Hook {
     size_t shellCodeSize;
 };
 
-Hook* hookCreate(Process *process, uintptr_t startAddress, size_t size, uint8_t *shellCode, size_t shellCodeSize) {
+Hook* hookCreate(Process *process, uintptr_t startAddress, size_t size, uint8_t *shellCode, size_t shellCodeSize, uint8_t *expectedOriginalBytes) {
     // Allocate a read-write-execute memory page in the target process
     uintptr_t pageAddress;
     bool success = processAllocatePage(process, shellCodeSize > MIN_PAGE_SIZE ? shellCodeSize : MIN_PAGE_SIZE, &pageAddress);
@@ -54,19 +55,41 @@ Hook* hookCreate(Process *process, uintptr_t startAddress, size_t size, uint8_t 
         return NULL;
     }
 
-    // Save original bytes before overwriting them with the JMP instruction
-    uint8_t *originalBytes = (uint8_t*)malloc(sizeof(uint8_t)*size);
-    if (!originalBytes) {
-        LOG_ERROR("Failed to allocate memory for original bytes.\n");
+    // Read current bytes from memory
+    uint8_t *currentBytes = (uint8_t*)malloc(sizeof(uint8_t)*size);
+    if (!currentBytes) {
+        LOG_ERROR("Failed to allocate memory for current bytes.\n");
         return NULL;
     }
 
-    success = processRead(process, startAddress, originalBytes, size);
+    success = processRead(process, startAddress, currentBytes, size);
     if (!success) {
-        LOG_ERROR("Failed to read original bytes from target process.\n");
-        free(originalBytes);
+        LOG_ERROR("Failed to read current bytes from target process.\n");
+        free(currentBytes);
         return NULL;
     }
+
+    // Determine original bytes to use
+    uint8_t *originalBytes = (uint8_t*)malloc(sizeof(uint8_t)*size);
+    if (!originalBytes) {
+        LOG_ERROR("Failed to allocate memory for original bytes.\n");
+        free(currentBytes);
+        return NULL;
+    }
+
+    // Check if memory already contains a JMP instruction (hook from previous session)
+    bool alreadyHooked = (currentBytes[0] == JMP_INSTRUCTION);
+    
+    if (alreadyHooked && expectedOriginalBytes != NULL) {
+        // Use the expected original bytes since memory is already hooked
+        memcpy(originalBytes, expectedOriginalBytes, size);
+        LOG_INFO("Hook at 0x%08X: detected existing hook, using expected original bytes.\n", (unsigned int)startAddress);
+    } else {
+        // Use the current bytes as original
+        memcpy(originalBytes, currentBytes, size);
+    }
+    
+    free(currentBytes);
 
     // Calculate the jump adress to the allocated memory from the hooked function so its not computed on each activation
     uint32_t jmpToHook = pageAddress - (startAddress + 5);
@@ -74,6 +97,7 @@ Hook* hookCreate(Process *process, uintptr_t startAddress, size_t size, uint8_t 
     Hook *hook = (Hook*)malloc(sizeof(Hook));
     if (!hook) {
         LOG_ERROR("Failed to allocate memory for Hook\n");
+        free(originalBytes);
         return NULL;
     }
     hook->process = process;
@@ -101,6 +125,7 @@ void hookDestroy(Hook *hook) {
 }
 
 bool hookIsActivated(Hook *hook) {
+    if (!hook) return false;
     // Read the current bytes from the target process memory
     uint8_t *current = (uint8_t*)malloc(hook->originalBytesSize);
     if (!current) {
@@ -147,6 +172,7 @@ bool hookIsActivated(Hook *hook) {
 }
 
 bool hookActivate(Hook *hook) {
+    if (hookIsActivated(hook)) return true;
     // Change memory protection to allow writing
     uint32_t oldProtect = 0;
     bool success = processVirtualProtect(hook->process, hook->startAddress, hook->originalBytesSize, PAGE_EXECUTE_READWRITE, &oldProtect);
@@ -187,6 +213,7 @@ bool hookActivate(Hook *hook) {
 }
 
 bool hookDeactivate(Hook *hook) {
+    if (!hookIsActivated(hook)) return true;
     // Change memory protection to allow writing
     uint32_t oldProtect = 0;
     bool success = processVirtualProtect(hook->process, hook->startAddress, hook->originalBytesSize, PAGE_EXECUTE_READWRITE, &oldProtect);

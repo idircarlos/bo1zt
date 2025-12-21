@@ -51,7 +51,7 @@ bool _rawApiSetThirdPerson(Process *process, bool enabled);
 bool _rawApiGetInfiniteAmmo(Process *process);
 bool _rawApiSetInfiniteAmmo(Process *process, bool enabled);
 
-bool _rawApiGetInstantKill(Map *hooks);
+bool _rawApiGetInstantKill(Process *process, Map *hooks);
 bool _rawApiSetInstantKill(Process *process, Map *hooks, bool enabled);
 
 bool _rawApiGetMakeBorderless(Process *process);
@@ -154,7 +154,7 @@ bool rawApiIsCheatEnabled(RawApi *rawApi, CheatName cheatName) {
         case CHEAT_NAME_INFINITE_AMMO:
             return _rawApiGetInfiniteAmmo(process);
         case CHEAT_NAME_INSTANT_KILL:
-            return _rawApiGetInstantKill(rawApi->hooks);
+            return _rawApiGetInstantKill(process, rawApi->hooks);
         case CHEAT_NAME_MAKE_BORDERLESS:
             return _rawApiGetMakeBorderless(process);
         case CHEAT_NAME_UNLIMIT_FPS:
@@ -877,10 +877,10 @@ bool _rawApiGetInfiniteAmmo(Process *process) {
         printf("Failed to read Infinite Ammo value\n");
         return false;
     }
-    bool infiniteAmmoEnabled = memcmp(CHEAT_ASM_INFINITE_AMMO.on.instructions, buffer, sizeof(CHEAT_ASM_INFINITE_AMMO.on.size)) == 0;
+    bool infiniteAmmoEnabled = memcmp(CHEAT_ASM_INFINITE_AMMO.on.instructions, buffer, CHEAT_ASM_INFINITE_AMMO.on.size) == 0;
     if (infiniteAmmoEnabled) return true;
 
-    bool infiniteAmmoDisabled = memcmp(CHEAT_ASM_INFINITE_AMMO.off.instructions, buffer, sizeof(CHEAT_ASM_INFINITE_AMMO.off.size)) == 0;
+    bool infiniteAmmoDisabled = memcmp(CHEAT_ASM_INFINITE_AMMO.off.instructions, buffer, CHEAT_ASM_INFINITE_AMMO.off.size) == 0;
     if (!infiniteAmmoDisabled) {
         LOG_WARN("Infinite Ammo bytes do not match known patterns. Possible memory corruption or external modification.\n");
         return false;
@@ -902,10 +902,10 @@ bool _rawApiGetSmallCrosshair(Process *process) {
         printf("Failed to read Small Crosshair value\n");
         return false;
     }
-    bool smallCrosshairEnabled = memcmp(CHEAT_ASM_SMALL_CROSSHAIR.on.instructions, buffer, sizeof(CHEAT_ASM_SMALL_CROSSHAIR.on.size)) == 0;
+    bool smallCrosshairEnabled = memcmp(CHEAT_ASM_SMALL_CROSSHAIR.on.instructions, buffer, CHEAT_ASM_SMALL_CROSSHAIR.on.size) == 0;
     if (smallCrosshairEnabled) return true;
 
-    bool smallCrosshairDisabled = memcmp(CHEAT_ASM_SMALL_CROSSHAIR.off.instructions, buffer, sizeof(CHEAT_ASM_SMALL_CROSSHAIR.off.size)) == 0;
+    bool smallCrosshairDisabled = memcmp(CHEAT_ASM_SMALL_CROSSHAIR.off.instructions, buffer, CHEAT_ASM_SMALL_CROSSHAIR.off.size) == 0;
     if (!smallCrosshairDisabled) {
         LOG_WARN("Small Crosshair bytes do not match known patterns. Possible memory corruption or external modification.\n");
         return false;
@@ -933,8 +933,16 @@ bool _rawApiSetSmallCrosshair(Process *process, bool enabled) {
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
 
-bool _rawApiGetInstantKill(Map *hooks) {
-    Hook *hook = (Hook*)mapGet(hooks, HOOK_INSTANT_KILL_ID);
+bool _rawApiGetInstantKill(Process *process, Map *hooks) {
+    CheatAsm *instructionSet = &CHEAT_ASM_INSTANT_KILL;
+    Hook *hook;
+    if (!mapContains(hooks, HOOK_INSTANT_KILL_ID)) {
+        hook = hookCreate(process, instructionSet->offset, instructionSet->off.size, instructionSet->on.instructions, instructionSet->on.size, instructionSet->off.instructions);
+        mapPut(hooks, HOOK_INSTANT_KILL_ID, hook);
+    } else {
+        hook = (Hook*)mapGet(hooks, HOOK_INSTANT_KILL_ID);
+    }
+    
     return hookIsActivated(hook);
 }
 
@@ -942,12 +950,11 @@ bool _rawApiSetInstantKill(Process *process, Map *hooks, bool enabled) {
     CheatAsm *instructionSet = &CHEAT_ASM_INSTANT_KILL;
     Hook *hook;
     if (!mapContains(hooks, HOOK_INSTANT_KILL_ID)) {
-        hook = hookCreate(process, instructionSet->offset, instructionSet->off.size, instructionSet->on.instructions, instructionSet->on.size);
+        hook = hookCreate(process, instructionSet->offset, instructionSet->off.size, instructionSet->on.instructions, instructionSet->on.size, instructionSet->off.instructions);
         mapPut(hooks, HOOK_INSTANT_KILL_ID, hook);
     } else {
         hook = (Hook*)mapGet(hooks, HOOK_INSTANT_KILL_ID);
     }
-
     return enabled ? hookActivate(hook) : hookDeactivate(hook);
 }
 
