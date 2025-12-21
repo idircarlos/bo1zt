@@ -3,6 +3,8 @@
 #include "controller.h"
 #include "controller/controller_internal.h"
 #include "logic/game.h"
+#include "logic/cheat/manager.h"
+#include "logic/cheat/manager/handlers.h"
 #include "logger.h"
 #include "win/process.h"
 #include "logic/command.h"
@@ -71,6 +73,10 @@ static bool eventHandleMapRestart(Event event) {
 static bool eventHandleVMNotify(Event event) {
     State *state = controllerGetState(controller);
     Game *game = &state->activeGame;
+    if (strcmp(event.data.vmNotify.eventName, "fade_introblack") == 0) {
+        cheatManagerHandleGameStart(_controllerGetCheatManager(controller));
+        return true;
+    }
     if (strcmp(event.data.vmNotify.eventName, "fade_in_complete") == 0) {
         return gameStart(game, controllerGetLevelName(controller), event.timestamp);
     }

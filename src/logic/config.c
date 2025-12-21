@@ -154,6 +154,20 @@ static bool configLoad(Config *config) {
     
     // Load keybindings
     configLoadBinds(config, dictionary);
+    
+    // Load hacks config
+    config->hacks.godMode = iniparser_getboolean(dictionary, "Hacks:GodMode", config->hacks.godMode);
+    config->hacks.noClip = iniparser_getboolean(dictionary, "Hacks:NoClip", config->hacks.noClip);
+    config->hacks.invisible = iniparser_getboolean(dictionary, "Hacks:Invisible", config->hacks.invisible);
+    config->hacks.infiniteAmmo = iniparser_getboolean(dictionary, "Hacks:InfiniteAmmo", config->hacks.infiniteAmmo);
+    config->hacks.instantKill = iniparser_getboolean(dictionary, "Hacks:InstantKill", config->hacks.instantKill);
+    config->hacks.noRecoil = iniparser_getboolean(dictionary, "Hacks:NoRecoil", config->hacks.noRecoil);
+    config->hacks.smallCrosshair = iniparser_getboolean(dictionary, "Hacks:SmallCrosshair", config->hacks.smallCrosshair);
+    config->hacks.fastGameplay = iniparser_getboolean(dictionary, "Hacks:FastGameplay", config->hacks.fastGameplay);
+    config->hacks.noShellshock = iniparser_getboolean(dictionary, "Hacks:NoShellshock", config->hacks.noShellshock);
+    config->hacks.increaseKnifeRange = iniparser_getboolean(dictionary, "Hacks:IncreaseKnifeRange", config->hacks.increaseKnifeRange);
+    config->hacks.boxNeverMoves = iniparser_getboolean(dictionary, "Hacks:BoxNeverMoves", config->hacks.boxNeverMoves);
+    config->hacks.thirdPerson = iniparser_getboolean(dictionary, "Hacks:ThirdPerson", config->hacks.thirdPerson);
 
     iniparser_freedict(dictionary);
     return true;
@@ -256,6 +270,21 @@ bool configSave(Config *config) {
             ret += iniparser_set(dictionary, bindKey, config->binds.binds[i].command);
         }
     }
+    
+    // Save hacks config
+    ret += iniparser_set(dictionary, "Hacks", NULL);
+    ret += iniparser_set(dictionary, "Hacks:GodMode", strfmt(valueBuffer, "%d", config->hacks.godMode));
+    ret += iniparser_set(dictionary, "Hacks:NoClip", strfmt(valueBuffer, "%d", config->hacks.noClip));
+    ret += iniparser_set(dictionary, "Hacks:Invisible", strfmt(valueBuffer, "%d", config->hacks.invisible));
+    ret += iniparser_set(dictionary, "Hacks:InfiniteAmmo", strfmt(valueBuffer, "%d", config->hacks.infiniteAmmo));
+    ret += iniparser_set(dictionary, "Hacks:InstantKill", strfmt(valueBuffer, "%d", config->hacks.instantKill));
+    ret += iniparser_set(dictionary, "Hacks:NoRecoil", strfmt(valueBuffer, "%d", config->hacks.noRecoil));
+    ret += iniparser_set(dictionary, "Hacks:SmallCrosshair", strfmt(valueBuffer, "%d", config->hacks.smallCrosshair));
+    ret += iniparser_set(dictionary, "Hacks:FastGameplay", strfmt(valueBuffer, "%d", config->hacks.fastGameplay));
+    ret += iniparser_set(dictionary, "Hacks:NoShellshock", strfmt(valueBuffer, "%d", config->hacks.noShellshock));
+    ret += iniparser_set(dictionary, "Hacks:IncreaseKnifeRange", strfmt(valueBuffer, "%d", config->hacks.increaseKnifeRange));
+    ret += iniparser_set(dictionary, "Hacks:BoxNeverMoves", strfmt(valueBuffer, "%d", config->hacks.boxNeverMoves));
+    ret += iniparser_set(dictionary, "Hacks:ThirdPerson", strfmt(valueBuffer, "%d", config->hacks.thirdPerson));
 
     if (ret < 0) {
         LOG_ERROR("Error setting ini values\n");
@@ -271,6 +300,7 @@ void configReset(Config *config) {
     configResetGame(config);
     configResetGraphics(config);
     configResetCustomizer(config);
+    configResetHacks(config);
     for (int i = 0; i < N_CONFIG_WIDGETS; i++) {
         configResetWidget(config, i);
     }
@@ -340,6 +370,24 @@ void configResetBinds(Config *config) {
         config->binds.binds[i].keyName[0] = '\0';
         config->binds.binds[i].command[0] = '\0';
     }
+}
+
+void configResetHacks(Config *config) {
+    HacksConfig hacks = {
+        .godMode = false,
+        .noClip = false,
+        .invisible = false,
+        .infiniteAmmo = false,
+        .instantKill = false,
+        .noRecoil = false,
+        .smallCrosshair = false,
+        .fastGameplay = false,
+        .noShellshock = false,
+        .increaseKnifeRange = false,
+        .boxNeverMoves = false,
+        .thirdPerson = false,
+    };
+    config->hacks = hacks;
 }
 
 void configDestroy(Config *config) {

@@ -1,4 +1,7 @@
 #include "gui/hacks.h"
+#include "logic/config.h"
+#include "logic/cheat/manager.h"
+#include "logic/cheat/manager/actions.h"
 #include <stdio.h>
 
 // Controller instance
@@ -25,10 +28,61 @@ static uiCheckbox *thirdPersonCheckbox = NULL;
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
-    bool success = controllerSetCheat(controller, cheatName, enabled);
-    if (!success) {
-        fprintf(stderr, "Failed to set cheat %d to %d\n", cheatName, enabled);
-        uiCheckboxSetChecked(checkbox, !enabled); // Revert checkbox state
+    
+    CheatManager *cheatManager = controllerGetCheatManager(controller);
+    if (!cheatManager) {
+        // Fallback: update Config directly if CheatManager not available
+        Config *config = controllerGetConfig(controller);
+        HacksConfig *hacks = &config->hacks;
+        
+        switch (cheatName) {
+            case CHEAT_NAME_GOD_MODE:
+                hacks->godMode = enabled;
+                break;
+            case CHEAT_NAME_NO_CLIP:
+                hacks->noClip = enabled;
+                break;
+            case CHEAT_NAME_INVISIBLE:
+                hacks->invisible = enabled;
+                break;
+            case CHEAT_NAME_INFINITE_AMMO:
+                hacks->infiniteAmmo = enabled;
+                break;
+            case CHEAT_NAME_INSTANT_KILL:
+                hacks->instantKill = enabled;
+                break;
+            case CHEAT_NAME_NO_RECOIL:
+                hacks->noRecoil = enabled;
+                break;
+            case CHEAT_NAME_SMALL_CROSSHAIR:
+                hacks->smallCrosshair = enabled;
+                break;
+            case CHEAT_NAME_FAST_GAMEPLAY:
+                hacks->fastGameplay = enabled;
+                break;
+            case CHEAT_NAME_NO_SHELLSHOCK:
+                hacks->noShellshock = enabled;
+                break;
+            case CHEAT_NAME_INCREASE_KNIFE_RANGE:
+                hacks->increaseKnifeRange = enabled;
+                break;
+            case CHEAT_NAME_BOX_NEVER_MOVES:
+                hacks->boxNeverMoves = enabled;
+                break;
+            case CHEAT_NAME_THIRD_PERSON:
+                hacks->thirdPerson = enabled;
+                break;
+            default:
+                break;
+        }
+        return;
+    }
+    
+    CheatResult result = cheatManagerSetToggle(cheatManager, cheatName, enabled);
+    
+    // If API failed, revert checkbox to previous state
+    if (result == CHEAT_RESULT_API_FAILED) {
+        uiCheckboxSetChecked(checkbox, !enabled);
     }
 }
 
@@ -90,7 +144,46 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 }
 
 static void update() {
-    // Nothing
+    Config *config = controllerGetConfig(controller);
+    HacksConfig *hacks = &config->hacks;
+    
+    // Sync UI with config values
+    if (uiCheckboxChecked(godModeCheckbox) != hacks->godMode) {
+        uiCheckboxSetChecked(godModeCheckbox, hacks->godMode);
+    }
+    if (uiCheckboxChecked(noClipCheckbox) != hacks->noClip) {
+        uiCheckboxSetChecked(noClipCheckbox, hacks->noClip);
+    }
+    if (uiCheckboxChecked(invisibleCheckbox) != hacks->invisible) {
+        uiCheckboxSetChecked(invisibleCheckbox, hacks->invisible);
+    }
+    if (uiCheckboxChecked(infiniteAmoCheckbox) != hacks->infiniteAmmo) {
+        uiCheckboxSetChecked(infiniteAmoCheckbox, hacks->infiniteAmmo);
+    }
+    if (uiCheckboxChecked(instantKillCheckbox) != hacks->instantKill) {
+        uiCheckboxSetChecked(instantKillCheckbox, hacks->instantKill);
+    }
+    if (uiCheckboxChecked(noRecoilCheckbox) != hacks->noRecoil) {
+        uiCheckboxSetChecked(noRecoilCheckbox, hacks->noRecoil);
+    }
+    if (uiCheckboxChecked(smallCrosshairCheckbox) != hacks->smallCrosshair) {
+        uiCheckboxSetChecked(smallCrosshairCheckbox, hacks->smallCrosshair);
+    }
+    if (uiCheckboxChecked(fastGameplayCheckbox) != hacks->fastGameplay) {
+        uiCheckboxSetChecked(fastGameplayCheckbox, hacks->fastGameplay);
+    }
+    if (uiCheckboxChecked(noShellshockCheckbox) != hacks->noShellshock) {
+        uiCheckboxSetChecked(noShellshockCheckbox, hacks->noShellshock);
+    }
+    if (uiCheckboxChecked(increaseKnifeRangeCheckbox) != hacks->increaseKnifeRange) {
+        uiCheckboxSetChecked(increaseKnifeRangeCheckbox, hacks->increaseKnifeRange);
+    }
+    if (uiCheckboxChecked(boxNeverMovesCheckbox) != hacks->boxNeverMoves) {
+        uiCheckboxSetChecked(boxNeverMovesCheckbox, hacks->boxNeverMoves);
+    }
+    if (uiCheckboxChecked(thirdPersonCheckbox) != hacks->thirdPerson) {
+        uiCheckboxSetChecked(thirdPersonCheckbox, hacks->thirdPerson);
+    }
 }
 
 UIControlGroup *uiHacksBuildControlGroup() {

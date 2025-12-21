@@ -22,6 +22,7 @@ bool controllerAttachGame(Controller *controller);
 bool controllerDetachGame(Controller *controller);
 bool controllerIsGameRunning(Controller *controller);
 bool controllerIsTimRunning(Controller *controller);
+bool controllerIsZombiesGameOngoing(Controller *controller);
 void controllerWaitUntilGameCloses(Controller *controller); // This method should be called from a different thread to not block the main thread (UI)
 bool controllerIsGameWindowFocused(Controller *controller);
 bool controllerIsGameWindowAttached(Controller *controller);
@@ -49,11 +50,15 @@ GraphicsConfig controllerGetGraphicsConfig(Controller *controller);
 CustomizerConfig controllerGetCustomizerConfig(Controller *controller);
 WidgetConfig controllerGetWidgetConfig(Controller *controller, int index);
 BindsConfig controllerGetBindsConfig(Controller *controller);
-void controllerUpdateConfig(Controller *controller, ConfigType type);
+Config *controllerGetConfig(Controller *controller);
 void controllerResetConfig(Controller *controller, ConfigType type);
 void controllerResetWidgetConfig(Controller *controller, int index);
 void controllerResetBindsConfig(Controller *controller);
 void controllerUpdateBindsConfig(Controller *controller, BindsConfig *bindsConfig);
 void controllerDestroy(Controller *controller);
+
+// Forward declaration for CheatManager
+typedef struct CheatManager CheatManager;
+CheatManager *controllerGetCheatManager(Controller *controller);
 
 #endif // CONTROLLER_H_

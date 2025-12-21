@@ -58,6 +58,21 @@ typedef struct {
 } WidgetConfig;
 
 typedef struct {
+    bool godMode;
+    bool noClip;
+    bool invisible;
+    bool infiniteAmmo;
+    bool instantKill;
+    bool noRecoil;
+    bool smallCrosshair;
+    bool fastGameplay;
+    bool noShellshock;
+    bool increaseKnifeRange;
+    bool boxNeverMoves;
+    bool thirdPerson;
+} HacksConfig;
+
+typedef struct {
     char keyName[MAX_KEY_NAME_LENGTH];
     char command[MAX_COMMAND_LENGTH];
 } KeyBindConfig;
@@ -71,6 +86,7 @@ typedef struct {
     GameConfig game;
     GraphicsConfig graphics;
     CustomizerConfig customizer;
+    HacksConfig hacks;
     WidgetConfig widgets[N_CONFIG_WIDGETS];
     BindsConfig binds;
 } Config;
@@ -91,6 +107,7 @@ void configResetGraphics(Config *config);
 void configResetCustomizer(Config *config);
 void configResetWidget(Config *config, int index);
 void configResetBinds(Config *config);
+void configResetHacks(Config *config);
 void configDestroy(Config *config);
 
 #endif // CONFIG_H_

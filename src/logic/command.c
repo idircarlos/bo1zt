@@ -1,10 +1,13 @@
 #include "logic/command.h"
-#include "logic/command/perk.h"
+#include "controller.h"
+#include "logic/cheat.h"
+#include "logic/command/graphics.h"
+#include "logic/command/hacks.h"
+#include "logic/command/misc.h"
 #include "logic/server.h"
 #include "controller/controller_internal.h"
 #include "utils/map.h"
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 
 #define ARGV_DEFAULT_CAP 2
@@ -45,20 +48,37 @@ static bool isCommand(const char *message) {
 
 static Map* createCommandsMap() {
     Map *map = mapCreate();
-    mapPutInt(map, "noclip", COMMAND_NOCLIP);
+    // Hacks
+    mapPutInt(map, "infammo", COMMAND_INFAMMO);
+    mapPutInt(map, "insta", COMMAND_INSTA);
     mapPutInt(map, "god", COMMAND_GOD);
-    mapPutInt(map, "demigod", COMMAND_DEMIGOD);
-    mapPutInt(map, "invisible", COMMAND_INVISIBLE);
-    mapPutInt(map, "ufo", COMMAND_UFO);
-    mapPutInt(map, "give", COMMAND_GIVE);
+    mapPutInt(map, "noclip", COMMAND_NOCLIP);
+    mapPutInt(map, "invis", COMMAND_INVISIBLE);
+    mapPutInt(map, "norecoil", COMMAND_NORECOIL);
+    mapPutInt(map, "staticbox", COMMAND_STATICBOX);
+    mapPutInt(map, "thirdperson", COMMAND_THIRDPERSON);
+    mapPutInt(map, "crosshair", COMMAND_CROSSHAIR);
+    mapPutInt(map, "speed", COMMAND_SPEED);
+    mapPutInt(map, "noshellshock", COMMAND_NOSHELLSHOCK);
+    mapPutInt(map, "knife", COMMAND_KNIFE);
+    
+    // Graphics
     mapPutInt(map, "fov", COMMAND_FOV);
     mapPutInt(map, "fovscale", COMMAND_FOVSCALE);
     mapPutInt(map, "fps", COMMAND_FPS);
-    mapPutInt(map, "ndogs", COMMAND_NDOGS);
-    mapPutInt(map, "insta", COMMAND_INSTA);
-    mapPutInt(map, "infammo", COMMAND_INFAMMO);
-    mapPutInt(map, "tp", COMMAND_TP);
+    mapPutInt(map, "borderless", COMMAND_BORDERLESS);
+    mapPutInt(map, "unlimitfps", COMMAND_UNLIMITFPS);
+    mapPutInt(map, "disablehud", COMMAND_DISABLEHUD);
+    mapPutInt(map, "disablefog", COMMAND_DISABLEFOG);
+    mapPutInt(map, "fullbright", COMMAND_FULLBRIGHT);
+    mapPutInt(map, "colorized", COMMAND_COLORIZED);
+
+    // GSC
     mapPutInt(map, "perk", COMMAND_PERK);
+    
+    // Others
+    mapPutInt(map, "give", COMMAND_GIVE);
+    mapPutInt(map, "tp", COMMAND_TP);
     mapPutInt(map, "uwu", COMMAND_UWU);
     return map;
 }
@@ -75,7 +95,9 @@ void commandInit(Controller *controllerInstance) {
     controller = controllerInstance;
     server = _controllerGetServer(controller);
     commandsMap = createCommandsMap();
-    commandPerkInit(server, _controllerGetApi(controller));
+    commandGraphicsInit(server, controller);
+    commandHacksInit(controller);
+    commandMiscInit(server, controller, _controllerGetApi(controller));
 }
 
 Command commandBuild(const char *message) {
@@ -100,32 +122,59 @@ Command commandBuild(const char *message) {
 }
 
 bool commandHandle(Command command) {
-    char buffer[64];
     switch (command.name) {
         case COMMAND_NOCLIP:
+            return commandNoclipHandle(command);
         case COMMAND_GOD:
-        case COMMAND_DEMIGOD:
-        case COMMAND_UFO:
-            serverExecuteCommand(server, command.argv[0]);
-            break;
+            return commandGodHandle(command);
         case COMMAND_INVISIBLE:
-            serverExecuteCommand(server, "notarget");
-            break;
+            return commandInvisibleHandle(command);
         case COMMAND_GIVE:
-            if (command.argc < 2) {
-                serverChatMessage(server, "/give must receive an argument!");
-                serverChatMessage(server, "Usage: /give ammo | <weapon>");
-                return false;
-            }
-            snprintf(buffer, 64, "give %s", command.argv[1]);
-            serverExecuteCommand(server, buffer);
-            break;
+            return commandGiveHandle(command);
         case COMMAND_FOV:
-            // TODO: Implement rest of commands
+            return commandFovHandle(command);
+        case COMMAND_FOVSCALE:
+            return commandFovscaleHandle(command);
+        case COMMAND_FPS:
+            return commandFpsHandle(command);
+        case COMMAND_BORDERLESS:
+            return commandBorderlessHandle(command);
+        case COMMAND_UNLIMITFPS:
+            return commandUnlimitfpsHandle(command);
+        case COMMAND_DISABLEHUD:
+            return commandDisablehudHandle(command);
+        case COMMAND_DISABLEFOG:
+            return commandDisablefogHandle(command);
+        case COMMAND_FULLBRIGHT:
+            return commandFullbrightHandle(command);
+        case COMMAND_COLORIZED:
+            return commandColorizedHandle(command);
+        case COMMAND_INSTA:
+            return commandInstaHandle(command);
+        case COMMAND_INFAMMO:
+            return commandInfammoHandle(command);
+        case COMMAND_TP:
+            return commandTpHandle(command);
         case COMMAND_PERK:
             return commandPerkHandle(command);
+        case COMMAND_NORECOIL:
+            return commandNorecoilHandle(command);
+        case COMMAND_CROSSHAIR:
+            return commandCrosshairHandle(command);
+        case COMMAND_SPEED:
+            return commandSpeedHandle(command);
+        case COMMAND_NOSHELLSHOCK:
+            return commandNoshellshockHandle(command);
+        case COMMAND_KNIFE:
+            return commandKnifeHandle(command);
+        case COMMAND_STATICBOX:
+            return commandStaticboxHandle(command);
+        case COMMAND_THIRDPERSON:
+            return commandThirdpersonHandle(command);
+        case COMMAND_UWU:
+            serverExecuteCommand(server, "magic_chest_movable 1");
+            return serverCenterMessage(server, "UwU :3");
         default:
             return false;
     }
-    return true;
 }

@@ -1,5 +1,7 @@
 #include "gui/graphics.h"
 #include "gui/customizer.h"
+#include "logic/cheat/manager.h"
+#include "logic/cheat/manager/actions.h"
 #include "utils/map.h"
 #include "resource_ids.h"
 #include <stdio.h>
@@ -37,21 +39,67 @@ static UIControlGroup *controlGroups[] = {NULL};
 // Handlers
 static void onSpinboxChange(uiSpinbox *spin, void *data) {
     SimpleCheatName simpleCheatName = (SimpleCheatName)(uintptr_t)data;
-    int value = (float)uiSpinboxValue(spin);
-    controllerSetSimpleCheat(controller, simpleCheatName, &value);
-    controllerUpdateConfig(controller, CONFIG_GRAPHICS);
+    int value = uiSpinboxValue(spin);
+    Config *config = controllerGetConfig(controller);
+    
+    switch (simpleCheatName) {
+        case SIMPLE_CHEAT_NAME_FOV:
+            config->graphics.fov = value;
+            break;
+        case SIMPLE_CHEAT_NAME_FOV_SCALE:
+            config->graphics.fovScale = value;
+            break;
+        case SIMPLE_CHEAT_NAME_FPS_CAP:
+            config->graphics.fpsCap = value;
+            break;
+        default:
+            break;
+    }
+    configSave(config);
 }
 
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
-    bool success = controllerIsGameAttached(controller) ? controllerSetCheat(controller, cheatName, enabled) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
-    if (!success) {
-        fprintf(stderr, "Failed to set Graphics cheat %d to %d\n", cheatName, enabled);
-        uiCheckboxSetChecked(checkbox, !enabled); // Revert checkbox state
+    
+    CheatManager *cheatManager = controllerGetCheatManager(controller);
+    if (!cheatManager) {
+        // Fallback: update Config directly if CheatManager not available
+        Config *config = controllerGetConfig(controller);
+        switch (cheatName) {
+            case CHEAT_NAME_MAKE_BORDERLESS:
+                config->graphics.borderless = enabled;
+                break;
+            case CHEAT_NAME_UNLIMIT_FPS:
+                config->graphics.unlimitFps = enabled;
+                break;
+            case CHEAT_NAME_DISABLE_HUD:
+                config->graphics.disableHud = enabled;
+                break;
+            case CHEAT_NAME_DISABLE_FOG:
+                config->graphics.disableFog = enabled;
+                break;
+            case CHEAT_NAME_FULLBRIGHT:
+                config->graphics.fullbright = enabled;
+                break;
+            case CHEAT_NAME_COLORIZED:
+                config->graphics.colorized = enabled;
+                break;
+            default:
+                break;
+        }
+        configSave(config);
         return;
     }
-    // If "Unlimit FPS" checkbox is toggled, enable/disable FPS Cap Spinbox
+    
+    CheatResult result = cheatManagerSetToggle(cheatManager, cheatName, enabled);
+    
+    // If API failed, revert checkbox to previous state
+    if (result == CHEAT_RESULT_API_FAILED) {
+        uiCheckboxSetChecked(checkbox, !enabled);
+    }
+    
+    // Handle unlimitFps UI state change
     if (cheatName == CHEAT_NAME_UNLIMIT_FPS) {
         if (enabled) {
             uiControlDisable(uiControl(fpsCapLabel));
@@ -61,7 +109,6 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
             uiEnableSpinbox(fpsCapSpin);
         }
     }
-    controllerUpdateConfig(controller, CONFIG_GRAPHICS);
 }
 
 static int onCustomizerClose(uiWindow *window, void *data) {
@@ -179,6 +226,39 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
 
 static void update() {
+    Config *config = controllerGetConfig(controller);
+    GraphicsConfig *graphics = &config->graphics;
+    
+    // Sync UI with config values (in case commands changed them)
+    if (uiSpinboxValue(fovSpin) != graphics->fov) {
+        uiSpinboxSetValue(fovSpin, graphics->fov);
+    }
+    if (uiSpinboxValue(fovScaleSpin) != graphics->fovScale) {
+        uiSpinboxSetValue(fovScaleSpin, graphics->fovScale);
+    }
+    if (uiSpinboxValue(fpsCapSpin) != graphics->fpsCap) {
+        uiSpinboxSetValue(fpsCapSpin, graphics->fpsCap);
+    }
+    if (uiCheckboxChecked(makeBorderlessCheckbox) != graphics->borderless) {
+        uiCheckboxSetChecked(makeBorderlessCheckbox, graphics->borderless);
+    }
+    if (uiCheckboxChecked(unlimitFpsCheckbox) != graphics->unlimitFps) {
+        uiCheckboxSetChecked(unlimitFpsCheckbox, graphics->unlimitFps);
+    }
+    if (uiCheckboxChecked(disableHudCheckbox) != graphics->disableHud) {
+        uiCheckboxSetChecked(disableHudCheckbox, graphics->disableHud);
+    }
+    if (uiCheckboxChecked(fogCheckbox) != graphics->disableFog) {
+        uiCheckboxSetChecked(fogCheckbox, graphics->disableFog);
+    }
+    if (uiCheckboxChecked(fullbrightCheckbox) != graphics->fullbright) {
+        uiCheckboxSetChecked(fullbrightCheckbox, graphics->fullbright);
+    }
+    if (uiCheckboxChecked(colorizedCheckbox) != graphics->colorized) {
+        uiCheckboxSetChecked(colorizedCheckbox, graphics->colorized);
+    }
+    
+    // Handle TIM running state
     State *state = controllerGetState(controller);
     bool timRunning = state->isTimRunning;
     if (timRunning != mapGetBool(cache, CACHE_TIM_RUNNING)) {

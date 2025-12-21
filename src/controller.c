@@ -1,5 +1,8 @@
 #include "controller.h"
 #include "controller/controller_internal.h"
+#include "logic/cheat.h"
+#include "logic/cheat/manager.h"
+#include "logic/cheat/manager/handlers.h"
 #include "logic/config.h"
 #include "logic/game.h"
 #include "logic/game/level.h"
@@ -10,13 +13,7 @@
 #include "api.h"
 #include "logger.h"
 #include "logic/state.h"
-#include "gui/hacks.h"
-#include "gui/graphics.h"
-#include "gui/customizer.h"
-#include "gui/game.h"
-#include "gui/widgets.h"
 #include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
 
 Controller* controllerCreate() {
@@ -28,7 +25,9 @@ Controller* controllerCreate() {
     controller->api = NULL;
     controller->server = NULL;
     controller->gsc = NULL;
+    controller->cheatManager = NULL;
     controllerAttachGame(controller);
+    controller->cheatManager = cheatManagerCreate(controller);
     return controller;
 }
 
@@ -45,6 +44,11 @@ bool controllerIsGameRunning(Controller *controller) {
 bool controllerIsTimRunning(Controller *controller) {
     (void)controller;
     return processIsRunning(TIM_EXECUTABLE_NAME);
+}
+
+bool controllerIsZombiesGameOngoing(Controller *controller) {
+    (void)controller;
+    return apiIsZombiesGameOngoing(controller->api);
 }
 
 bool controllerIsGameAttached(Controller *controller) {
@@ -77,7 +81,7 @@ bool controllerAttachGame(Controller *controller) {
     if (!controller->gsc) controller->gsc = gscCreate(controller->server);
     controller->state->isGameAttached = controllerIsGameAttached(controller);
     controller->state->isTimRunning = controllerIsTimRunning(controller);
-    controller->state->isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
+    controller->state->isZombiesGameOngoing = controllerIsZombiesGameOngoing(controller);
     controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
     controller->state->gameResets = apiGetGameResets(controller->api);
     Game *activeGame = &controller->state->activeGame;
@@ -94,6 +98,12 @@ bool controllerDetachGame(Controller *controller) {
         return false;
     }
     LOG_INFO("Detaching game\n");
+    
+    // Clear AppliedState when game detaches
+    if (controller->cheatManager) {
+        cheatManagerHandleGameDetach(controller->cheatManager);
+    }
+    
     processClose(controller->process);
     stateGameClear(controller->state);
     controller->process = NULL;
@@ -110,7 +120,6 @@ bool controllerIsGameWindowFocused(Controller *controller) {
     if (!controller || !controller->process) return false;
     return processIsWindowForeground(controller->process);
 }
-
 
 bool controllerIsGameWindowAttached(Controller *controller) {
     if (!controller) return false;
@@ -159,6 +168,10 @@ bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, voi
 
 void controllerDestroy(Controller *controller) {
     if (controller) {
+        if (controller->cheatManager) {
+            cheatManagerDestroy(controller->cheatManager);
+            controller->cheatManager = NULL;
+        }
         if (controller->process) {
             processClose(controller->process);
             controller->process = NULL;
@@ -168,13 +181,41 @@ void controllerDestroy(Controller *controller) {
 }
 
 bool controllerIsCheatCheckboxChecked(Controller *controller, CheatName cheat) {
-    if (!controller || !controller->process) return false;
-    return uiHacksIsChecked(cheat);
+    if (!controller || !controller->config) return false;
+    HacksConfig *hacks = &controller->config->hacks;
+    switch (cheat) {
+        case CHEAT_NAME_GOD_MODE:
+            return hacks->godMode;
+        case CHEAT_NAME_NO_CLIP:
+            return hacks->noClip;
+        case CHEAT_NAME_INVISIBLE:
+            return hacks->invisible;
+        case CHEAT_NAME_INFINITE_AMMO:
+            return hacks->infiniteAmmo;
+        case CHEAT_NAME_INSTANT_KILL:
+            return hacks->instantKill;
+        case CHEAT_NAME_NO_RECOIL:
+            return hacks->noRecoil;
+        case CHEAT_NAME_SMALL_CROSSHAIR:
+            return hacks->smallCrosshair;
+        case CHEAT_NAME_FAST_GAMEPLAY:
+            return hacks->fastGameplay;
+        case CHEAT_NAME_NO_SHELLSHOCK:
+            return hacks->noShellshock;
+        case CHEAT_NAME_INCREASE_KNIFE_RANGE:
+            return hacks->increaseKnifeRange;
+        case CHEAT_NAME_BOX_NEVER_MOVES:
+            return hacks->boxNeverMoves;
+        case CHEAT_NAME_THIRD_PERSON:
+            return hacks->thirdPerson;
+        default:
+            return false;
+    }
 }
 
 int controllerUiGraphicsGetFpsCap(Controller *controller) {
-    if (!controller || !controller->process) return false;
-    return uiGraphicsGetFpsCap();
+    if (!controller || !controller->config) return 185; // default
+    return controller->config->graphics.fpsCap;
 }
 
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller) {
@@ -219,7 +260,7 @@ void controllerUpdateState(Controller *controller) {
     };
     // General state
     controller->state->isGameAttached = controllerIsGameWindowAttached(controller);
-    controller->state->isZombiesGameOngoing = apiIsZombiesGameOngoing(controller->api);
+    controller->state->isZombiesGameOngoing = controllerIsZombiesGameOngoing(controller);
     controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
     controller->state->gameResets = apiGetGameResets(controller->api);
     
@@ -237,85 +278,46 @@ void controllerUpdateState(Controller *controller) {
 
 void controllerInitTrainerConfig(Controller *controller) {
     if (!controllerIsGameAttached(controller)) return;
-    Color scoreBg = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND);
-    Color scoreP1 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1);
-    Color scoreP2 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2);
-    Color scoreP3 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3);
-    Color scoreP4 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4);
-    Color reloadWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY);
-    Color reloadWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY);
-    Color lowAmmoWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY);
-    Color lowAmmoWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY);
-    Color noAmmoWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY);
-    Color noAmmoWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY);
-    int transparencyPoints = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS);
-    int transparencyScoreboard = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD);
-    int warnFrequency = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY);
-    int warnMin = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN);
-    int warnMax = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX);
+    Config *config = controller->config;
+    CustomizerConfig *customizer = &config->customizer;
     
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND, &scoreBg);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1, &scoreP1);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2, &scoreP2);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3, &scoreP3);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4, &scoreP4);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS, &transparencyPoints);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD, &transparencyScoreboard);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY, &reloadWarnPrimary);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY, &reloadWarnSecondary);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY, &lowAmmoWarnPrimary);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY, &lowAmmoWarnSecondary);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY, &noAmmoWarnPrimary);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY, &noAmmoWarnSecondary);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY, &warnFrequency);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN, &warnMin);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX, &warnMax);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND, &customizer->scoreBackground);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1, &customizer->scorePlayer1);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2, &customizer->scorePlayer2);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3, &customizer->scorePlayer3);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4, &customizer->scorePlayer4);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS, &customizer->pointsTransparency);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD, &customizer->scoreboardTransparency);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY, &customizer->reloadWarnPrimary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY, &customizer->reloadWarnSecondary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY, &customizer->lowAmmoWarnPrimary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY, &customizer->lowAmmoWarnSecondary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY, &customizer->noAmmoWarnPrimary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY, &customizer->noAmmoWarnSecondary);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY, &customizer->warningTransitionsFrequency);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN, &customizer->warningTransitionsMin);
+    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX, &customizer->warningTransitionsMax);
 
-    bool makeBorderless = uiGraphicsIsChecked(CHEAT_NAME_MAKE_BORDERLESS);
-    if (controllerIsGameWindowAttached(controller) && !processIsBorderless(controller->process) && makeBorderless) {
-        controllerSetCheat(controller, CHEAT_NAME_MAKE_BORDERLESS, makeBorderless);
+    if (controllerIsGameWindowAttached(controller) && !processIsBorderless(controller->process) && config->graphics.borderless) {
+        controllerSetCheat(controller, CHEAT_NAME_MAKE_BORDERLESS, config->graphics.borderless);
     }
 
     // --- Other non-gui Config ---
     controllerSetCheat(controller, CHEAT_NAME_PATCH_CHAT, true);
+    
+    // --- HacksConfig ---
+    // Use CheatManager to apply all enabled cheats from Config that meet conditions
+    if (controller->cheatManager) {
+        cheatManagerHandleGameAttach(controller->cheatManager);
+    }
 }
 
 void controllerUpdateTrainerConfig(Controller *controller) {
-    if (!controllerIsGameAttached(controller)) return;
-    // --- Graphics Config ---
-    // Only update these cheats if TIM is NOT running. Fight is over... He is stronger...
-    if (!controllerIsTimRunning(controller)) {
-        int fov = uiGraphicsGetFov();
-        int fovScale = uiGraphicsGetFovScale();
-        controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FOV, &fov);
-        controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FOV_SCALE, &fovScale);
-        bool unlimitFps = uiGraphicsIsChecked(CHEAT_NAME_UNLIMIT_FPS);
-        if (!unlimitFps) {
-            int fpsCap = uiGraphicsGetFpsCap();
-            controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_FPS_CAP, &fpsCap);
-        }
-    }
-    bool disableHud = uiGraphicsIsChecked(CHEAT_NAME_DISABLE_HUD);
-    bool disableFog = uiGraphicsIsChecked(CHEAT_NAME_DISABLE_FOG);
-    bool fullbright = uiGraphicsIsChecked(CHEAT_NAME_FULLBRIGHT);
-    bool colorized = uiGraphicsIsChecked(CHEAT_NAME_COLORIZED);
-    controllerSetCheat(controller, CHEAT_NAME_DISABLE_HUD, disableHud);
-    controllerSetCheat(controller, CHEAT_NAME_DISABLE_FOG, disableFog);
-    controllerSetCheat(controller, CHEAT_NAME_COLORIZED, colorized);
-    controllerSetCheat(controller, CHEAT_NAME_FULLBRIGHT, fullbright);
-
-    // --- Game Config ---
-    bool fixMovementSpeed = uiGameIsChecked(CHEAT_NAME_FIX_MOVEMENT_SPEED);
-    bool showFps = uiGameIsChecked(CHEAT_NAME_SHOW_FPS);
-    controllerSetCheat(controller, CHEAT_NAME_FIX_MOVEMENT_SPEED, fixMovementSpeed);
-    controllerSetCheat(controller, CHEAT_NAME_SHOW_FPS, showFps);
-    if (!controllerIsTimRunning(controller)) {
-        // Only modify when there is an active game. This address gets mad when it gets modified outside a game.s
-        if (controller->state->isZombiesGameOngoing) {
-            char *hostname = uiGameGetHostname();
-            controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, hostname);            
-            uiFreeText(hostname);
-        }
+    if (!controllerIsGameAttached(controller) || !controllerIsGameReady(controller)) return;
+    
+    // Use CheatManager for all cheats - handles conditions and applied state tracking
+    if (controller->cheatManager) {
+        cheatManagerHandleStateChange(controller->cheatManager);
     }
 }
 
@@ -339,76 +341,8 @@ BindsConfig controllerGetBindsConfig(Controller *controller) {
     return controller->config->binds;
 }
 
-void controllerUpdateConfig(Controller *controller, ConfigType type) {
-    if (!controller) return;
-    char *hostname;
-    char *location;
-    switch (type) {
-        case CONFIG_GAME:
-            controller->config->game.fixMovementSpeed = uiGameIsChecked(CHEAT_NAME_FIX_MOVEMENT_SPEED);
-            controller->config->game.showFps = uiGameIsChecked(CHEAT_NAME_SHOW_FPS);
-            hostname = uiGameGetHostname();
-            location = uiGameGetLocation();
-            strcpy(controller->config->game.hostname, hostname);
-            strcpy(controller->config->game.location, location);
-            uiFreeText(hostname);
-            uiFreeText(location);
-            break;
-        case CONFIG_GRAPHICS:
-            controller->config->graphics.fov = uiGraphicsGetFov();
-            controller->config->graphics.fovScale = uiGraphicsGetFovScale();
-            controller->config->graphics.fpsCap = uiGraphicsGetFpsCap();
-            controller->config->graphics.borderless = uiGraphicsIsChecked(CHEAT_NAME_MAKE_BORDERLESS);
-            controller->config->graphics.unlimitFps = uiGraphicsIsChecked(CHEAT_NAME_UNLIMIT_FPS);
-            controller->config->graphics.disableHud = uiGraphicsIsChecked(CHEAT_NAME_DISABLE_HUD);
-            controller->config->graphics.disableFog = uiGraphicsIsChecked(CHEAT_NAME_DISABLE_FOG);
-            controller->config->graphics.fullbright = uiGraphicsIsChecked(CHEAT_NAME_FULLBRIGHT);
-            controller->config->graphics.colorized = uiGraphicsIsChecked(CHEAT_NAME_COLORIZED);
-            break;
-        case CONFIG_CUSTOMIZER:
-            controller->config->customizer.scoreBackground =  uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND);
-            controller->config->customizer.scorePlayer1 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1);
-            controller->config->customizer.scorePlayer2 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2);
-            controller->config->customizer.scorePlayer3 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3);
-            controller->config->customizer.scorePlayer4 = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4);
-            controller->config->customizer.reloadWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY);
-            controller->config->customizer.reloadWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY);
-            controller->config->customizer.lowAmmoWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY);
-            controller->config->customizer.lowAmmoWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY);
-            controller->config->customizer.noAmmoWarnPrimary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY);
-            controller->config->customizer.noAmmoWarnSecondary = uiCustomizerGetCheatColor(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY);
-            controller->config->customizer.scoreboardTransparency = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD);
-            controller->config->customizer.pointsTransparency = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS);
-            controller->config->customizer.warningTransitionsFrequency = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY);
-            controller->config->customizer.warningTransitionsMin = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN);
-            controller->config->customizer.warningTransitionsMax = uiCustomizerGetCheatInt(SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX);
-            break;
-        case CONFIG_WIDGETS:
-            for (int i = 0; i < N_CONFIG_WIDGETS; i++) {
-                controller->config->widgets[i].enabled = uiWidgetsIsEnabled(i);
-                const char *font = uiWidgetsGetFont(i);
-                strcpy(controller->config->widgets[i].font, font);
-                controller->config->widgets[i].textColor = uiWidgetsGetTextColor(i);
-                controller->config->widgets[i].hideOnDefault = uiWidgetsIsHideOnDefaultChecked(i); 
-                controller->config->widgets[i].rect = uiWidgetsGetRect(i);
-                controller->config->widgets[i].fontSize = uiWidgetsGetFontSize(i);  
-            }
-            break;
-        default:
-            LOG_ERROR("Unknown Config Type %d\n", type);
-            return;
-    }
-    configSave(controller->config);
-}
-
-void controllerWidgetUpdateConfig(Controller *controller, int index) {
-    if (!controller) return;
-    controller->config->widgets[index].enabled = uiWidgetsIsEnabled(index);
-    const char *font = uiWidgetsGetFont(index);
-    strcpy(controller->config->widgets[index].font, font);
-    controller->config->widgets[index].textColor = uiWidgetsGetTextColor(index);
-    controller->config->widgets[index].hideOnDefault = uiWidgetsIsHideOnDefaultChecked(index);
-    configSave(controller->config);
+Config *controllerGetConfig(Controller *controller) {
+    return controller->config;
 }
 
 void controllerResetConfig(Controller *controller, ConfigType type) {
@@ -452,4 +386,14 @@ GSC *_controllerGetGsc(Controller *controller) {
 Server *_controllerGetServer(Controller *controller) {
     if (!controller) return NULL;
     return controller->server;
+}
+
+CheatManager *controllerGetCheatManager(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->cheatManager;
+}
+
+CheatManager *_controllerGetCheatManager(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->cheatManager;
 }

@@ -4,6 +4,8 @@
 #include "gui/binds.h"
 #include "logger.h"
 #include "logic/state.h"
+#include "logic/cheat/manager.h"
+#include "logic/cheat/manager/actions.h"
 #include "win/thread.h"
 #include "utils/map.h"
 #include "resource_ids.h"
@@ -239,18 +241,47 @@ static void handlerTimDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) 
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
-    bool success = controllerIsGameAttached(controller) ? controllerSetCheat(controller, cheatName, enabled) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
-    if (!success) {
-        fprintf(stderr, "Failed to set Game cheat %d to %d\n", cheatName, enabled);
-        uiCheckboxSetChecked(checkbox, !enabled); // Revert checkbox state
+    
+    CheatManager *cheatManager = controllerGetCheatManager(controller);
+    if (!cheatManager) {
+        // Fallback: update Config directly if CheatManager not available
+        Config *config = controllerGetConfig(controller);
+        switch (cheatName) {
+            case CHEAT_NAME_FIX_MOVEMENT_SPEED:
+                config->game.fixMovementSpeed = enabled;
+                break;
+            case CHEAT_NAME_SHOW_FPS:
+                config->game.showFps = enabled;
+                break;
+            default:
+                break;
+        }
+        configSave(config);
+        return;
     }
-    controllerUpdateConfig(controller, CONFIG_GAME);
+    
+    CheatResult result = cheatManagerSetToggle(cheatManager, cheatName, enabled);
+    
+    // If API failed, revert checkbox to previous state
+    if (result == CHEAT_RESULT_API_FAILED) {
+        uiCheckboxSetChecked(checkbox, !enabled);
+    }
 }
 
 static void onEntryChange(uiEntry *entry, void *data) {
-    (void)entry;
     (void)data;
-    controllerUpdateConfig(controller, CONFIG_GAME);
+    Config *config = controllerGetConfig(controller);
+    
+    if (entry == hostnameEntry) {
+        char *hostname = uiEntryText(hostnameEntry);
+        strncpy(config->game.hostname, hostname, sizeof(config->game.hostname) - 1);
+        uiFreeText(hostname);
+    } else if (entry == locationEntry) {
+        char *location = uiEntryText(locationEntry);
+        strncpy(config->game.location, location, sizeof(config->game.location) - 1);
+        uiFreeText(location);
+    }
+    configSave(config);
 }
 
 static void onLaunchButtonClick(uiButton *button, void *data) {
@@ -271,7 +302,9 @@ static void onLaunchButtonClick(uiButton *button, void *data) {
         char gameDir[MAX_PATH];
         extractDirectory(gamePath, gameDir, MAX_PATH);
         uiEntrySetText(locationEntry, gameDir);
-        controllerUpdateConfig(controller, CONFIG_GAME);
+        Config *config = controllerGetConfig(controller);
+        strncpy(config->game.location, gameDir, sizeof(config->game.location) - 1);
+        configSave(config);
         uiFreeText(gamePath);
     }
     // Run a new thread to avoid blocking the UI while game starts.
@@ -384,7 +417,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiGrid *grid = uiNewGrid();
     uiGridSetPadded(grid, 1);
-
     statusLabel = uiNewLabel("Status");
     statusArea = uiNewArea(&statusHandler);
     timLabel = uiNewLabel("TIM");
@@ -433,7 +465,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiGroupSetChild(gameGroup, uiControl(gameBox));
     uiGroupSetMargined(gameGroup, 1);
-    
+
     init();
     buildWidgets();
     buildBinds();
@@ -443,6 +475,17 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
 
 static void update() {
+    Config *config = controllerGetConfig(controller);
+    GameConfig *game = &config->game;
+    
+    // Sync UI with config values (in case commands changed them)
+    if (uiCheckboxChecked(patchMovementCheckbox) != game->fixMovementSpeed) {
+        uiCheckboxSetChecked(patchMovementCheckbox, game->fixMovementSpeed);
+    }
+    if (uiCheckboxChecked(showFpsCheckbox) != game->showFps) {
+        uiCheckboxSetChecked(showFpsCheckbox, game->showFps);
+    }
+    
     State *state = controllerGetState(controller);
     bool gameAttached = state->isGameAttached;
     // Avoid redrawing the area and modifying components constantly
@@ -537,7 +580,9 @@ bool uiGamePromptLocation(void) {
     extractDirectory(gamePath, gameDir, MAX_PATH);
     uiGameSetLocation(gameDir);
     uiFreeText(gamePath);
-    controllerUpdateConfig(controller, CONFIG_GAME);    
+    Config *config = controllerGetConfig(controller);
+    strncpy(config->game.location, gameDir, sizeof(config->game.location) - 1);
+    configSave(config);
     return true;
 }
 

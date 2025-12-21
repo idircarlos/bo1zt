@@ -38,11 +38,52 @@ static void init();
 static void onColorButtonChange(uiColorButton *button, void *data) {
     SimpleCheatName cheat = (SimpleCheatName)(uintptr_t)data;
     Color color = buildColor(button);
-    bool success = controllerIsGameAttached(controller) ? controllerSetSimpleCheat(controller, cheat, &color) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
-    if (!success) {
-        LOG_ERROR("Failed to set Customizer Color cheat %d to RGB(%d, %d, %d)\n", cheat, color);
-        return;
+    Config *config = controllerGetConfig(controller);
+    CustomizerConfig *customizer = &config->customizer;
+    
+    switch (cheat) {
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND:
+            customizer->scoreBackground = color;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1:
+            customizer->scorePlayer1 = color;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2:
+            customizer->scorePlayer2 = color;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3:
+            customizer->scorePlayer3 = color;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4:
+            customizer->scorePlayer4 = color;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY:
+            customizer->reloadWarnPrimary = color;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY:
+            customizer->reloadWarnSecondary = color;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY:
+            customizer->lowAmmoWarnPrimary = color;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY:
+            customizer->lowAmmoWarnSecondary = color;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY:
+            customizer->noAmmoWarnPrimary = color;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY:
+            customizer->noAmmoWarnSecondary = color;
+            break;
+        default:
+            break;
     }
+    
+    // Apply immediately to game if attached
+    if (controllerIsGameAttached(controller)) {
+        controllerSetSimpleCheat(controller, cheat, &color);
+    }
+    
     uiControlEnable(uiControl(btnReset));
     uiControlEnable(uiControl(btnSave));
 }
@@ -50,11 +91,25 @@ static void onColorButtonChange(uiColorButton *button, void *data) {
 static void onSliderChange(uiSlider *slider, void *data) {
     SimpleCheatName cheat = (SimpleCheatName)(uintptr_t)data;
     int value = uiSliderValue(slider);
-    bool success = controllerIsGameAttached(controller) ? controllerSetSimpleCheat(controller, cheat, &value) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
-    if (!success) {
-        LOG_ERROR("Failed to set Customizer Slider cheat %d to %d\n", cheat, value);
-        return;
+    Config *config = controllerGetConfig(controller);
+    CustomizerConfig *customizer = &config->customizer;
+    
+    switch (cheat) {
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD:
+            customizer->scoreboardTransparency = value;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS:
+            customizer->pointsTransparency = value;
+            break;
+        default:
+            break;
     }
+    
+    // Apply immediately to game if attached
+    if (controllerIsGameAttached(controller)) {
+        controllerSetSimpleCheat(controller, cheat, &value);
+    }
+    
     uiControlEnable(uiControl(btnReset));
     uiControlEnable(uiControl(btnSave));
 }
@@ -62,11 +117,28 @@ static void onSliderChange(uiSlider *slider, void *data) {
 static void onSpinboxChange(uiSpinbox *spinbox, void *data) {
     SimpleCheatName cheat = (SimpleCheatName)(uintptr_t)data;
     int value = uiSpinboxValue(spinbox);
-    bool success = controllerIsGameAttached(controller) ? controllerSetSimpleCheat(controller, cheat, &value) : true; // Allowing modifying checkboxes if the game is not running since they will be updated as soon as it starts.
-    if (!success) {
-        LOG_ERROR("Failed to set Customizer Spinbox cheat %d to %d\n", cheat, value);
-        return;
+    Config *config = controllerGetConfig(controller);
+    CustomizerConfig *customizer = &config->customizer;
+    
+    switch (cheat) {
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY:
+            customizer->warningTransitionsFrequency = value;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN:
+            customizer->warningTransitionsMin = value;
+            break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX:
+            customizer->warningTransitionsMax = value;
+            break;
+        default:
+            break;
     }
+    
+    // Apply immediately to game if attached
+    if (controllerIsGameAttached(controller)) {
+        controllerSetSimpleCheat(controller, cheat, &value);
+    }
+    
     uiControlEnable(uiControl(btnReset));
     uiControlEnable(uiControl(btnSave));
 }
@@ -74,7 +146,8 @@ static void onSpinboxChange(uiSpinbox *spinbox, void *data) {
 static void onResetButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    controllerResetConfig(controller, CONFIG_CUSTOMIZER);
+    Config *config = controllerGetConfig(controller);
+    configResetCustomizer(config);
     init();
     uiControlDisable(uiControl(btnReset));
     uiControlEnable(uiControl(btnSave));
@@ -83,7 +156,8 @@ static void onResetButtonClick(uiButton *button, void *data) {
 static void onSaveButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    controllerUpdateConfig(controller, CONFIG_CUSTOMIZER);
+    Config *config = controllerGetConfig(controller);
+    configSave(config);
     uiControlDisable(uiControl(btnSave));
 }
 
@@ -222,7 +296,24 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 }
 
 static void update() {
-    // Nothing for now
+    // Sync UI with config values (in case external sources changed them)
+    CustomizerConfig config = controllerGetCustomizerConfig(controller);
+    
+    if (uiSliderValue(scoreboardTransparencySlider) != config.scoreboardTransparency) {
+        uiSliderSetValue(scoreboardTransparencySlider, config.scoreboardTransparency);
+    }
+    if (uiSliderValue(pointsTransparencySlider) != config.pointsTransparency) {
+        uiSliderSetValue(pointsTransparencySlider, config.pointsTransparency);
+    }
+    if (uiSpinboxValue(freqSpin) != config.warningTransitionsFrequency) {
+        uiSpinboxSetValue(freqSpin, config.warningTransitionsFrequency);
+    }
+    if (uiSpinboxValue(minSpin) != config.warningTransitionsMin) {
+        uiSpinboxSetValue(minSpin, config.warningTransitionsMin);
+    }
+    if (uiSpinboxValue(maxSpin) != config.warningTransitionsMax) {
+        uiSpinboxSetValue(maxSpin, config.warningTransitionsMax);
+    }
 }
 
 

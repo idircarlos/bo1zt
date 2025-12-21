@@ -313,7 +313,16 @@ static void onResetButtonClick(uiButton *button, void *data) {
 static void onSaveButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    controllerUpdateConfig(controller, CONFIG_WIDGETS);
+    Config *config = controllerGetConfig(controller);
+    for (int i = 0; i < N_WIDGETS; i++) {
+        config->widgets[i].enabled = widgets[i]->status.enabled;
+        strcpy(config->widgets[i].font, fontNames[widgets[i]->status.fontIndex]);
+        config->widgets[i].textColor = widgets[i]->status.color;
+        config->widgets[i].hideOnDefault = widgets[i]->status.hideOnDefault;
+        config->widgets[i].rect = widgetGetPosition(widgets[i]->widget);
+        config->widgets[i].fontSize = widgetGetFontSize(widgets[i]->widget);
+    }
+    configSave(config);
     uiControlDisable(uiControl(btnSave));
 }
 
@@ -479,7 +488,12 @@ static void update() {
         }
     }
     if (wasTransforming && !isTransformingNow) {
-        controllerUpdateConfig(controller, CONFIG_WIDGETS);
+        Config *config = controllerGetConfig(controller);
+        for (int i = 0; i < N_WIDGETS; i++) {
+            config->widgets[i].rect = widgetGetPosition(widgets[i]->widget);
+            config->widgets[i].fontSize = widgetGetFontSize(widgets[i]->widget);
+        }
+        configSave(config);
     }
     mapPutBool(cache, WIDGET_TRANSFORMING, isTransformingNow);
 }

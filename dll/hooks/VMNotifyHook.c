@@ -22,7 +22,7 @@ extern bool SendEvent(const Event* ev);
 static const char* (__cdecl *getEventNameById)(int, int) = (const char* (__cdecl *)(int, int))GET_EVENT_NAME_BY_ID_OFFSET;
 
 // Event names
-static const char* eventNames[] = { "start_of_round", "end_of_round", "end_game", "powerup_grabbed", "powerup_dropped", "zom_kill", "fade_in_complete" };
+static const char* eventNames[] = {  "start_of_round", "end_of_round", "end_game", "powerup_grabbed", "powerup_dropped", "zom_kill",  "fade_introblack", "fade_in_complete" };
 static const int eventNamesCount = sizeof(eventNames) / sizeof(eventNames[0]);
 
 // Function prototypes
@@ -89,7 +89,7 @@ static void __cdecl VMNotifyHookFunction(int invalidEvent, int unused, int event
 
     const char *eventName = getEventNameById(eventId, 0);
     if (!eventName) return;
-
+    LOG_INFO("%s\n", eventName);
     for (int i = 0; i < eventNamesCount; i++) {
         if (strcmp(eventName, eventNames[i]) != 0 && strncmp(eventName, "bo1zt::", 7)) continue;
         Event ev = {0};

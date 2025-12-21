@@ -1,0 +1,169 @@
+#include "logic/cheat/manager/handlers.h"
+#include "logic/cheat/manager/manager_internal.h"
+#include "logic/cheat/manager/state.h"
+#include "logic/cheat/manager/registry.h"
+#include "controller.h"
+#include "controller/controller_internal.h"
+#include "logic/config.h"
+#include "logic/server.h"
+#include "api.h"
+#include <string.h>
+
+static void notifyCheatFailed(CheatManager *manager) {
+    if (!manager || !manager->controller) return;
+    Server *server = _controllerGetServer(manager->controller);
+    if (server) {
+        serverChatMessage(server, "Cheat failed to apply");
+    }
+}
+
+static bool checkConditions(CheatManager *manager, CheatCondition conditions) {
+    if (!manager || !manager->controller) return false;
+    if (conditions == CHEAT_COND_NONE) return true;
+    
+    if ((conditions & CHEAT_COND_NO_TIM) && controllerIsTimRunning(manager->controller)) {
+        return false;
+    }
+    
+    if ((conditions & CHEAT_COND_GAME_ONGOING) && !controllerIsZombiesGameOngoing(manager->controller)) {
+        return false;
+    }
+    
+    if ((conditions & CHEAT_COND_GAME_READY) && !controllerIsGameReady(manager->controller)) {
+        return false;
+    }
+    
+    return true;
+}
+
+static bool checkSimpleCheatConditions(CheatManager *manager, SimpleCheatName cheat) {
+    const SimpleCheatDefinition *def = findSimpleCheatDefinition(cheat);
+    if (!def) return false;
+    return checkConditions(manager, def->condition);
+}
+
+void cheatManagerHandleGameStart(CheatManager *manager) {
+    if (!manager || !manager->config) return;
+    
+    Api *api = _controllerGetApi(manager->controller);
+    if (!api) return;
+    
+    for (int i = 0; i < NUM_CHEAT_REGISTRY; i++) {        
+        CheatName cheat = CHEAT_REGISTRY[i].name;
+        bool configValue = getConfigToggleValue(manager->config, cheat);
+        
+        // Skip disabled cheats
+        if (!configValue) continue;
+        
+        // Force apply (ignore applied state, always re-apply)
+        bool apiResult = apiSetCheatEnabled(api, cheat, true);
+        if (apiResult) {
+            setAppliedToggleValue(&manager->applied, cheat, true);
+        } else {
+            notifyCheatFailed(manager);
+        }
+    }
+}
+
+void cheatManagerHandleStateChange(CheatManager *manager) {
+    if (!manager || !manager->config) return;
+    
+    Api *api = _controllerGetApi(manager->controller);
+    if (!api) return;
+    
+    // Handle value cheats that have conditions (FOV, FOVScale, FPSCap, Hostname)
+    GraphicsConfig *graphics = &manager->config->graphics;
+    GameConfig *game = &manager->config->game;
+    
+    // We do not "cache" since FOV is a special value that gets reset after each map restart.
+    // Just force always a restart. 
+    if (checkSimpleCheatConditions(manager, SIMPLE_CHEAT_NAME_FOV)) {
+        if (apiSetSimpleCheat(api, SIMPLE_CHEAT_NAME_FOV, &graphics->fov)) {
+            manager->applied.fov = graphics->fov;
+        }
+    }
+    
+    if (manager->applied.fovScale != graphics->fovScale && checkSimpleCheatConditions(manager, SIMPLE_CHEAT_NAME_FOV_SCALE)) {
+        if (apiSetSimpleCheat(api, SIMPLE_CHEAT_NAME_FOV_SCALE, &graphics->fovScale)) {
+            manager->applied.fovScale = graphics->fovScale;
+        }
+    }
+    
+    if (!graphics->unlimitFps && manager->applied.fpsCap != graphics->fpsCap && checkSimpleCheatConditions(manager, SIMPLE_CHEAT_NAME_FPS_CAP)) {
+        if (apiSetSimpleCheat(api, SIMPLE_CHEAT_NAME_FPS_CAP, &graphics->fpsCap)) {
+            manager->applied.fpsCap = graphics->fpsCap;
+        }
+    }
+    
+    if (strcmp(manager->applied.hostname, game->hostname) != 0 && checkSimpleCheatConditions(manager, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME)) {
+        if (apiSetSimpleCheat(api, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, game->hostname)) {
+            strncpy(manager->applied.hostname, game->hostname, sizeof(manager->applied.hostname) - 1);
+            manager->applied.hostname[sizeof(manager->applied.hostname) - 1] = '\0';
+        }
+    }
+}
+
+void cheatManagerHandleGameAttach(CheatManager *manager) {
+    if (!manager || !manager->config) return;
+    
+    Api *api = _controllerGetApi(manager->controller);
+    if (!api) return;
+    
+    // Apply all enabled toggle cheats from Config that meet conditions
+    for (int i = 0; i < NUM_CHEAT_REGISTRY; i++) {
+        CheatName cheat = CHEAT_REGISTRY[i].name;
+        bool configValue = getConfigToggleValue(manager->config, cheat);
+        
+        // Skip disabled cheats
+        if (!configValue) continue;
+        
+        // Check conditions
+        if (!checkConditions(manager, CHEAT_REGISTRY[i].condition)) continue;
+        
+        // Apply the cheat
+        bool apiResult = apiSetCheatEnabled(api, cheat, configValue);
+        if (apiResult) {
+            setAppliedToggleValue(&manager->applied, cheat, configValue);
+        } else {
+            notifyCheatFailed(manager);
+        }
+    }
+    
+    // Apply value cheats that meet conditions
+    GraphicsConfig *graphics = &manager->config->graphics;
+    GameConfig *game = &manager->config->game;
+    
+    // FOV
+    if (checkSimpleCheatConditions(manager, SIMPLE_CHEAT_NAME_FOV)) {
+        if (apiSetSimpleCheat(api, SIMPLE_CHEAT_NAME_FOV, &graphics->fov)) {
+            manager->applied.fov = graphics->fov;
+        }
+    }
+    
+    // FOV Scale
+    if (checkSimpleCheatConditions(manager, SIMPLE_CHEAT_NAME_FOV_SCALE)) {
+        if (apiSetSimpleCheat(api, SIMPLE_CHEAT_NAME_FOV_SCALE, &graphics->fovScale)) {
+            manager->applied.fovScale = graphics->fovScale;
+        }
+    }
+    
+    // FPS Cap
+    if (checkSimpleCheatConditions(manager, SIMPLE_CHEAT_NAME_FPS_CAP)) {
+        if (apiSetSimpleCheat(api, SIMPLE_CHEAT_NAME_FPS_CAP, &graphics->fpsCap)) {
+            manager->applied.fpsCap = graphics->fpsCap;
+        }
+    }
+    
+    // Hostname
+    if (checkSimpleCheatConditions(manager, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME)) {
+        if (apiSetSimpleCheat(api, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, game->hostname)) {
+            strncpy(manager->applied.hostname, game->hostname, sizeof(manager->applied.hostname) - 1);
+            manager->applied.hostname[sizeof(manager->applied.hostname) - 1] = '\0';
+        }
+    }
+}
+
+void cheatManagerHandleGameDetach(CheatManager *manager) {
+    if (!manager) return;
+    appliedStateClear(&manager->applied);
+}
