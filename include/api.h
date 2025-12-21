@@ -37,5 +37,7 @@ uintptr_t apiGetDVarPointer(Api *api, const char *dVar);
 // GSC backend operations
 bool apiAddPerks(Api *api, List *perks);
 bool apiRemovePerks(Api *api, List *perks);
+bool apiGetStaticBox(Api *api);
+bool apiSetStaticBox(Api *api, bool enabled);
 
 #endif // API_H_

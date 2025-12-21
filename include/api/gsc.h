@@ -13,4 +13,7 @@ void gscApiDestroy(GscApi *gscApi);
 bool gscApiAddPerks(GscApi *gscApi, List *perks);
 bool gscApiRemovePerks(GscApi *gscApi, List *perks);
 
+bool gscApiGetStaticBox(GscApi *gscApi);
+bool gscApiSetStaticBox(GscApi *gscApi, bool enabled);
+
 #endif // API_GSC_H_
