@@ -6,6 +6,7 @@
 #include "logic/game/perk.h"
 #include "win/thread.h"
 #include <stdlib.h>
+#include <string.h>
 
 struct GscApi {
     Controller *controller;
@@ -105,4 +106,53 @@ static int _apiThreadHandler(void *data) {
     free(callData->args);
     free(callData);
     return 1;
+}
+
+bool gscApiGetStaticBox(GscApi *gscApi) {
+    if (!gscApi || !gscApi->controller) {
+        return false;
+    }
+
+    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    if (!gsc) {
+        return false;
+    }
+
+    GSCArgs gscArgs = gscArgsCreate(0);
+    GSCResponse response = gscCall(gsc, GSC_STATIC_BOX, gscArgs);
+    
+    bool result = (response != NULL && strcmp(response, "1") == 0);
+    return result;
+}
+
+bool gscApiSetStaticBox(GscApi *gscApi, bool enabled) {
+    if (!gscApi || !gscApi->controller) {
+        return false;
+    }
+
+    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    if (!gsc) {
+        return false;
+    }
+
+    GSCArgs *gscArgs = (GSCArgs *)malloc(sizeof(GSCArgs));
+    if (!gscArgs) return false;
+    
+    gscArgs->args = (const char **)malloc(1 * sizeof(const char *));
+    gscArgs->count = 1;
+    gscArgs->args[0] = enabled ? "1" : "0";
+
+    GscApiCallData *callData = (GscApiCallData *)malloc(sizeof(GscApiCallData));
+    if (!callData) {
+        free(gscArgs->args);
+        free(gscArgs);
+        return false;
+    }
+
+    callData->gsc = gsc;
+    callData->method = GSC_STATIC_BOX;
+    callData->args = gscArgs;
+    threadCreate(_apiThreadHandler, (void *)callData);
+
+    return true;
 }

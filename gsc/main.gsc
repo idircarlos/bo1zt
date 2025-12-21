@@ -49,6 +49,7 @@ bo1ztSetupWorker(workerId)
             requestTokens = strTok(request, "::");
             method = requestTokens[1];
             args = strTok(requestTokens[2], ",");
+            result = "success";
             switch (method) {
                 case "AddPerks":
                     Bo1ztAddPerks(args);
@@ -56,12 +57,15 @@ bo1ztSetupWorker(workerId)
                 case "RemovePerks":
                     Bo1ztRemovePerks(args);
                     break;
+                case "StaticBox":
+                    result = Bo1ztStaticBox(args);
+                    break;
                 default:
                     break;
             }
             setdvar("bo1zt_gsc_worker_" + workerId, "");
             wait 0.2; // Wait a bit for dvar update since its async
-            self notify("bo1zt::Worker" + workerId + "::" + "success");
+            self notify("bo1zt::Worker" + workerId + "::" + result);
         }
         wait 0.05;
     }
@@ -81,4 +85,23 @@ Bo1ztRemovePerks(perks)
         self waittill("perk_lost");
     }
     self update_perk_hud();
+}
+
+Bo1ztStaticBox(args)
+{
+    if (args.size == 0 || args[0] == "") {
+        movable = getdvar("magic_chest_movable");
+        if (movable == "1") {
+            return "0";
+        } else {
+            return "1";
+        }
+    } else {
+        if (args[0] == "1") {
+            setdvar("magic_chest_movable", "0");
+        } else {
+            setdvar("magic_chest_movable", "1");
+        }
+        return "success";
+    }
 }

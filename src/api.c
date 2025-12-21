@@ -2,6 +2,7 @@
 #include "api/raw.h"
 #include "api/gsc.h"
 #include "controller.h"
+#include "logic/cheat.h"
 #include "logger.h"
 #include <stdlib.h>
 
@@ -47,11 +48,23 @@ void apiDestroy(Api *api) {
 
 bool apiIsCheatEnabled(Api *api, CheatName cheatName) {
     if (!api) return false;
+    
+    // Use GSC backend for BOX_NEVER_MOVES
+    if (cheatName == CHEAT_NAME_BOX_NEVER_MOVES) {
+        return apiGetStaticBox(api);
+    }
+    
     return rawApiIsCheatEnabled(api->raw, cheatName);
 }
 
 bool apiSetCheatEnabled(Api *api, CheatName cheatName, bool enabled) {
     if (!api) return false;
+    
+    // Use GSC backend for BOX_NEVER_MOVES
+    if (cheatName == CHEAT_NAME_BOX_NEVER_MOVES) {
+        return apiSetStaticBox(api, enabled);
+    }
+    
     return rawApiSetCheatEnabled(api->raw, cheatName, enabled);
 }
 
@@ -145,4 +158,14 @@ bool apiAddPerks(Api *api, List *perks) {
 bool apiRemovePerks(Api *api, List *perks) {
     if (!api || !api->gsc) return false;
     return gscApiRemovePerks(api->gsc, perks);
+}
+
+bool apiGetStaticBox(Api *api) {
+    if (!api || !api->gsc) return false;
+    return gscApiGetStaticBox(api->gsc);
+}
+
+bool apiSetStaticBox(Api *api, bool enabled) {
+    if (!api || !api->gsc) return false;
+    return gscApiSetStaticBox(api->gsc, enabled);
 }
