@@ -123,6 +123,7 @@ bool processIsBorderless(Process *process) {
 }
 
 bool processMakeBorderless(Process *process, bool enabled) {
+    if (enabled == processIsBorderless(process)) return true;   // Only toggle borderless if we receive a different value
     HWND hwnd = process->windowInfo.hwnd;
     if (hwnd == NULL) {
         LOG_ERROR("Couldn't find window for pid %u\n", process->pid);
