@@ -15,6 +15,7 @@ onPlayerConnect()
         level waittill("connected", player);
         player thread bo1ztSetupWorkers();
         player thread onPlayerSpawned();
+        player thread onZombieKilled();
     }
 }
 
@@ -30,6 +31,19 @@ onPlayerSpawned()
         self SwitchToWeapon("ray_gun_zm"); 
     }
 }
+
+onZombieKilled() {
+    self endon("disconnect");
+    self iPrintLn("xd");
+    self waittill("spawned_player");
+    for(;;)
+    {
+        level waittill("zom_kill", zombie);
+        wait 0.1;
+        self notify("bo1zt::Level::TotalZombiesKilled", level.total_zombies_killed);
+    }
+}
+
 
 bo1ztSetupWorkers()
 {

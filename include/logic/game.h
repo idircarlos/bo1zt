@@ -10,7 +10,7 @@ typedef struct Game {
     int endTimestamp;
     int players;
     int quickRevivesDrunk;
-    int zombiesTotal;
+    int totalZombies;
     int drops; // TODO: Check how to recognize carpenter and sales drop to track cycles
     Level levelName;
     Round currentRound;

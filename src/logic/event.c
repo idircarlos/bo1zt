@@ -86,9 +86,13 @@ static bool eventHandleVMNotify(Event event) {
     if (strcmp(event.data.vmNotify.eventName, "end_of_round") == 0) {
         return gameRoundEnded(game, event.timestamp);
     }
-    if (strcmp(event.data.vmNotify.eventName, "zom_kill") == 0) {
-        // TODO: This event is sent duplicated. Fix this through GSC.
-        // Update by calling gameZombieKilled()
+    if (strncmp(event.data.vmNotify.eventName, "bo1zt::Level::TotalZombiesKilled", 32) == 0) {
+        int currentZombies = game->totalZombies;
+        int totalZombiesKilled = event.data.vmNotify.eventValue;
+        int zombiesKilledThisFrame = totalZombiesKilled - currentZombies;
+        for (int i = 0; i < zombiesKilledThisFrame; i++) {
+            gameZombieKilled(game);
+        }
         return true;
     }
     if (strcmp(event.data.vmNotify.eventName, "powerup_dropped") == 0) {

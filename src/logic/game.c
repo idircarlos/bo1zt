@@ -36,7 +36,7 @@ bool gameClear(Game *game) {
     game->elapsed = 0;
     game->startTimestamp = 0;
     game->endTimestamp = 0;
-    game->zombiesTotal = 0;
+    game->totalZombies = 0;
     game->quickRevivesDrunk = 0;
     game->drops = 0;
     memset(game->rounds, 0, sizeof(game->rounds));
@@ -68,7 +68,7 @@ bool gameRoundEnded(Game *game, int endTimestamp) {
 }
 
 bool gameZombieKilled(Game *game) {
-    game->zombiesTotal++;
+    game->totalZombies++;
     roundZombieKilled(&game->currentRound);
     return true;
 }
@@ -82,7 +82,7 @@ bool gamePowerupDropped(Game *game) {
 void gamePrint(Game *game) {
     LOG_INFO("Game { elapsed: %d, start: %d, end: %d, players: %d, qr: %d, zombies: %d, drops: %d, level: %d }\n",
         game->elapsed, game->startTimestamp, game->endTimestamp, game->players,
-        game->quickRevivesDrunk, game->zombiesTotal, game->drops, game->levelName);
+        game->quickRevivesDrunk, game->totalZombies, game->drops, game->levelName);
 }
 
 
