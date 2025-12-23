@@ -11,7 +11,7 @@
 #define WIDGET_MIN_HEIGHT 50
 #define WIDGET_ASCII_CHARS 96
 #define WIDGET_ASCII_OFFSET 32
-#define WIDGET_CTRL_BG_ALPHA 0x30
+#define WIDGET_ALT_BG_ALPHA 0x20
 
 enum ResizeEdge {
     EDGE_TOP_LEFT = 0,
@@ -32,23 +32,23 @@ static void initBitmapInfo(BITMAPINFO* bmi, int width, int height) {
     bmi->bmiHeader.biCompression = BI_RGB;
 }
 
-// Helper: Set window transparency state based on CTRL key
-static void updateWindowTransparency(Widget* wgt, bool isCtrlHeld) {
+// Helper: Set window transparency state based on ALT key
+static void updateWindowTransparency(Widget* wgt, bool isAltHeld) {
     LONG_PTR cur = GetWindowLongPtr(wgt->win.hwnd, GWL_EXSTYLE);
-    bool isCtrlSaved = flagsContains(wgt->win.flags, WINDOW_CTRL_SAVED);
+    bool isAltSaved = flagsContains(wgt->win.flags, WINDOW_ALT_SAVED);
     
-    if (isCtrlHeld && !isCtrlSaved) {
+    if (isAltHeld && !isAltSaved) {
         wgt->win.savedExstyle = cur;
-        flagsAdd(&wgt->win.flags, WINDOW_CTRL_SAVED);
+        flagsAdd(&wgt->win.flags, WINDOW_ALT_SAVED);
         if (cur & WS_EX_TRANSPARENT) {
             SetWindowLongPtr(wgt->win.hwnd, GWL_EXSTYLE, cur & ~WS_EX_TRANSPARENT);
             SetWindowPos(wgt->win.hwnd, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
         }
-    } else if (!isCtrlHeld && isCtrlSaved) {
+    } else if (!isAltHeld && isAltSaved) {
         SetWindowLongPtr(wgt->win.hwnd, GWL_EXSTYLE, wgt->win.savedExstyle);
         SetWindowPos(wgt->win.hwnd, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
         wgt->win.savedExstyle = 0;
-        flagsRemove(&wgt->win.flags, WINDOW_CTRL_SAVED);
+        flagsRemove(&wgt->win.flags, WINDOW_ALT_SAVED);
     }
 }
 
@@ -157,6 +157,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     Widget* wgt = (Widget*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
     if (!wgt) return DefWindowProc(hwnd, msg, wParam, lParam);
 
+    BOOL altPressed = (GetKeyState(VK_MENU) & 0x8000) != 0;
     switch (msg) {
     case WM_SETCURSOR:
         return TRUE;
@@ -166,7 +167,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         return 0;
 
     case WM_LBUTTONDOWN:
-        if (wParam & MK_CONTROL) {
+        if (altPressed) {
             POINT pt;
             GetCursorPos(&pt);
             int edge = getResizeEdge(wgt, pt.x, pt.y);
@@ -202,12 +203,12 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 
     case WM_MOUSEMOVE: {
         Flags activeFlags = wgt->win.flags & (WINDOW_DRAGGING | WINDOW_RESIZING);
-        bool isCtrlHeld = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+        bool isAltHeld = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
         
         // Update cursor when not dragging/resizing
         if (!activeFlags) {
             HCURSOR cursor = LoadCursor(NULL, IDC_ARROW);
-            if (isCtrlHeld) {
+            if (isAltHeld) {
                 POINT pt;
                 GetCursorPos(&pt);
                 int edge = getResizeEdge(wgt, pt.x, pt.y);
@@ -258,7 +259,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     case WM_LBUTTONUP:
         if (flagsContains(wgt->win.flags, WINDOW_DRAGGING)) {
             flagsRemove(&wgt->win.flags, WINDOW_DRAGGING);
-            if (!flagsContains(wgt->win.flags, WINDOW_CTRL_SAVED))
+            if (!flagsContains(wgt->win.flags, WINDOW_ALT_SAVED))
                 wgt->win.savedExstyle = 0;
             ReleaseCapture();
             return 0;
@@ -354,9 +355,9 @@ int widgetThreadProc(void *data) {
             flagsRemove(&wgt->pending.flags, PENDING_SIZE);
         }
 
-        // Detect CTRL key state each frame and remove/restore WS_EX_TRANSPARENT
-        bool isCtrlHeld = (GetAsyncKeyState(VK_CONTROL) & 0x8000) ? 1 : 0;
-        updateWindowTransparency(wgt, isCtrlHeld);
+        // Detect ALT key state each frame and remove/restore WS_EX_TRANSPARENT
+        bool isAltHeld = (GetAsyncKeyState(VK_MENU) & 0x8000) ? 1 : 0;
+        updateWindowTransparency(wgt, isAltHeld);
 
         processPendingFont(wgt);
         processPendingFontSize(wgt);
@@ -568,8 +569,8 @@ void widgetUpdateLayeredWindow(Widget* wgt, HDC hdc_win) {
     GetDIBits(wgt->render.hdcMem, wgt->render.hbm, 0, wgt->render.h, bits, &bmi, DIB_RGB_COLORS);
 
     if (bits) {
-        int ctrl_down = (GetAsyncKeyState(VK_CONTROL) & 0x8000) ? 1 : 0;
-        unsigned char bg_alpha = ctrl_down ? WIDGET_CTRL_BG_ALPHA : 0x00;
+        int alt_down = (GetAsyncKeyState(VK_MENU) & 0x8000) ? 1 : 0;
+        unsigned char bg_alpha = alt_down ? WIDGET_ALT_BG_ALPHA : 0x00;
         unsigned char* px = (unsigned char*)bits;
         int pixels = wgt->render.w * wgt->render.h;
         for (int i = 0; i < pixels; ++i) {

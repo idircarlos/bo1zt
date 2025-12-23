@@ -12,7 +12,7 @@ struct WidgetVTable {
 typedef enum {
 	WINDOW_DRAGGING = 0x1,
 	WINDOW_RESIZING = 0x2,
-	WINDOW_CTRL_SAVED = 0x4,
+	WINDOW_ALT_SAVED = 0x4,
 } PendingWindowFlags;
 
 typedef struct WindowState {
