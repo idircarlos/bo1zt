@@ -95,8 +95,13 @@ static bool eventHandleVMNotify(Event event) {
         }
         return true;
     }
-    if (strcmp(event.data.vmNotify.eventName, "powerup_dropped") == 0) {
-        return gamePowerupDropped(game);
+    if (strncmp(event.data.vmNotify.eventName, "bo1zt::Level::Powerup::Dropped", 30) == 0) {
+        Powerup powerup = (Powerup)event.data.vmNotify.eventValue;
+        return gamePowerupDropped(game, powerup);
+    }
+    if (strncmp(event.data.vmNotify.eventName, "bo1zt::Level::Powerup::NewCycle", 31) == 0) {
+        gamePowerupNewCycle(game);
+        return true;
     }
     if (strncmp(event.data.vmNotify.eventName, "bo1zt::Worker", 13) == 0) {
         int index;
@@ -126,6 +131,7 @@ static bool eventHandleIDUpdate(Event event) {
 }
 
 static bool _eventValidIDUpdate(int eventId, int *pEventValue) {
+    if (!pEventValue) return NULL;
     Process *process = controllerGetProcess(controller);
     int value;
     processRead(process, (uint32_t)pEventValue + 0x8, &value, sizeof(int));

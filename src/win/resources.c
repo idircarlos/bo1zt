@@ -4,6 +4,15 @@
 #include <string.h>
 #include "miniz.h"
 
+// IStream vtable for C
+typedef struct IStreamVtbl_ {
+    HRESULT(__stdcall* QueryInterface)(IStream*, REFIID, void**);
+    ULONG(__stdcall* AddRef)(IStream*);
+    ULONG(__stdcall* Release)(IStream*);
+} IStreamVtbl_;
+
+#define STREAM_RELEASE(pStream) (((IStreamVtbl_*)(*(void**)(pStream)))->Release(pStream))
+
 #define MAX_EMBEDDED_FONTS 16
 
 static HANDLE fontHandles[MAX_EMBEDDED_FONTS];
@@ -32,34 +41,15 @@ bool resourcesLoadFont(int resourceId) {
         return false;
     }
 
-    HMODULE hModule = GetModuleHandleA(NULL);
-    if (!hModule) {
-        return false;
-    }
-
-    HRSRC hRes = FindResourceA(hModule, MAKEINTRESOURCEA(resourceId), RT_RCDATA);
-    if (!hRes) {
-        return false;
-    }
-
-    HGLOBAL hMem = LoadResource(hModule, hRes);
-    if (!hMem) {
-        return false;
-    }
-
-    void* pFontData = LockResource(hMem);
-    if (!pFontData) {
-        return false;
-    }
-
-    DWORD fontSize = SizeofResource(hModule, hRes);
-    if (fontSize == 0) {
+    void* pFontData = NULL;
+    DWORD fontSize = 0;
+    if (!resourcesGetData(resourceId, &pFontData, &fontSize)) {
         return false;
     }
 
     DWORD numFonts = 0;
     HANDLE hFont = AddFontMemResourceEx(pFontData, fontSize, NULL, &numFonts);
-    
+
     if (!hFont) {
         return false;
     }
@@ -78,28 +68,9 @@ bool resourcesExtractToFile(int resourceId, const char* outputPath) {
         return false;
     }
 
-    HMODULE hModule = GetModuleHandle(NULL);
-    if (!hModule) {
-        return false;
-    }
-
-    HRSRC hResource = FindResource(hModule, MAKEINTRESOURCE(resourceId), RT_RCDATA);
-    if (!hResource) {
-        return false;
-    }
-
-    HGLOBAL hLoadedResource = LoadResource(hModule, hResource);
-    if (!hLoadedResource) {
-        return false;
-    }
-
-    void* pResourceData = LockResource(hLoadedResource);
-    if (!pResourceData) {
-        return false;
-    }
-
-    DWORD resourceSize = SizeofResource(hModule, hResource);
-    if (resourceSize == 0) {
+    void* pResourceData = NULL;
+    DWORD resourceSize = 0;
+    if (!resourcesGetData(resourceId, &pResourceData, &resourceSize)) {
         return false;
     }
 
@@ -131,20 +102,11 @@ static void mkdirRecursive(const char* path) {
 bool resourcesExtractZip(int resourceId, const char* outputDir) {
     if (!outputDir) return false;
 
-    HMODULE hModule = GetModuleHandle(NULL);
-    if (!hModule) return false;
-
-    HRSRC hResource = FindResource(hModule, MAKEINTRESOURCE(resourceId), RT_RCDATA);
-    if (!hResource) return false;
-
-    HGLOBAL hLoadedResource = LoadResource(hModule, hResource);
-    if (!hLoadedResource) return false;
-
-    void* pResourceData = LockResource(hLoadedResource);
-    if (!pResourceData) return false;
-
-    DWORD resourceSize = SizeofResource(hModule, hResource);
-    if (resourceSize == 0) return false;
+    void* pResourceData = NULL;
+    DWORD resourceSize = 0;
+    if (!resourcesGetData(resourceId, &pResourceData, &resourceSize)) {
+        return false;
+    }
 
     mz_zip_archive zip = {0};
     if (!mz_zip_reader_init_mem(&zip, pResourceData, resourceSize, 0)) {
@@ -171,4 +133,54 @@ bool resourcesExtractZip(int resourceId, const char* outputDir) {
 
     mz_zip_reader_end(&zip);
     return true;
+}
+
+
+bool resourcesGetData(int resourceId, void** outData, DWORD* outSize) {
+    if (!outData || !outSize) return false;
+
+    HMODULE hModule = GetModuleHandle(NULL);
+    if (!hModule) return false;
+
+    HRSRC hRes = FindResource(hModule, MAKEINTRESOURCE(resourceId), RT_RCDATA);
+    if (!hRes) return false;
+
+    HGLOBAL hData = LoadResource(hModule, hRes);
+    if (!hData) return false;
+
+    *outData = LockResource(hData);
+    *outSize = SizeofResource(hModule, hRes);
+
+    return (*outData != NULL && *outSize > 0);
+}
+
+IStream* resourcesCreateStream(int resourceId) {
+    void* pData = NULL;
+    DWORD dataSize = 0;
+
+    if (!resourcesGetData(resourceId, &pData, &dataSize)) {
+        return NULL;
+    }
+
+    // Copy to moveable memory for IStream
+    HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, dataSize);
+    if (!hMem) return NULL;
+
+    void* pMem = GlobalLock(hMem);
+    memcpy(pMem, pData, dataSize);
+    GlobalUnlock(hMem);
+
+    IStream* pStream = NULL;
+    if (CreateStreamOnHGlobal(hMem, TRUE, &pStream) != S_OK) {
+        GlobalFree(hMem);
+        return NULL;
+    }
+
+    return pStream;
+}
+
+void resourcesReleaseStream(IStream* stream) {
+    if (stream) {
+        STREAM_RELEASE(stream);
+    }
 }

@@ -1,0 +1,15 @@
+#ifndef POWERUP_H_
+#define POWERUP_H_
+
+typedef enum {
+    POWERUP_INVALID = -1,
+    POWERUP_MAX_AMMO,
+    POWERUP_INSTA_KILL,
+    POWERUP_NUKE,
+    POWERUP_DOUBLE_POINTS,
+    POWERUP_CARPENTER,
+    POWERUP_FIRE_SALE,
+    POWERUP_MINI,
+} Powerup;
+
+#endif // POWERUP_H_

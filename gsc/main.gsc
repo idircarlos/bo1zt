@@ -1,5 +1,6 @@
 #include maps\_utility;
 #include common_scripts\utility;
+#include maps\_zombiemode_utility;
 #include maps\_hud_util;
 #include maps\_zombiemode_perks;
 
@@ -16,6 +17,7 @@ onPlayerConnect()
         player thread bo1ztSetupWorkers();
         player thread onPlayerSpawned();
         player thread onZombieKilled();
+        player thread onPowerupDropped();
     }
 }
 
@@ -34,13 +36,39 @@ onPlayerSpawned()
 
 onZombieKilled() {
     self endon("disconnect");
-    self iPrintLn("xd");
     self waittill("spawned_player");
     for(;;)
     {
         level waittill("zom_kill", zombie);
-        wait 0.1;
         self notify("bo1zt::Level::TotalZombiesKilled", level.total_zombies_killed);
+    }
+}
+
+onPowerupDropped() {
+    self endon("disconnect");
+    self waittill("spawned_player");
+    for(;;)
+    {
+        preIndex = level.zombie_powerup_index;
+        level waittill("powerup_dropped", powerup);
+        self notify("bo1zt::Level::Powerup::Dropped", getPowerupId(powerup.powerup_name));
+        postIndex = level.zombie_powerup_index;
+        if (postIndex < preIndex) {
+            self notify("bo1zt::Level::Powerup::NewCycle");
+        }
+    }
+}
+
+getPowerupId(powerupName) {
+    switch (powerupName) {
+        case "full_ammo": return 0;
+        case "insta_kill": return 1;
+        case "nuke": return 2;
+        case "double_points": return 3;
+        case "carpenter": return 4;
+        case "fire_sale": return 5;
+        case "minigun": return 6;
+        default: return -1;
     }
 }
 
@@ -102,7 +130,7 @@ Bo1ztRemovePerks(perks)
 }
 
 Bo1ztStaticBox(args)
-{
+{        
     if (args.size == 0 || args[0] == "") {
         movable = getdvar("magic_chest_movable");
         if (movable == "1") {

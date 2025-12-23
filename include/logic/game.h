@@ -3,6 +3,7 @@
 
 #include "logic/game/level.h"
 #include "logic/game/round.h"
+#include "logic/game/powerup.h"
 
 typedef struct Game {
     int elapsed;
@@ -28,7 +29,8 @@ bool gameUpdateElapsed(Game *game, int levelElapsed);
 bool gameRoundStarted(Game *game, int startTimestamp);
 bool gameRoundEnded(Game *game, int endTimestamp);
 bool gameZombieKilled(Game *game);
-bool gamePowerupDropped(Game *game);
+bool gamePowerupDropped(Game *game, Powerup powerup);
+bool gamePowerupNewCycle(Game *game);
 void gamePrint(Game *game);
 
 #endif // GAME_H_

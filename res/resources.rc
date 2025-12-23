@@ -13,3 +13,12 @@ IDR_CHAT_HOOK_DLL RCDATA "../build/bo1zt.dll"
 
 // Embedded GSC scripts (ZIP archive)
 IDR_GSC_ZIP RCDATA "../build/gsc.zip"
+
+// Powerup images
+IDR_PNG_AMMO      RCDATA "images/powerups/ammo.png"
+IDR_PNG_INSTA     RCDATA "images/powerups/insta.png"
+IDR_PNG_NUKE      RCDATA "images/powerups/nuke.png"
+IDR_PNG_DOUBLE    RCDATA "images/powerups/double.png"
+IDR_PNG_CARPENTER RCDATA "images/powerups/carpenter.png"
+IDR_PNG_SALE      RCDATA "images/powerups/sale.png"
+IDR_PNG_MINI      RCDATA "images/powerups/mini.png"

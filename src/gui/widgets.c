@@ -3,6 +3,7 @@
 #include "utils/common.h"
 #include "widget/timer.h"
 #include "widget/velocity.h"
+#include "widget/cycle.h"
 #include "utils/map.h"
 #include "logger.h"
 #include "logic/state.h"
@@ -11,10 +12,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N_WIDGETS 3
+#define N_WIDGETS 4
 #define WIDGET_TIMER "Timer"
 #define WIDGET_ROUND_TIMER "Round Timer"
 #define WIDGET_VELOCITY "Velocity"
+#define WIDGET_CYCLE "Powerup Cycle"
 
 #define WIDGET_TRANSFORMING "WIDGET_TRANSFORMING"
 
@@ -24,7 +26,8 @@
 typedef enum {
     WIDGET_NAME_TIMER,
     WIDGET_NAME_ROUND_TIMER,
-    WIDGET_NAME_VELOCITY
+    WIDGET_NAME_VELOCITY,
+    WIDGET_NAME_CYCLE
 } WidgetName;
 
 typedef struct {
@@ -49,7 +52,7 @@ static uiWindow *parent;
 
 static Map *cache = NULL;
 
-static WidgetObj *widgets[N_WIDGETS] = { NULL, NULL, NULL };
+static WidgetObj *widgets[N_WIDGETS] = { NULL, NULL, NULL, NULL };
 
 // UI Components
 static uiTable *widgetTable = NULL;
@@ -73,13 +76,15 @@ static int selectedWidgetIndex = 0;
 static const char* widgetNames[N_WIDGETS] = {
     "Timer",
     "Round Timer",
-    "Velocity"
+    "Velocity",
+    "Powerup Cycle"
 };
 
 static const char* widgetConfigNames[N_WIDGETS] = {
     "Timer",
     "RoundTimer",
-    "Velocity"
+    "Velocity",
+    "Cycle"
 };
 
 static const char* fontNames[N_FONTS] = {
@@ -189,7 +194,7 @@ static uiAttributedString *buildHintAttributedString() {
     hintHandler.MouseCrossed = hintHandlerMouseCrossed;
     hintHandler.MouseEvent = hintHandlerMouseEvent;
 
-    uiAttributedString *attributedString = uiNewAttributedString("Hold CTRL to move and resize widgets");
+    uiAttributedString *attributedString = uiNewAttributedString("Hold ALT to move and resize widgets");
     size_t len = uiAttributedStringLen(attributedString);
     uiAttribute *attrItalic = uiNewItalicAttribute(uiTextItalicItalic);
     uiAttributedStringSetAttribute(attributedString, attrItalic, 0, len);
@@ -454,6 +459,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     createWidgetObj(WIDGET_NAME_TIMER, timerWidgetCreate(&(activeGame->elapsed)));
     createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate(&(activeGame->currentRound.elapsed)));
     createWidgetObj(WIDGET_NAME_VELOCITY, velocityWidgetCreate());
+    createWidgetObj(WIDGET_NAME_CYCLE, cycleWidgetCreate());
     cache = mapCreate();
     mapPutBool(cache, WIDGET_TRANSFORMING, false);
     init();
@@ -555,6 +561,8 @@ Rect uiWidgetsGetDefaultRect(int index) {
             return WIDGET_TIMER_RECT;
         case WIDGET_NAME_VELOCITY:
             return WIDGET_VELOCITY_RECT;
+        case WIDGET_NAME_CYCLE:
+            return WIDGET_CYCLE_RECT;
         default:
             LOG_ERROR("Unknown widget index %d\n", index);
             return rectCreate(0, 0, 0, 0);
@@ -568,8 +576,15 @@ int uiWidgetsGetDefaultFontSize(int index) {
             return WIDGET_TIMER_FONT_SIZE;
         case WIDGET_NAME_VELOCITY:
             return WIDGET_VELOCITY_FONT_SIZE;
+        case WIDGET_NAME_CYCLE:
+            return 0; // Cycle widget doesn't use font
         default:
             LOG_ERROR("Unknown widget index %d\n", index);
             return 0;
     }
+}
+
+Widget* uiWidgetsGetCycleWidget() {
+    if (!widgets[WIDGET_NAME_CYCLE]) return NULL;
+    return widgets[WIDGET_NAME_CYCLE]->widget;
 }

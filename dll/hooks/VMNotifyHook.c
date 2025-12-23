@@ -89,7 +89,6 @@ static void __cdecl VMNotifyHookFunction(int invalidEvent, int unused, int event
 
     const char *eventName = getEventNameById(eventId, 0);
     if (!eventName) return;
-    LOG_INFO("%s\n", eventName);
     for (int i = 0; i < eventNamesCount; i++) {
         if (strcmp(eventName, eventNames[i]) != 0 && strncmp(eventName, "bo1zt::", 7)) continue;
         Event ev = {0};

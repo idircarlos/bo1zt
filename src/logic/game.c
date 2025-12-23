@@ -2,6 +2,8 @@
 #include "logger.h"
 #include "logic/game/level.h"
 #include "logic/game/round.h"
+#include "widget/cycle.h"
+#include "gui/widgets.h"
 #include <string.h>
 
 void gameInit(Game *game, int players) {
@@ -73,9 +75,18 @@ bool gameZombieKilled(Game *game) {
     return true;
 }
 
-bool gamePowerupDropped(Game *game) {
+bool gamePowerupDropped(Game *game, Powerup powerup) {
     game->drops++;
     roundPowerupDropped(&game->currentRound);
+    Widget *cycle = uiWidgetsGetCycleWidget();
+    cycleWidgetActivate(cycle, powerup);
+    return true;
+}
+
+bool gamePowerupNewCycle(Game *game) {
+    (void)game;
+    Widget *cycle = uiWidgetsGetCycleWidget();
+    cycleWidgetReset(cycle);
     return true;
 }
 
