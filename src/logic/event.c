@@ -114,6 +114,7 @@ static bool eventHandleVMNotify(Event event) {
     return true;
 }
 
+// Not in use since GSC was introduced.
 static bool eventHandleIDUpdate(Event event) {
     Process *process = controllerGetProcess(controller);
     State *state = controllerGetState(controller);
@@ -124,7 +125,6 @@ static bool eventHandleIDUpdate(Event event) {
     switch (eventId) {
         // Round
         case 4748:
-            return processRead(process, (uint32_t)pEventValue + 0x4, &(game->currentRound.number), sizeof(int));
         default:
             return true;
     }
