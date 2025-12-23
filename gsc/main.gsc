@@ -51,11 +51,14 @@ onPowerupDropped() {
     {
         preIndex = level.zombie_powerup_index;
         level waittill("powerup_dropped", powerup);
-        self notify("bo1zt::Level::Powerup::Dropped", getPowerupId(powerup.powerup_name));
         postIndex = level.zombie_powerup_index;
+        if (flag("dog_round")) {
+            continue;
+        }
         if (postIndex < preIndex) {
             self notify("bo1zt::Level::Powerup::NewCycle");
         }
+        self notify("bo1zt::Level::Powerup::Dropped", getPowerupId(powerup.powerup_name));   
     }
 }
 
