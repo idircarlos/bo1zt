@@ -23,6 +23,7 @@ bool rawApiSetRound(RawApi *rawApi, int currentRound, int nextRound);
 bool rawApiIsGameReady(RawApi *rawApi);
 Level rawApiGetLevelName(RawApi *rawApi);
 double rawApiGetLevelElapsedTime(RawApi *rawApi);
+float rawApiGetMovementSpeed(RawApi *rawApi);
 bool rawApiIsZombiesGameOngoing(RawApi *rawApi);
 bool rawApiIsZombiesGamePaused(RawApi *rawApi);
 int rawApiGetGameResets(RawApi *rawApi);

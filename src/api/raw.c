@@ -494,6 +494,26 @@ double rawApiGetLevelElapsedTime(RawApi *rawApi) {
     return elapsed;
 }
 
+float rawApiGetMovementSpeed(RawApi *rawApi) {
+    if (!rawApi || !rawApi->controller) {
+        LOG_ERROR("RawApi or Controller is null\n");
+        return false;
+    }
+    
+    Process *process = controllerGetProcess(rawApi->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return false;
+    }
+    float speed;
+    bool success = processRead(process, GAME_CHEAT.movementSpeed, &speed, sizeof(speed));
+    if (!success) {
+        printf("Failed to read Movement Speed value\n");
+        return false;
+    }
+    return speed;
+}
+
 bool rawApiIsZombiesGameOngoing(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
         LOG_ERROR("RawApi or Controller is null\n");

@@ -40,6 +40,7 @@ bool gameClear(Game *game) {
     game->endTimestamp = 0;
     game->totalZombies = 0;
     game->quickRevivesDrunk = 0;
+    game->movementSpeed = 0;
     game->drops = 0;
     memset(game->rounds, 0, sizeof(game->rounds));
     roundClear(&game->currentRound);

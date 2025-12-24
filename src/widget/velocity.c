@@ -6,7 +6,7 @@
 #include <GL/gl.h>
 
 typedef struct {
-    float speed;
+    float *speed;
 } VelocityData;
 
 static void velocityRender(Widget* widget) {
@@ -20,7 +20,7 @@ static void velocityRender(Widget* widget) {
 
     char buf[32];
     // Keep a fixed-width number to avoid widget width changes. Assuming max 3 integer digits and 2 decimals
-    float s = data->speed;
+    float s = data->speed ? *(data->speed) : 0.0f;
     if (s < 0.0f) s = 0.0f;
     if (s > 999.99f) s = 999.99f;
     // %6.2f ensures the numeric part is always width 6 (e.g., "  0.00", "999.99")
@@ -45,19 +45,10 @@ static WidgetVTable velocityVTable = {
     .destroy = velocityDestroy
 };
 
-Widget* velocityWidgetCreate() {
+Widget* velocityWidgetCreate(float *movementSpeed) {
     VelocityData* data = (VelocityData*)calloc(1, sizeof(VelocityData));
+    if (!data) return NULL;
+
+    data->speed = movementSpeed;
     return widgetCreate("VelocityFloat", &velocityVTable, data, WIDGET_VELOCITY_RECT, WIDGET_VELOCITY_FONT_SIZE);
-}
-
-void velocityWidgetSetSpeed(Widget* velocity, float speed) {
-    if (!velocity || !velocity->displayData) return;
-    VelocityData* data = (VelocityData*)velocity->displayData;
-    data->speed = speed;
-}
-
-float velocityWidgetGetSpeed(const Widget* velocity) {
-    if (!velocity || !velocity->displayData) return 0.0f;
-    const VelocityData* data = (const VelocityData*)velocity->displayData;
-    return data->speed;
 }

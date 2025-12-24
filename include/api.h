@@ -27,6 +27,7 @@ bool apiSetRound(Api *api, int currentRound, int nextRound);
 bool apiIsGameReady(Api *api);
 Level apiGetLevelName(Api *api);
 double apiGetLevelElapsedTime(Api *api);
+float apiGetMovementSpeed(Api *api);
 bool apiIsZombiesGameOngoing(Api *api);
 bool apiIsZombiesGamePaused(Api *api);
 int apiGetGameResets(Api *api);

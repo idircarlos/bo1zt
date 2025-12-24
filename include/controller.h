@@ -28,6 +28,7 @@ bool controllerIsGameWindowFocused(Controller *controller);
 bool controllerIsGameWindowAttached(Controller *controller);
 bool controllerIsGameReady(Controller *controller);
 int controllerGetLevelElapsedTime(Controller *controller);
+float controllerGetMovementSpeed(Controller *controller);
 Level controllerGetLevelName(Controller *controller);
 bool controllerTryAttachGameWindow(Controller *controller);
 bool controllerGetCheat(Controller *controller, CheatName cheat);

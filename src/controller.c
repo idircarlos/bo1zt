@@ -139,6 +139,12 @@ int controllerGetLevelElapsedTime(Controller *controller) {
     return apiGetLevelElapsedTime(controller->api);
 }
 
+float controllerGetMovementSpeed(Controller *controller) {
+    if (!controller) return 0;
+    if (!controller->process) return 0;
+    return apiGetMovementSpeed(controller->api);
+}
+
 Level controllerGetLevelName(Controller *controller) {
     if (!controller) return LEVEL_INVALID;
     if (!controller->process) return LEVEL_INVALID;
@@ -267,6 +273,7 @@ void controllerUpdateState(Controller *controller) {
     // Active game
     Game *activeGame = &controller->state->activeGame;
     if (gameRunning(activeGame) && levelIsMonitored(activeGame->levelName)) {
+        activeGame->movementSpeed = controllerGetMovementSpeed(controller);
         int levelElapsed = controllerGetLevelElapsedTime(controller);
         gameUpdateElapsed(activeGame, levelElapsed);
         Round *round = &activeGame->currentRound;

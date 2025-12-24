@@ -11,6 +11,7 @@ typedef struct Game {
     int endTimestamp;
     int players;
     int quickRevivesDrunk;
+    float movementSpeed;
     int totalZombies;
     int drops; // TODO: Check how to recognize carpenter and sales drop to track cycles
     Level levelName;

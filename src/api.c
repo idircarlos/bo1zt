@@ -118,6 +118,11 @@ double apiGetLevelElapsedTime(Api *api) {
     return rawApiGetLevelElapsedTime(api->raw);
 }
 
+float apiGetMovementSpeed(Api *api) {
+    if (!api) return 0;
+    return rawApiGetMovementSpeed(api->raw);
+}
+
 bool apiIsZombiesGameOngoing(Api *api) {
     if (!api) return false;
     return rawApiIsZombiesGameOngoing(api->raw);

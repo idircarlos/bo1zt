@@ -463,7 +463,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     createWidgetObj(WIDGET_NAME_TIMER, timerWidgetCreate(&(activeGame->elapsed)));
     createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate(&(activeGame->currentRound.elapsed)));
-    createWidgetObj(WIDGET_NAME_VELOCITY, velocityWidgetCreate());
+    createWidgetObj(WIDGET_NAME_VELOCITY, velocityWidgetCreate(&(activeGame->movementSpeed)));
     createWidgetObj(WIDGET_NAME_CYCLE, cycleWidgetCreate());
     createWidgetObj(WIDGET_NAME_ZOMBIES, zombiesWidgetCreate(&(activeGame->currentRound.zombiesLeft)));
     cache = mapCreate();

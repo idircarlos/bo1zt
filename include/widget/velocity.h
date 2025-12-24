@@ -7,8 +7,6 @@
 #define WIDGET_VELOCITY_FONT_SIZE 36
 
 // Velocity-specific operations
-Widget* velocityWidgetCreate();
-void velocityWidgetSetSpeed(Widget* velocity, float speed);
-float velocityWidgetGetSpeed(const Widget* velocity);
+Widget* velocityWidgetCreate(float *movementSpeed);
 
 #endif // VELOCITY_WIDGET_H_
