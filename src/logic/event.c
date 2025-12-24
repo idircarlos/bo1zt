@@ -116,9 +116,6 @@ static bool eventHandleVMNotify(Event event) {
 
 // Not in use since GSC was introduced.
 static bool eventHandleIDUpdate(Event event) {
-    Process *process = controllerGetProcess(controller);
-    State *state = controllerGetState(controller);
-    Game *game = &state->activeGame;
     int eventId = event.data.idUpdate.eventId;
     int *pEventValue =  event.data.idUpdate.pEventValue;
     if (!_eventValidIDUpdate(eventId, pEventValue)) return true;
