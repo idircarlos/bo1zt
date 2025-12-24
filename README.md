@@ -18,7 +18,7 @@
 
 **Black Ops 1 Zombies Trainer**
 
-A simple trainer for *Black Ops 1 Zombies* written in C.
+A trainer for *Black Ops 1 Zombies* written in C.
 This tool is being created just for fun while learning reverse engineering fundamentals. This tool is still under development. Main features:
 
 |    Player       |  Hacks                 |  Graphics                   |  Misc                                  |
