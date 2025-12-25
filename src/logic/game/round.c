@@ -25,6 +25,7 @@ bool roundClear(Round *round) {
     round->elapsed = 0;
     round->startTimestamp = 0;
     round->endTimestamp = 0;
+    round->zombiesLeft = 0;
     round->drops = 0;
     round->isSpecial = false;
     round->number = 0;
