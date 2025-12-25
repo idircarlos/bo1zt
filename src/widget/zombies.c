@@ -21,7 +21,6 @@ static void zombiesRender(Widget* widget) {
 
     char buf[64];
     snprintf(buf, sizeof(buf), "Zombies Left: %d", left);
-    printf("xdd %s\n", buf);
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     widgetDrawText(widget, buf);
