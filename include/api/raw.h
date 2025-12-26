@@ -30,5 +30,8 @@ int rawApiGetGameResets(RawApi *rawApi);
 bool rawApiSVSendServerCommand(RawApi *rawApi, int commandType, int clientNumber, const char *commands);
 bool rawApiCBuffAddText(RawApi *rawApi, const char *commands);
 uintptr_t rawApiGetDVarPointer(RawApi *rawApi, const char *dVar);
+int rawApiGetClaymoreCount(RawApi *rawApi);
+int rawApiGetCurrentSnapshotEntities(RawApi *rawApi);
+int rawApiGetMaxSnapshotEntities(RawApi *rawApi);
 
 #endif // API_RAW_H_

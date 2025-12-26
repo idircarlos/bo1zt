@@ -218,6 +218,12 @@ typedef struct {
     uintptr_t isZombiesGamePausedOffset;
     uintptr_t nResetsOffset;
     uintptr_t lastChatMessage;
+    // Claymore count
+    uintptr_t entityCountOffset;
+    uintptr_t entityBaseOffset;
+    // Snapshot entities
+    uintptr_t currentSnapshotEntitiesOffset;
+    uintptr_t maxSnapshotEntitiesOffset;
 } GameCheat;
 
 typedef struct {

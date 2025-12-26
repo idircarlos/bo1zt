@@ -18,6 +18,8 @@ typedef struct Game {
     int drops;
     int numPerks;
     int lastPerkAcquiredOnRound;
+    int currentEntities;
+    int maxEntities;
     Level levelName;
     Round currentRound;
     Round rounds[MAX_ROUNDS];

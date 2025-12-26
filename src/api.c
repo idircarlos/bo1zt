@@ -153,6 +153,21 @@ uintptr_t apiGetDVarPointer(Api *api, const char *dVar) {
     return rawApiGetDVarPointer(api->raw, dVar);
 }
 
+int apiGetClaymoreCount(Api *api) {
+    if (!api) return 0;
+    return rawApiGetClaymoreCount(api->raw);
+}
+
+int apiGetCurrentSnapshotEntities(Api *api) {
+    if (!api) return 0;
+    return rawApiGetCurrentSnapshotEntities(api->raw);
+}
+
+int apiGetMaxSnapshotEntities(Api *api) {
+    if (!api) return 0;
+    return rawApiGetMaxSnapshotEntities(api->raw);
+}
+
 // GSC backend forwards
 
 bool apiAddPerks(Api *api, List *perks) {

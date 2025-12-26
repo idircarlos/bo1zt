@@ -1,6 +1,7 @@
 #include "logic/command/misc.h"
 #include "logic/cheat.h"
 #include "logic/game/perk.h"
+#include "logic/game/level.h"
 #include "logic/game.h"
 #include "logic/state.h"
 #include "logger.h"
@@ -8,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 static Server *server;
 static Controller *controller;
@@ -129,4 +131,94 @@ bool commandNextSpecialRoundHandle(Command command) {
     }
     serverChatMessage(server, "No special rounds");
     return false;
+}
+
+bool commandClaymoresHandle(Command command) {
+    (void)command;
+    int count = apiGetClaymoreCount(api);
+    char buffer[64];
+    snprintf(buffer, 64, "Claymores: %d", count);
+    serverChatMessage(server, buffer);
+    return true;
+}
+
+bool commandEntitiesHandle(Command command) {
+    (void)command;
+    State *state = controllerGetState(controller);
+    Game *game = &state->activeGame;
+    char buffer[64];
+    snprintf(buffer, 64, "Entities: %d/%d", game->currentEntities, game->maxEntities);
+    serverChatMessage(server, buffer);
+    return true;
+}
+
+bool commandSphHandle(Command command) {
+    State *state = controllerGetState(controller);
+    Game *game = &state->activeGame;
+    char buffer[128];
+
+    // Check if there are any completed rounds
+    if (game->currentRound.number <= 1) {
+        serverChatMessage(server, "No previous rounds to display SPH for!");
+        return false;
+    }
+
+    RoundType levelSpecial = levelGetSpecialRound(game->levelName);
+
+    // If argument provided, get specific round
+    if (command.argc >= 2) {
+        int roundNum = atoi(command.argv[1]);
+        if (roundNum <= 0 || roundNum >= game->currentRound.number) {
+            snprintf(buffer, 128, "Usage: /sph or /sph <1-%d>", game->currentRound.number - 1);
+            serverChatMessage(server, buffer);
+            return false;
+        }
+        
+        Round *targetRound = &game->rounds[roundNum - 1];
+        
+        // Check if it's a special round (except George rounds)
+        if (targetRound->isSpecial && levelSpecial != RT_GEORGE) {
+            snprintf(buffer, 128, "Round %d was a special round!", targetRound->number);
+            serverChatMessage(server, buffer);
+            return true;
+        }
+
+        // Calculate SPH for specific round
+        int elapsedSeconds = (targetRound->endTimestamp - targetRound->startTimestamp) / 1000;
+        float hordeCount = roundHordeCount(targetRound);
+        if (hordeCount < 1.0f) hordeCount = 1.0f;
+
+        double sph = round((double)elapsedSeconds / hordeCount * 10.0) / 10.0;
+        snprintf(buffer, 128, "SPH for round %d: %.1f", targetRound->number, sph);
+        serverChatMessage(server, buffer);
+        return true;
+    }
+
+    // No argument: calculate average SPH across all completed rounds
+    double totalSph = 0.0;
+    int validRounds = 0;
+
+    for (int i = 0; i < game->currentRound.number - 1; i++) {
+        Round *r = &game->rounds[i];
+        
+        // Skip special rounds (except George)
+        if (r->isSpecial && levelSpecial != RT_GEORGE) continue;
+
+        int elapsedSeconds = (r->endTimestamp - r->startTimestamp) / 1000;
+        float hordeCount = roundHordeCount(r);
+        if (hordeCount < 1.0f) hordeCount = 1.0f;
+
+        totalSph += (double)elapsedSeconds / hordeCount;
+        validRounds++;
+    }
+
+    if (validRounds == 0) {
+        serverChatMessage(server, "No valid rounds to calculate SPH yet!");
+        return false;
+    }
+
+    double avgSph = round((totalSph / validRounds) * 10.0) / 10.0;
+    snprintf(buffer, 128, "Average SPH: %.2f", avgSph);
+    serverChatMessage(server, buffer);
+    return true;
 }

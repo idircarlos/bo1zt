@@ -85,6 +85,11 @@ static Map* createCommandsMap() {
     mapPutInt(map, "dogs", COMMAND_DOGS);
     mapPutInt(map, "monkeys", COMMAND_MONKEYS);
     mapPutInt(map, "thief", COMMAND_THIEF);
+
+    // Info
+    mapPutInt(map, "claymores", COMMAND_CLAYMORES);
+    mapPutInt(map, "entities", COMMAND_ENTITIES);
+    mapPutInt(map, "sph", COMMAND_SPH);
     return map;
 }
 
@@ -183,6 +188,12 @@ bool commandHandle(Command command) {
         case COMMAND_MONKEYS:
         case COMMAND_THIEF:
             return commandNextSpecialRoundHandle(command);
+        case COMMAND_CLAYMORES:
+            return commandClaymoresHandle(command);
+        case COMMAND_ENTITIES:
+            return commandEntitiesHandle(command);
+        case COMMAND_SPH:
+            return commandSphHandle(command);
         default:
             return false;
     }

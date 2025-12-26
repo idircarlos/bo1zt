@@ -11,5 +11,8 @@ bool commandGiveHandle(Command command);
 bool commandTpHandle(Command command);
 bool commandPerkHandle(Command command);
 bool commandNextSpecialRoundHandle(Command command);
+bool commandClaymoresHandle(Command command);
+bool commandEntitiesHandle(Command command);
+bool commandSphHandle(Command command);
 
 #endif // COMMAND_MISC_H_

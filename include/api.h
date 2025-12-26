@@ -34,6 +34,9 @@ int apiGetGameResets(Api *api);
 bool apiSVSendServerCommand(Api *api, int commandType, int clientNumber, const char *commands);
 bool apiCBuffAddText(Api *api, const char *commands);
 uintptr_t apiGetDVarPointer(Api *api, const char *dVar);
+int apiGetClaymoreCount(Api *api);
+int apiGetCurrentSnapshotEntities(Api *api);
+int apiGetMaxSnapshotEntities(Api *api);
 
 // GSC backend operations
 bool apiAddPerks(Api *api, List *perks);

@@ -34,6 +34,9 @@ typedef enum {
     COMMAND_DOGS,
     COMMAND_MONKEYS,
     COMMAND_THIEF,
+    COMMAND_CLAYMORES,
+    COMMAND_ENTITIES,
+    COMMAND_SPH,
 } CommandName;
 
 typedef struct Command {

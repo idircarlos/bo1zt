@@ -255,10 +255,12 @@ bool controllerSetRound(Controller *controller, int currentRound, int nextRound)
 }
 
 State *controllerGetState(Controller *controller) {
+    if (!controller) return NULL;
     return controller->state;
 }
 
 void controllerUpdateState(Controller *controller) {
+    if (!controller || !controller->state) return;
     controller->state->isTimRunning = controllerIsTimRunning(controller);
     if (!controllerIsGameAttached(controller)) {
         stateGameClear(controller->state);
@@ -274,6 +276,8 @@ void controllerUpdateState(Controller *controller) {
     Game *activeGame = &controller->state->activeGame;
     if (gameRunning(activeGame) && levelIsMonitored(activeGame->levelName)) {
         activeGame->movementSpeed = controllerGetMovementSpeed(controller);
+        activeGame->currentEntities = apiGetCurrentSnapshotEntities(controller->api);
+        activeGame->maxEntities = apiGetMaxSnapshotEntities(controller->api);
         int levelElapsed = controllerGetLevelElapsedTime(controller);
         gameUpdateElapsed(activeGame, levelElapsed);
         Round *round = &activeGame->currentRound;

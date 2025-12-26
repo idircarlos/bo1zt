@@ -1300,3 +1300,79 @@ bool _rawApiSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheat
     LOG_DEBUG("Writting %d in %x\n", value, cheat.offset);
     return processWrite(process, cheat.offset, &value, sizeof(uint32_t));
 }
+
+int rawApiGetClaymoreCount(RawApi *rawApi) {
+    if (!rawApi || !rawApi->controller) {
+        LOG_ERROR("RawApi or Controller is null\n");
+        return 0;
+    }
+    
+    Process *process = controllerGetProcess(rawApi->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return 0;
+    }
+
+    uint32_t entityCount = 0;
+    bool success = processRead(process, GAME_CHEAT.entityCountOffset, &entityCount, sizeof(entityCount));
+    if (!success) {
+        LOG_ERROR("Failed to read entity count\n");
+        return 0;
+    }
+
+    uint32_t entityAddr = GAME_CHEAT.entityBaseOffset;
+    int32_t claymoreCount = 0;
+    for (uint32_t i = 0; i < entityCount; i++) {
+        uint8_t isActive = 0;
+        processRead(process, entityAddr - 71, &isActive, sizeof(isActive));
+        
+        if (isActive != 0) {
+            uint16_t entityType = 0;
+            processRead(process, entityAddr - 102, &entityType, sizeof(entityType));
+            
+            // 0x4 = Missile (claymores/betties)
+            if (entityType == 0x4) {
+                claymoreCount++;
+            }
+        }
+        
+        entityAddr += 844;
+    }
+
+    return claymoreCount;
+}
+
+int rawApiGetCurrentSnapshotEntities(RawApi *rawApi) {
+    if (!rawApi || !rawApi->controller) {
+        LOG_ERROR("RawApi or Controller is null\n");
+        return 0;
+    }
+    
+    Process *process = controllerGetProcess(rawApi->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return 0;
+    }
+
+    int32_t current = 0;
+    processRead(process, GAME_CHEAT.currentSnapshotEntitiesOffset, &current, sizeof(current));
+    return current;
+}
+
+int rawApiGetMaxSnapshotEntities(RawApi *rawApi) {
+    if (!rawApi || !rawApi->controller) {
+        LOG_ERROR("RawApi or Controller is null\n");
+        return 0;
+    }
+    
+    Process *process = controllerGetProcess(rawApi->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return 0;
+    }
+
+    int32_t maxRaw = 0;
+    processRead(process, GAME_CHEAT.maxSnapshotEntitiesOffset, &maxRaw, sizeof(maxRaw));
+    // 2147483646 - maxRaw
+    return 2147483646 - maxRaw;
+}

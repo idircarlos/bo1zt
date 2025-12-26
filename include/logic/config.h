@@ -4,7 +4,7 @@
 #include "utils/common.h"
 #include <stdbool.h>
 
-#define N_CONFIG_WIDGETS 5
+#define N_CONFIG_WIDGETS 6
 #define MAX_BINDS 100
 #define MAX_KEY_NAME_LENGTH 32
 #define MAX_COMMAND_LENGTH 256

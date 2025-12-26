@@ -53,6 +53,9 @@ bool gameClear(Game *game) {
     game->quickRevivesDrunk = 0;
     game->movementSpeed = 0;
     game->drops = 0;
+    game->currentEntities = 0;
+    game->maxEntities = 0;
+    roundClear(&game->currentRound);
     for (int i = 0; i < MAX_ROUNDS; i++) {
         roundClear(&game->rounds[i]);
     }

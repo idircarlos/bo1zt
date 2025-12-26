@@ -5,6 +5,7 @@
 #include "widget/velocity.h"
 #include "widget/cycle.h"
 #include "widget/zombies.h"
+#include "widget/entities.h"
 #include "utils/map.h"
 #include "logger.h"
 #include "logic/state.h"
@@ -13,12 +14,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N_WIDGETS 5
+#define N_WIDGETS 6
 #define WIDGET_TIMER "Timer"
 #define WIDGET_ROUND_TIMER "Round Timer"
 #define WIDGET_VELOCITY "Velocity"
 #define WIDGET_CYCLE "Powerup Cycle"
 #define WIDGET_ZOMBIES "Zombies Left"
+#define WIDGET_ENTITIES "Entities"
 
 #define WIDGET_TRANSFORMING "WIDGET_TRANSFORMING"
 
@@ -30,7 +32,8 @@ typedef enum {
     WIDGET_NAME_ROUND_TIMER,
     WIDGET_NAME_VELOCITY,
     WIDGET_NAME_CYCLE,
-    WIDGET_NAME_ZOMBIES
+    WIDGET_NAME_ZOMBIES,
+    WIDGET_NAME_ENTITIES
 } WidgetName;
 
 typedef struct {
@@ -55,7 +58,7 @@ static uiWindow *parent;
 
 static Map *cache = NULL;
 
-static WidgetObj *widgets[N_WIDGETS] = { NULL, NULL, NULL, NULL, NULL };
+static WidgetObj *widgets[N_WIDGETS] = { NULL, NULL, NULL, NULL, NULL, NULL };
 
 // UI Components
 static uiTable *widgetTable = NULL;
@@ -81,7 +84,8 @@ static const char* widgetNames[N_WIDGETS] = {
     "Round Timer",
     "Velocity",
     "Powerup Cycle",
-    "Zombies Left"
+    "Zombies Left",
+    "Entities"
 };
 
 static const char* widgetConfigNames[N_WIDGETS] = {
@@ -89,7 +93,8 @@ static const char* widgetConfigNames[N_WIDGETS] = {
     "RoundTimer",
     "Velocity",
     "Cycle",
-    "Zombies"
+    "Zombies",
+    "Entities"
 };
 
 static const char* fontNames[N_FONTS] = {
@@ -466,6 +471,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     createWidgetObj(WIDGET_NAME_VELOCITY, velocityWidgetCreate(&(activeGame->movementSpeed)));
     createWidgetObj(WIDGET_NAME_CYCLE, cycleWidgetCreate());
     createWidgetObj(WIDGET_NAME_ZOMBIES, zombiesWidgetCreate(&(activeGame->currentRound.zombiesLeft)));
+    createWidgetObj(WIDGET_NAME_ENTITIES, entitiesWidgetCreate(&(activeGame->currentEntities), &(activeGame->maxEntities)));
     cache = mapCreate();
     mapPutBool(cache, WIDGET_TRANSFORMING, false);
     init();
@@ -571,6 +577,8 @@ Rect uiWidgetsGetDefaultRect(int index) {
             return WIDGET_CYCLE_RECT;
         case WIDGET_NAME_ZOMBIES:
             return WIDGET_ZOMBIES_RECT;
+        case WIDGET_NAME_ENTITIES:
+            return WIDGET_ENTITIES_RECT;
         default:
             LOG_ERROR("Unknown widget index %d\n", index);
             return rectCreate(0, 0, 0, 0);
@@ -588,6 +596,8 @@ int uiWidgetsGetDefaultFontSize(int index) {
             return 0; // Cycle widget doesn't use font
         case WIDGET_NAME_ZOMBIES:
             return WIDGET_ZOMBIES_FONT_SIZE;
+        case WIDGET_NAME_ENTITIES:
+            return WIDGET_ENTITIES_FONT_SIZE;
         default:
             LOG_ERROR("Unknown widget index %d\n", index);
             return 0;
