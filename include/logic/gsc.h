@@ -22,6 +22,7 @@ void gscDestroy(GSC *gsc);
 GSCResponse gscCall(GSC *gsc, GSCMethod method, GSCArgs args);
 void gscWriteResponse(GSC *gsc, int index, GSCResponse response);
 const char* gscMethodToString(GSCMethod method);
+const char* gscArgsToString(GSCArgs args);
 GSCArgs gscArgsCreate(int count);
 void gscArgsFree(GSCArgs *gscArgs);
 

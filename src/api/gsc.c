@@ -1,6 +1,7 @@
 #include "api/gsc.h"
 #include "controller.h"
 #include "controller/controller_internal.h"
+#include "logger.h"
 #include "logic/gsc.h"
 #include "logic/gsc/misc.h"
 #include "logic/game/perk.h"
@@ -15,12 +16,13 @@ struct GscApi {
 typedef struct {
     GSC *gsc;
     GSCMethod method;
-    GSCArgs *args;
+    GSCArgs args;
 } GscApiCallData;
 
 static int _apiThreadHandler(void *data);
+static int _apiOnThreadError(void *data);
 static bool _gscApiCallPerks(GscApi *gscApi, GSCMethod method, List *perks);
-static GSCArgs *_buildPerkArgs(List *perks);
+static GSCArgs _buildPerkArgs(List *perks);
 
 GscApi *gscApiCreate(Controller *controller) {
     if (!controller) return NULL;
@@ -57,53 +59,56 @@ static bool _gscApiCallPerks(GscApi *gscApi, GSCMethod method, List *perks) {
         return false;
     }
 
-    GSCArgs *gscArgs = _buildPerkArgs(perks);
-    if (!gscArgs || gscArgs->count == 0) {
-        if (gscArgs) {
-            gscArgsFree(gscArgs);
-            free(gscArgs);
-        }
+    GSCArgs gscArgs = _buildPerkArgs(perks);
+    if (gscArgs.count == 0) {
+        gscArgsFree(&gscArgs);
         return false;
     }
 
     GscApiCallData *callData = (GscApiCallData *)malloc(sizeof(GscApiCallData));
     if (!callData) {
-        gscArgsFree(gscArgs);
-        free(gscArgs);
+        gscArgsFree(&gscArgs);
         return false;
     }
 
     callData->gsc = gsc;
     callData->method = method;
     callData->args = gscArgs;
-    threadCreate(_apiThreadHandler, (void *)callData);
+    Thread *thread = threadCreate(_apiThreadHandler, (void *)callData);
+    threadCreateWatchdog(thread, 3000, _apiOnThreadError, callData);
 
     return true;
 }
 
-static GSCArgs *_buildPerkArgs(List *perks) {
+static GSCArgs _buildPerkArgs(List *perks) {
     size_t count = listSize(perks);
-    GSCArgs *gscArgs = (GSCArgs *)malloc(sizeof(GSCArgs));
-    if (!gscArgs) return NULL;
+    GSCArgs gscArgs = {0};
 
-    gscArgs->args = (const char **)malloc(count * sizeof(const char *));
-    gscArgs->count = 0;
+    gscArgs.args = (const char **)malloc(count * sizeof(const char *));
+    if (!gscArgs.args) return gscArgs;
+    gscArgs.count = 0;
 
     for (size_t i = 0; i < count; i++) {
         Perk perk = (Perk)listGetInt(perks, i);
         const char *perkName = gscGetPerkName(perk);
         if (perkName != NULL) {
-            gscArgs->args[gscArgs->count++] = perkName;
+            gscArgs.args[gscArgs.count++] = perkName;
         }
     }
     return gscArgs;
 }
 
+static int _apiOnThreadError(void *data) {
+    if (!data) return 0;
+    GscApiCallData *callData = (GscApiCallData*)data;
+    LOG_ERROR("GSC API Call Failed calling %s(%s).\n", gscMethodToString(callData->method), gscArgsToString(callData->args));
+    return 1;
+}
+
 static int _apiThreadHandler(void *data) {
     GscApiCallData *callData = (GscApiCallData *)data;
-    gscCall(callData->gsc, callData->method, *callData->args);
-    gscArgsFree(callData->args);
-    free(callData->args);
+    gscCall(callData->gsc, callData->method, callData->args);
+    gscArgsFree(&callData->args);
     free(callData);
     return 1;
 }
@@ -135,24 +140,23 @@ bool gscApiSetStaticBox(GscApi *gscApi, bool enabled) {
         return false;
     }
 
-    GSCArgs *gscArgs = (GSCArgs *)malloc(sizeof(GSCArgs));
-    if (!gscArgs) return false;
-    
-    gscArgs->args = (const char **)malloc(1 * sizeof(const char *));
-    gscArgs->count = 1;
-    gscArgs->args[0] = enabled ? "1" : "0";
+    GSCArgs gscArgs = {0};
+    gscArgs.args = (const char **)malloc(1 * sizeof(const char *));
+    if (!gscArgs.args) return false;
+    gscArgs.count = 1;
+    gscArgs.args[0] = enabled ? "1" : "0";
 
     GscApiCallData *callData = (GscApiCallData *)malloc(sizeof(GscApiCallData));
     if (!callData) {
-        free(gscArgs->args);
-        free(gscArgs);
+        free(gscArgs.args);
         return false;
     }
 
     callData->gsc = gsc;
     callData->method = GSC_STATIC_BOX;
     callData->args = gscArgs;
-    threadCreate(_apiThreadHandler, (void *)callData);
+    Thread *thread = threadCreate(_apiThreadHandler, (void *)callData);
+    threadCreateWatchdog(thread, 3000, _apiOnThreadError, callData);
 
     return true;
 }

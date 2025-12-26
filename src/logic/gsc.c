@@ -8,7 +8,7 @@
 
 #define GSC_DVAR_VALUE_MAX_LEN 1024
 
-char *_gscMethodBuildDvarValue(GSCMethod method, int argc, const char **args);
+char *_gscMethodBuildDvarValue(const char *methodString, const char *argsString);
 
 static const char *GSC_METHOD_NAMES[] = {
     "AddPerks",
@@ -47,15 +47,16 @@ void gscDestroy(GSC *gsc) {
 GSCResponse gscCall(GSC *gsc, GSCMethod method, GSCArgs args) {
     if (!gsc) return NULL;
 
-    const char *methodName = gscMethodToString(method);
-    LOG_INFO("Calling %s with %d args...\n", methodName, args.count);
+    const char *methodString = gscMethodToString(method);
+    const char *argsString = gscArgsToString(args);
+    LOG_INFO("Calling %s(%s)\n", methodString, argsString);
 
     int index = poolAcquire(gsc->pool);
 
     char dvarKey[256];
     snprintf(dvarKey, sizeof(dvarKey), "bo1zt_gsc_worker_%d", index);
 
-    char *dvarValue = _gscMethodBuildDvarValue(method, args.count, args.args);
+    char *dvarValue = _gscMethodBuildDvarValue(methodString, argsString);
     if (!dvarValue) {
         poolRelease(gsc->pool, index);
         return NULL;
@@ -73,7 +74,7 @@ GSCResponse gscCall(GSC *gsc, GSCMethod method, GSCArgs args) {
     GSCResponse resp = gsc->pool->responses[index];
     poolRelease(gsc->pool, index);
 
-    LOG_INFO("Received %s -> [%s]\n", methodName, resp);
+    LOG_INFO("Received %s -> [%s]\n", methodString, resp);
     return resp;
 }
 
@@ -86,6 +87,22 @@ const char *gscMethodToString(GSCMethod method) {
     if (method < 0 || method >= GSC_METHOD_NAMES_SIZE)
         return "Unknown";
     return GSC_METHOD_NAMES[method] ? GSC_METHOD_NAMES[method] : "Unknown";
+}
+
+const char* gscArgsToString(GSCArgs args) {
+    char *value = (char*)calloc(GSC_DVAR_VALUE_MAX_LEN, 1);
+    if (!value) return "";
+
+    for (int i = 0; i < args.count; i++) {
+        if (args.args[i] != NULL) {
+            strncat(value, args.args[i], GSC_DVAR_VALUE_MAX_LEN - strlen(value) - 1);
+            if (i < args.count - 1) {
+                strncat(value, ",", GSC_DVAR_VALUE_MAX_LEN - strlen(value) - 1);
+            }
+        }
+    }
+
+    return value;
 }
 
 GSCArgs gscArgsCreate(int count) {
@@ -103,22 +120,10 @@ void gscArgsFree(GSCArgs *gscArgs) {
     }
 }
 
-char *_gscMethodBuildDvarValue(GSCMethod method, int argc, const char **args) {
+char *_gscMethodBuildDvarValue(const char *methodString, const char *argsString) {
     char *value = (char*)calloc(GSC_DVAR_VALUE_MAX_LEN, 1);
     if (!value) return NULL;
 
-    const char *methodName = gscMethodToString(method);
-
-    snprintf(value, GSC_DVAR_VALUE_MAX_LEN, "bo1zt::%s::", methodName);
-
-    for (int i = 0; i < argc; i++) {
-        if (args[i] != NULL) {
-            strncat(value, args[i], GSC_DVAR_VALUE_MAX_LEN - strlen(value) - 1);
-            if (i < argc - 1) {
-                strncat(value, ",", GSC_DVAR_VALUE_MAX_LEN - strlen(value) - 1);
-            }
-        }
-    }
-
+    snprintf(value, GSC_DVAR_VALUE_MAX_LEN, "bo1zt::%s::%s", methodString, argsString);
     return value;
 }
