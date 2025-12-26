@@ -39,6 +39,7 @@ typedef enum {
     COMMAND_SPH,
     COMMAND_RESTART,
     COMMAND_TRADE,
+    COMMAND_REVIVES,
 } CommandName;
 
 typedef struct Command {

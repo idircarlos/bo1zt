@@ -129,6 +129,15 @@ bool gameSetNumPerks(Game *game, int numPerks) {
     return true;
 }
 
+bool gameSetQuickRevivesDrunk(Game *game, int quickRevivesDrunk) {
+    game->quickRevivesDrunk = quickRevivesDrunk;
+    return true;
+}
+
+int gameGetQuickRevivesDrunk(Game *game) {
+    return game->quickRevivesDrunk;
+}
+
 bool gamePerkAcquired(Game *game) {
     Round currentRound = game->currentRound;
     game->lastPerkAcquiredOnRound = currentRound.number;

@@ -16,5 +16,6 @@ bool commandEntitiesHandle(Command command);
 bool commandSphHandle(Command command);
 bool commandRestartHandle(Command command);
 bool commandTradeHandle(Command command);
+bool commandRevivesHandle(Command command);
 
 #endif // COMMAND_MISC_H_

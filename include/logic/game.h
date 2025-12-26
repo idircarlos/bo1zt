@@ -44,6 +44,8 @@ bool gamePowerupDropped(Game *game, Powerup powerup);
 bool gamePowerupNewCycle(Game *game);
 bool gamePowerOn(Game *game, int timestamp);
 bool gameSetNumPerks(Game *game, int numPerks);
+bool gameSetQuickRevivesDrunk(Game *game, int soloLivesGiven);
+int gameGetQuickRevivesDrunk(Game *game);
 bool gamePerkAcquired(Game *game);
 bool gamePerkLost(Game *game);
 int gameNumSpecialRounds(Game *game);

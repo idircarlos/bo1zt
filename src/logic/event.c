@@ -136,17 +136,33 @@ static bool eventHandleVMNotify(Event event) {
     return true;
 }
 
-// Not in use since GSC was introduced.
 static bool eventHandleIDUpdate(Event event) {
+    Process *process = controllerGetProcess(controller);
+    State *state = controllerGetState(controller);
+    Game *game = &state->activeGame;
     int eventId = event.data.idUpdate.eventId;
     int *pEventValue =  event.data.idUpdate.pEventValue;
+    int eventValue = 0;
     if (!_eventValidIDUpdate(eventId, pEventValue)) return true;
     switch (eventId) {
         // Round
-        case 4748:
+        case 4748: return true;
+        // Solo Lives Given
+        case 5325:
+            if (!game) return false;
+            if (pEventValue) {
+                if (processRead(process, (uint32_t)pEventValue + 0x4, &eventValue, sizeof(int))) {
+                    return gameSetQuickRevivesDrunk(game, eventValue);
+                }
+                LOG_WARN("Coudln't read IDUpdate Solo Lives Given event value\n");
+                return false;
+            }
+            LOG_WARN("Event IDUpdate %d pointer value is null. Weird.", eventId);
+            return false;
         default:
             return true;
     }
+    return true;
 }
 
 static bool _eventValidIDUpdate(int eventId, int *pEventValue) {

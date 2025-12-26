@@ -92,6 +92,7 @@ static Map* createCommandsMap() {
     mapPutInt(map, "entities", COMMAND_ENTITIES);
     mapPutInt(map, "sph", COMMAND_SPH);
     mapPutInt(map, "trade", COMMAND_TRADE);
+    mapPutInt(map, "revives", COMMAND_REVIVES);
     return map;
 }
 
@@ -200,6 +201,8 @@ bool commandHandle(Command command) {
             return commandRestartHandle(command);
         case COMMAND_TRADE:
             return commandTradeHandle(command);
+        case COMMAND_REVIVES:
+            return commandRevivesHandle(command);
         default:
             return false;
     }

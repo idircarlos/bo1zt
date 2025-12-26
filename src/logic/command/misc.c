@@ -226,6 +226,7 @@ bool commandSphHandle(Command command) {
 }
 
 bool commandRestartHandle(Command command) {
+    (void)command;
     return serverExecuteCommand(server, "map_restart");
 }
 
@@ -303,4 +304,16 @@ bool commandTradeHandle(Command command) {
 
     serverChatMessage(server, "Usage: /trade [start | end | cancel | total]");
     return false;
+}
+
+bool commandRevivesHandle(Command command) {
+    (void)command;
+    State *state = controllerGetState(controller);
+    Game *game = &state->activeGame;
+    if (!game) return false;
+    int quickRevives = gameGetQuickRevivesDrunk(game);
+    char buffer[64];
+    snprintf(buffer, 64, "Quick Revives Drunk: %d", quickRevives);
+    serverChatMessage(server, buffer);
+    return true;
 }
