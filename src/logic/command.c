@@ -185,7 +185,6 @@ bool commandHandle(Command command) {
         case COMMAND_THIRDPERSON:
             return commandThirdpersonHandle(command);
         case COMMAND_UWU:
-            serverExecuteCommand(server, "magic_chest_movable 1");
             return serverCenterMessage(server, "UwU :3");
         case COMMAND_DOGS:
         case COMMAND_MONKEYS:
