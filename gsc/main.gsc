@@ -18,6 +18,8 @@ onPlayerConnect()
         player thread onPlayerSpawned();
         player thread onZombieKilled();
         player thread onPowerupDropped();
+        player thread onPerkBought();
+        player thread onPerkLost();
     }
 }
 
@@ -59,6 +61,34 @@ onPowerupDropped() {
             self notify("bo1zt::Level::Powerup::NewCycle");
         }
         self notify("bo1zt::Level::Powerup::Dropped", getPowerupId(powerup.powerup_name));   
+        if (powerup.powerup_name == "free_perk") {
+            powerup thread onFreePerkPowerupGrabbed(self);
+        }
+    }
+}
+
+onFreePerkPowerupGrabbed(player) {
+    self waittill("powerup_grabbed");
+    self notify("bo1zt::Player::NumPerks", player.num_perks);
+}
+
+onPerkBought() {
+    self endon("disconnect");
+    self waittill("spawned_player");
+    for(;;)
+    {
+        self waittill("perk_bought");
+        self notify("bo1zt::Player::NumPerks", self.num_perks);
+    }
+}
+
+onPerkLost() {
+    self endon("disconnect");
+    self waittill("spawned_player");
+    for(;;)
+    {
+        self waittill("perk_lost");
+        self notify("bo1zt::Player::NumPerks", self.num_perks);
     }
 }
 
@@ -71,6 +101,7 @@ getPowerupId(powerupName) {
         case "carpenter": return 4;
         case "fire_sale": return 5;
         case "minigun": return 6;
+        case "free_perk": return 7;
         default: return -1;
     }
 }
@@ -102,6 +133,9 @@ bo1ztSetupWorker(workerId)
                 case "RemovePerks":
                     Bo1ztRemovePerks(args);
                     break;
+                case "NumPerks":
+                    result = Bo1ztNumPerks();
+                    break;
                 case "StaticBox":
                     result = Bo1ztStaticBox(args);
                     break;
@@ -130,6 +164,10 @@ Bo1ztRemovePerks(perks)
         self waittill("perk_lost");
     }
     self update_perk_hud();
+}
+
+Bo1ztNumPerks() {
+    return self.num_perks;
 }
 
 Bo1ztStaticBox(args)
