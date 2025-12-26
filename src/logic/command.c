@@ -80,6 +80,11 @@ static Map* createCommandsMap() {
     mapPutInt(map, "give", COMMAND_GIVE);
     mapPutInt(map, "tp", COMMAND_TP);
     mapPutInt(map, "uwu", COMMAND_UWU);
+
+    // Special rounds
+    mapPutInt(map, "dogs", COMMAND_DOGS);
+    mapPutInt(map, "monkeys", COMMAND_MONKEYS);
+    mapPutInt(map, "thief", COMMAND_THIEF);
     return map;
 }
 
@@ -174,6 +179,10 @@ bool commandHandle(Command command) {
         case COMMAND_UWU:
             serverExecuteCommand(server, "magic_chest_movable 1");
             return serverCenterMessage(server, "UwU :3");
+        case COMMAND_DOGS:
+        case COMMAND_MONKEYS:
+        case COMMAND_THIEF:
+            return commandNextSpecialRoundHandle(command);
         default:
             return false;
     }

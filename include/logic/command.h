@@ -31,6 +31,9 @@ typedef enum {
     COMMAND_DISABLEFOG,
     COMMAND_FULLBRIGHT,
     COMMAND_COLORIZED,
+    COMMAND_DOGS,
+    COMMAND_MONKEYS,
+    COMMAND_THIEF,
 } CommandName;
 
 typedef struct Command {

@@ -1,6 +1,8 @@
 #include "logic/command/misc.h"
 #include "logic/cheat.h"
 #include "logic/game/perk.h"
+#include "logic/game.h"
+#include "logic/state.h"
 #include "logger.h"
 #include "utils/list.h"
 #include <stdlib.h>
@@ -113,4 +115,18 @@ bool commandTpHandle(Command command) {
     }
 
     return success;
+}
+
+bool commandNextSpecialRoundHandle(Command command) {
+    (void)command;
+    State *state = controllerGetState(controller);
+    Game *game = &state->activeGame;
+    const char *result = gameNextPotentialSpecialRounds(game);
+    if (result) {
+        serverChatMessage(server, result);
+        free((void*)result);
+        return true;
+    }
+    serverChatMessage(server, "No special rounds");
+    return false;
 }

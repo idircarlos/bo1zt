@@ -13,10 +13,10 @@ void roundInit(Round *round, int number, int players) {
     round->players = players;
 }
 
-bool roundStart(Round *round, int startTimestamp) {
+bool roundStart(Round *round, int startTimestamp, bool special) {
     round->startTimestamp = startTimestamp;
-    round->isSpecial = false; // TODO
-    round->zombiesLeft = roundZombieCount(round);
+    round->isSpecial = special;
+    round->zombiesLeft = roundZombieCount(round); // Not computing dogs/monkeys since I wasn't able to track their kills
     round->drops = 0;
     return true;
 }
@@ -43,7 +43,6 @@ bool roundEnded(Round *round) {
 bool roundRunning(Round *round) {
     return roundStarted(round) && !roundEnded(round);
 }
-
 
 bool roundEnd(Round *round, int endTimestamp) {
     round->endTimestamp = endTimestamp;

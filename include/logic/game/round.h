@@ -6,9 +6,13 @@
 #define MAX_ROUNDS 256
 
 typedef enum {
-    SR_NONE = -1,
-    SR_DOGS,
-} SpecialRound;
+    RT_INVALID = -1,
+    RT_NORMAL,
+    RT_DOGS,
+    RT_MONKEYS,
+    RT_THIEF,
+    RT_GEORGE,
+} RoundType;
 
 typedef struct Round {
     int number;
@@ -22,7 +26,7 @@ typedef struct Round {
 } Round;
 
 void roundInit(Round *round, int number, int players);
-bool roundStart(Round *round, int startTimestamp);
+bool roundStart(Round *round, int startTimestamp, bool special);
 bool roundClear(Round *round);
 bool roundStarted(Round *round);
 bool roundEnded(Round *round);

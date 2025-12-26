@@ -10,5 +10,6 @@ void commandMiscInit(Server *server, Controller *controller, Api *api);
 bool commandGiveHandle(Command command);
 bool commandTpHandle(Command command);
 bool commandPerkHandle(Command command);
+bool commandNextSpecialRoundHandle(Command command);
 
 #endif // COMMAND_MISC_H_

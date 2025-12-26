@@ -15,6 +15,8 @@
 static Controller *controller;
 static GSC *gsc;
 
+static bool pendingSpecialRound = false;
+
 static bool eventHandleChatMessage(Event event);
 static bool eventHandleMapChange(Event event);
 static bool eventHandleMapRestart(Event event);
@@ -81,10 +83,24 @@ static bool eventHandleVMNotify(Event event) {
         return gameStart(game, controllerGetLevelName(controller), event.timestamp);
     }
     if (strcmp(event.data.vmNotify.eventName, "start_of_round") == 0) {
-        return gameRoundStarted(game, event.timestamp);
+        bool success = gameRoundStarted(game, event.timestamp, pendingSpecialRound);
+        pendingSpecialRound = false;
+        return success;
     }
     if (strcmp(event.data.vmNotify.eventName, "end_of_round") == 0) {
         return gameRoundEnded(game, event.timestamp);
+    }
+    if (strcmp(event.data.vmNotify.eventName, "dog_round_starting") == 0) {
+        pendingSpecialRound = true;
+    }
+    if (strcmp(event.data.vmNotify.eventName, "monkey_round") == 0) {
+        pendingSpecialRound = true;
+    }
+    if (strcmp(event.data.vmNotify.eventName, "thief_round") == 0) {
+        pendingSpecialRound = true;
+    }
+    if (strcmp(event.data.vmNotify.eventName, "power_on") == 0) {
+        return gamePowerOn(game, event.timestamp);
     }
     if (strncmp(event.data.vmNotify.eventName, "bo1zt::Level::TotalZombiesKilled", 32) == 0) {
         int currentZombies = game->totalZombies;
@@ -102,6 +118,9 @@ static bool eventHandleVMNotify(Event event) {
     if (strncmp(event.data.vmNotify.eventName, "bo1zt::Level::Powerup::NewCycle", 31) == 0) {
         gamePowerupNewCycle(game);
         return true;
+    }
+    if (strncmp(event.data.vmNotify.eventName, "bo1zt::Player::NumPerks", 24) == 0) {
+        return gameSetNumPerks(game, event.data.vmNotify.eventValue);
     }
     if (strncmp(event.data.vmNotify.eventName, "bo1zt::Worker", 13) == 0) {
         int index;

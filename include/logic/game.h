@@ -9,11 +9,15 @@ typedef struct Game {
     int elapsed;
     int startTimestamp;
     int endTimestamp;
+    int powerOnTimestamp;
+    int powerOnRound;
     int players;
     int quickRevivesDrunk;
     float movementSpeed;
     int totalZombies;
-    int drops; // TODO: Check how to recognize carpenter and sales drop to track cycles
+    int drops;
+    int numPerks;
+    int lastPerkAcquiredOnRound;
     Level levelName;
     Round currentRound;
     Round rounds[MAX_ROUNDS];
@@ -27,11 +31,17 @@ bool gameRunning(Game *game);
 bool gameClear(Game *game);
 bool gameEnd(Game *game, int endTimestamp);
 bool gameUpdateElapsed(Game *game, int levelElapsed);
-bool gameRoundStarted(Game *game, int startTimestamp);
+bool gameRoundStarted(Game *game, int startTimestamp, bool special);
 bool gameRoundEnded(Game *game, int endTimestamp);
 bool gameZombieKilled(Game *game);
 bool gamePowerupDropped(Game *game, Powerup powerup);
 bool gamePowerupNewCycle(Game *game);
+bool gamePowerOn(Game *game, int timestamp);
+bool gameSetNumPerks(Game *game, int numPerks);
+bool gamePerkAcquired(Game *game);
+bool gamePerkLost(Game *game);
+int gameNumSpecialRounds(Game *game);
+const char* gameNextPotentialSpecialRounds(Game *game);
 void gamePrint(Game *game);
 
 #endif // GAME_H_
