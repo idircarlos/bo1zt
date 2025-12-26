@@ -4,6 +4,7 @@
 #include "logic/game/level.h"
 #include "logic/game/round.h"
 #include "logic/game/powerup.h"
+#include "logic/game/trade.h"
 
 typedef struct Game {
     int elapsed;
@@ -23,6 +24,9 @@ typedef struct Game {
     Level levelName;
     Round currentRound;
     Round rounds[MAX_ROUNDS];
+    Trade currentTrade;
+    Trade trades[MAX_TRADES];
+    int tradeCount;
 } Game;
 
 void gameInit(Game *game, int players);
@@ -44,6 +48,7 @@ bool gamePerkAcquired(Game *game);
 bool gamePerkLost(Game *game);
 int gameNumSpecialRounds(Game *game);
 const char* gameNextPotentialSpecialRounds(Game *game);
+bool gameTradeHit(Game *game);
 void gamePrint(Game *game);
 
 #endif // GAME_H_

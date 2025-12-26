@@ -122,6 +122,9 @@ static bool eventHandleVMNotify(Event event) {
     if (strncmp(event.data.vmNotify.eventName, "bo1zt::Player::NumPerks", 24) == 0) {
         return gameSetNumPerks(game, event.data.vmNotify.eventValue);
     }
+    if (strcmp(event.data.vmNotify.eventName, "chest_has_been_used") == 0) {
+        return gameTradeHit(game);
+    }
     if (strncmp(event.data.vmNotify.eventName, "bo1zt::Worker", 13) == 0) {
         int index;
         char response[256];

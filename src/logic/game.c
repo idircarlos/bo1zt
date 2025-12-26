@@ -2,6 +2,7 @@
 #include "logger.h"
 #include "logic/game/level.h"
 #include "logic/game/round.h"
+#include "logic/game/trade.h"
 #include "widget/cycle.h"
 #include "gui/widgets.h"
 #include <stdio.h>
@@ -59,6 +60,11 @@ bool gameClear(Game *game) {
     for (int i = 0; i < MAX_ROUNDS; i++) {
         roundClear(&game->rounds[i]);
     }
+    tradeClear(&game->currentTrade);
+    for (int i = 0; i < MAX_TRADES; i++) {
+        tradeClear(&game->trades[i]);
+    }
+    game->tradeCount = 0;
     return true;
 }
 
@@ -143,6 +149,10 @@ const char* gameNextPotentialSpecialRounds(Game *game) {
         case RT_THIEF: return _gameGetNextPotentialThiefRounds(game);
         default: return "Unimplemented";
     }
+}
+
+bool gameTradeHit(Game *game) {
+    return tradeHit(&game->currentTrade);
 }
 
 void gamePrint(Game *game) {

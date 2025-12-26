@@ -2,7 +2,9 @@
 #include "logic/cheat.h"
 #include "logic/game/perk.h"
 #include "logic/game/level.h"
+#include "logic/game/trade.h"
 #include "logic/game.h"
+#include "logic/server.h"
 #include "logic/state.h"
 #include "logger.h"
 #include "utils/list.h"
@@ -221,4 +223,84 @@ bool commandSphHandle(Command command) {
     snprintf(buffer, 128, "Average SPH: %.2f", avgSph);
     serverChatMessage(server, buffer);
     return true;
+}
+
+bool commandRestartHandle(Command command) {
+    return serverExecuteCommand(server, "map_restart");
+}
+
+bool commandTradeHandle(Command command) {
+    State *state = controllerGetState(controller);
+    Game *game = &state->activeGame;
+    Trade *trade = &game->currentTrade;
+    int timestamp = controllerGetLevelElapsedTime(controller);
+    char buffer[128];
+
+    if (command.argc < 2) {
+        if (!tradeRunning(trade)) {
+            serverChatMessage(server, "No trade running");
+            return true;
+        }
+        int ms = tradeGetElapsed(trade, timestamp);
+        int secs = ms / 1000;
+        int h = secs / 3600, m = (secs % 3600) / 60, s = secs % 60;
+        snprintf(buffer, 128, "Trade: %02d:%02d:%02d | Hits: %d", h, m, s, tradeGetHits(trade));
+        serverChatMessage(server, buffer);
+        return true;
+    }
+
+    if (strcmp(command.argv[1], "start") == 0) {
+        if (tradeStart(trade, timestamp)) {
+            serverChatMessage(server, "Trade started");
+        } else {
+            serverChatMessage(server, "Trade already running");
+        }
+        return true;
+    }
+
+    if (strcmp(command.argv[1], "end") == 0) {
+        if (tradeEnd(trade, timestamp)) {
+            int ms = tradeGetElapsed(trade, timestamp);
+            int secs = ms / 1000;
+            int h = secs / 3600, m = (secs % 3600) / 60, s = secs % 60;
+            snprintf(buffer, 128, "Trade ended: %02d:%02d:%02d | Hits: %d", h, m, s, tradeGetHits(trade));
+            serverChatMessage(server, buffer);
+            if (game->tradeCount < MAX_TRADES) {
+                game->trades[game->tradeCount++] = *trade;
+            }
+            tradeClear(trade);
+        } else {
+            serverChatMessage(server, "No trade running");
+        }
+        return true;
+    }
+
+    if (strcmp(command.argv[1], "cancel") == 0) {
+        if (tradeCancel(trade)) {
+            serverChatMessage(server, "Trade cancelled");
+        } else {
+            serverChatMessage(server, "No trade running");
+        }
+        return true;
+    }
+
+    if (strcmp(command.argv[1], "total") == 0) {
+        if (game->tradeCount == 0) {
+            serverChatMessage(server, "No trades recorded");
+            return true;
+        }
+        int totalMs = 0, totalHits = 0;
+        for (int i = 0; i < game->tradeCount; i++) {
+            totalMs += game->trades[i].endTimestamp - game->trades[i].startTimestamp;
+            totalHits += game->trades[i].hits;
+        }
+        int secs = totalMs / 1000;
+        int h = secs / 3600, m = (secs % 3600) / 60, s = secs % 60;
+        snprintf(buffer, 128, "Total: %02d:%02d:%02d | Hits: %d (%d trades)", h, m, s, totalHits, game->tradeCount);
+        serverChatMessage(server, buffer);
+        return true;
+    }
+
+    serverChatMessage(server, "Usage: /trade [start | end | cancel | total]");
+    return false;
 }

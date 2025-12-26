@@ -14,5 +14,7 @@ bool commandNextSpecialRoundHandle(Command command);
 bool commandClaymoresHandle(Command command);
 bool commandEntitiesHandle(Command command);
 bool commandSphHandle(Command command);
+bool commandRestartHandle(Command command);
+bool commandTradeHandle(Command command);
 
 #endif // COMMAND_MISC_H_

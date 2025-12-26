@@ -79,6 +79,7 @@ static Map* createCommandsMap() {
     // Others
     mapPutInt(map, "give", COMMAND_GIVE);
     mapPutInt(map, "tp", COMMAND_TP);
+    mapPutInt(map, "restart", COMMAND_RESTART);
     mapPutInt(map, "uwu", COMMAND_UWU);
 
     // Special rounds
@@ -90,6 +91,7 @@ static Map* createCommandsMap() {
     mapPutInt(map, "claymores", COMMAND_CLAYMORES);
     mapPutInt(map, "entities", COMMAND_ENTITIES);
     mapPutInt(map, "sph", COMMAND_SPH);
+    mapPutInt(map, "trade", COMMAND_TRADE);
     return map;
 }
 
@@ -194,6 +196,10 @@ bool commandHandle(Command command) {
             return commandEntitiesHandle(command);
         case COMMAND_SPH:
             return commandSphHandle(command);
+        case COMMAND_RESTART:
+            return commandRestartHandle(command);
+        case COMMAND_TRADE:
+            return commandTradeHandle(command);
         default:
             return false;
     }
