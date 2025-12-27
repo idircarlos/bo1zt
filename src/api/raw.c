@@ -1376,3 +1376,23 @@ int rawApiGetMaxSnapshotEntities(RawApi *rawApi) {
     // 2147483646 - maxRaw
     return 2147483646 - maxRaw;
 }
+
+bool rawApiIsChatOpen(RawApi *rawApi) {
+    if (!rawApi || !rawApi->controller) {
+        LOG_ERROR("RawApi or Controller is null\n");
+        return false;
+    }
+    
+    Process *process = controllerGetProcess(rawApi->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return false;
+    }
+
+    uint32_t chatStatus = 0;
+    bool success = processRead(process, GAME_CHEAT.chatStatusOffset, &chatStatus, sizeof(chatStatus));
+    if (!success) {
+        return false;
+    }
+    return chatStatus == 0x20; // 0x20 -> Chat is opened
+}

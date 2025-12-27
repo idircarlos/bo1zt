@@ -133,6 +133,12 @@ bool controllerIsGameReady(Controller *controller) {
     return apiIsGameReady(controller->api);
 }
 
+bool controllerIsChatOpen(Controller *controller) {
+    if (!controller) return false;
+    if (!controller->process) return false;
+    return apiIsChatOpen(controller->api);
+}
+
 int controllerGetLevelElapsedTime(Controller *controller) {
     if (!controller) return 0;
     if (!controller->process) return 0;

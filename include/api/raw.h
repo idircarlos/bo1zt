@@ -33,5 +33,6 @@ uintptr_t rawApiGetDVarPointer(RawApi *rawApi, const char *dVar);
 int rawApiGetClaymoreCount(RawApi *rawApi);
 int rawApiGetCurrentSnapshotEntities(RawApi *rawApi);
 int rawApiGetMaxSnapshotEntities(RawApi *rawApi);
+bool rawApiIsChatOpen(RawApi *rawApi);
 
 #endif // API_RAW_H_

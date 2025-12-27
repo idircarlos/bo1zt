@@ -37,6 +37,7 @@ uintptr_t apiGetDVarPointer(Api *api, const char *dVar);
 int apiGetClaymoreCount(Api *api);
 int apiGetCurrentSnapshotEntities(Api *api);
 int apiGetMaxSnapshotEntities(Api *api);
+bool apiIsChatOpen(Api *api);
 
 // GSC backend operations
 bool apiAddPerks(Api *api, List *perks);

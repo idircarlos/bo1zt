@@ -224,6 +224,8 @@ typedef struct {
     // Snapshot entities
     uintptr_t currentSnapshotEntitiesOffset;
     uintptr_t maxSnapshotEntitiesOffset;
+    // Chat status
+    uintptr_t chatStatusOffset;
 } GameCheat;
 
 typedef struct {

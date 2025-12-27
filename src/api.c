@@ -168,6 +168,11 @@ int apiGetMaxSnapshotEntities(Api *api) {
     return rawApiGetMaxSnapshotEntities(api->raw);
 }
 
+bool apiIsChatOpen(Api *api) {
+    if (!api) return false;
+    return rawApiIsChatOpen(api->raw);
+}
+
 // GSC backend forwards
 
 bool apiAddPerks(Api *api, List *perks) {

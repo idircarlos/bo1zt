@@ -69,22 +69,48 @@ static char *trimWhitespace(char *str) {
 static void executeCommands(const char *commandString) {
     if (commandString == NULL || commandString[0] == '\0') return;
     
-    char *copy = strdup(commandString);
-    char *saveptr;
-    char *token = strtok_s(copy, ";", &saveptr);
+    const char *ptr = commandString;
     
-    while (token != NULL) {
-        char *trimmed = trimWhitespace(token);
-        if (trimmed[0] != '\0') {
-            Command cmd = commandBuild(trimmed);
-            if (cmd.name != COMMAND_NONE && cmd.name != COMMAND_UNKNOWN) {
-                commandHandle(cmd);
+    // Skip leading whitespace
+    while (*ptr == ' ' || *ptr == '\t') ptr++;
+    
+    while (*ptr != '\0') {
+        // Each command should start with '/'
+        if (*ptr != '/') {
+            ptr++;
+            continue;
+        }
+        
+        // Find the end of this command (next '/' or end of string)
+        const char *cmdStart = ptr;
+        ptr++; // Skip the initial '/'
+        
+        while (*ptr != '\0' && *ptr != '/') {
+            ptr++;
+        }
+        
+        // Extract the command
+        size_t cmdLen = ptr - cmdStart;
+        char *cmd = (char *)malloc(cmdLen + 1);
+        strncpy(cmd, cmdStart, cmdLen);
+        cmd[cmdLen] = '\0';
+        
+        // Trim trailing whitespace
+        char *end = cmd + strlen(cmd) - 1;
+        while (end > cmd && (*end == ' ' || *end == '\t')) {
+            *end = '\0';
+            end--;
+        }
+        
+        if (cmd[0] != '\0') {
+            Command builtCmd = commandBuild(cmd);
+            if (builtCmd.name != COMMAND_NONE && builtCmd.name != COMMAND_UNKNOWN) {
+                commandHandle(builtCmd);
             }
         }
-        token = strtok_s(NULL, ";", &saveptr);
+        
+        free(cmd);
     }
-    
-    free(copy);
 }
 
 static void updateKeyState(KeyBind *kb) {
@@ -448,6 +474,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 static void update(void) {
     if (!controller || !controllerIsGameAttached(controller)) return;
     if (!controllerIsGameWindowFocused(controller)) return;
+    if (controllerIsChatOpen(controller)) return;
     
     bool processedThisFrame[MAX_KEYS] = {false};
     

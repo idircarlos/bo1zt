@@ -27,6 +27,7 @@ void controllerWaitUntilGameCloses(Controller *controller); // This method shoul
 bool controllerIsGameWindowFocused(Controller *controller);
 bool controllerIsGameWindowAttached(Controller *controller);
 bool controllerIsGameReady(Controller *controller);
+bool controllerIsChatOpen(Controller *controller);
 int controllerGetLevelElapsedTime(Controller *controller);
 float controllerGetMovementSpeed(Controller *controller);
 Level controllerGetLevelName(Controller *controller);
