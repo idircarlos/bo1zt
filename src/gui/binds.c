@@ -45,6 +45,7 @@ static void onEntryChanged(uiEntry *entry, void *data);
 static void init(void);
 static void loadBindingsFromConfig(void);
 static KeyBind *findKeyBindByButton(uiCustomButton *button);
+static void executeCommands(const char *commandString);
 
 static inline bool isValidVKCode(int vkCode) {
     return vkCode > 0 && vkCode < 256;
@@ -52,6 +53,38 @@ static inline bool isValidVKCode(int vkCode) {
 
 static inline bool hasCommand(const KeyBind *kb) {
     return kb != NULL && kb->command != NULL && kb->command[0] != '\0';
+}
+
+static char *trimWhitespace(char *str) {
+    while (*str == ' ' || *str == '\t') str++;
+    if (*str == '\0') return str;
+    
+    char *end = str + strlen(str) - 1;
+    while (end > str && (*end == ' ' || *end == '\t')) end--;
+    *(end + 1) = '\0';
+    
+    return str;
+}
+
+static void executeCommands(const char *commandString) {
+    if (commandString == NULL || commandString[0] == '\0') return;
+    
+    char *copy = strdup(commandString);
+    char *saveptr;
+    char *token = strtok_s(copy, ";", &saveptr);
+    
+    while (token != NULL) {
+        char *trimmed = trimWhitespace(token);
+        if (trimmed[0] != '\0') {
+            Command cmd = commandBuild(trimmed);
+            if (cmd.name != COMMAND_NONE && cmd.name != COMMAND_UNKNOWN) {
+                commandHandle(cmd);
+            }
+        }
+        token = strtok_s(NULL, ";", &saveptr);
+    }
+    
+    free(copy);
 }
 
 static void updateKeyState(KeyBind *kb) {
@@ -428,11 +461,8 @@ static void update(void) {
         bool isPressed = (GetAsyncKeyState(vkCode) & 0x8000) != 0;
         
         if (isPressed && !prevKeyStates[vkCode]) {
-            Command cmd = commandBuild(keyBinds[i].command);
-            if (cmd.name != COMMAND_NONE && cmd.name != COMMAND_UNKNOWN) {
-                commandHandle(cmd);
-                LOG_INFO("Keybind executed: %s -> %s\n", keyBinds[i].keyName, keyBinds[i].command);
-            }
+            executeCommands(keyBinds[i].command);
+            LOG_INFO("Keybind executed: %s -> %s\n", keyBinds[i].keyName, keyBinds[i].command);
             
             if (keymapIsModifier(keyBinds[i].keyName)) {
                 int pairIndex = getModifierPairIndex(&keyBinds[i]);
