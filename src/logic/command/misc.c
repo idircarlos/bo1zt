@@ -111,10 +111,7 @@ bool commandTpHandle(Command command) {
     TeleportCoords coords = { x, y, z };
     bool success = controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_TELEPORT, &coords);
 
-    if (success) {
-        snprintf(buffer, 64, "Teleported to (%d, %d, %d)", (int)x, (int)y, (int)z);
-        serverChatMessage(server, buffer);
-    } else {
+    if (!success) {
         serverChatMessage(server, "Failed to teleport!");
     }
 

@@ -40,58 +40,16 @@ static UIControlGroup *controlGroups[] = {NULL};
 static void onSpinboxChange(uiSpinbox *spin, void *data) {
     SimpleCheatName simpleCheatName = (SimpleCheatName)(uintptr_t)data;
     int value = uiSpinboxValue(spin);
-    Config *config = controllerGetConfig(controller);
     
-    switch (simpleCheatName) {
-        case SIMPLE_CHEAT_NAME_FOV:
-            config->graphics.fov = value;
-            break;
-        case SIMPLE_CHEAT_NAME_FOV_SCALE:
-            config->graphics.fovScale = value;
-            break;
-        case SIMPLE_CHEAT_NAME_FPS_CAP:
-            config->graphics.fpsCap = value;
-            break;
-        default:
-            break;
-    }
-    configSave(config);
+    CheatManager *cheatManager = controllerGetCheatManager(controller);
+    cheatManagerSetValue(cheatManager, simpleCheatName, &value);
 }
 
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
     
-    CheatManager *cheatManager = controllerGetCheatManager(controller);
-    if (!cheatManager) {
-        // Fallback: update Config directly if CheatManager not available
-        Config *config = controllerGetConfig(controller);
-        switch (cheatName) {
-            case CHEAT_NAME_MAKE_BORDERLESS:
-                config->graphics.borderless = enabled;
-                break;
-            case CHEAT_NAME_UNLIMIT_FPS:
-                config->graphics.unlimitFps = enabled;
-                break;
-            case CHEAT_NAME_DISABLE_HUD:
-                config->graphics.disableHud = enabled;
-                break;
-            case CHEAT_NAME_DISABLE_FOG:
-                config->graphics.disableFog = enabled;
-                break;
-            case CHEAT_NAME_FULLBRIGHT:
-                config->graphics.fullbright = enabled;
-                break;
-            case CHEAT_NAME_COLORIZED:
-                config->graphics.colorized = enabled;
-                break;
-            default:
-                break;
-        }
-        configSave(config);
-        return;
-    }
-    
+    CheatManager *cheatManager = controllerGetCheatManager(controller);    
     CheatResult result = cheatManagerSetToggle(cheatManager, cheatName, enabled);
     
     // If API failed, revert checkbox to previous state

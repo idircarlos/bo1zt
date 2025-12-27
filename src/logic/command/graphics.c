@@ -1,4 +1,5 @@
 #include "logic/command/graphics.h"
+#include "logic/cheat.h"
 #include "logic/cheat/manager.h"
 #include "logic/cheat/manager/actions.h"
 #include "logic/config.h"
@@ -17,6 +18,10 @@ static bool toggle(CheatName cheat) {
     return cheatManagerToggle(controllerGetCheatManager(controller), cheat) != CHEAT_RESULT_API_FAILED;
 }
 
+static bool setValue(SimpleCheatName cheat, void *value) {
+    return cheatManagerSetValue(controllerGetCheatManager(controller), cheat, value) != CHEAT_RESULT_API_FAILED;
+}
+
 bool commandFovHandle(Command command) {
     char buffer[64];
     Config *config = controllerGetConfig(controller);
@@ -33,10 +38,7 @@ bool commandFovHandle(Command command) {
         return false;
     }
 
-    config->graphics.fov = fov;
-    configSave(config);
-    snprintf(buffer, 64, "FOV set to %d", fov);
-    serverChatMessage(server, buffer);
+    setValue(SIMPLE_CHEAT_NAME_FOV, &fov);
     return true;
 }
 
@@ -56,10 +58,7 @@ bool commandFovscaleHandle(Command command) {
         return false;
     }
 
-    config->graphics.fovScale = fovScale;
-    configSave(config);
-    snprintf(buffer, 64, "FOV Scale set to %d", fovScale);
-    serverChatMessage(server, buffer);
+    setValue(SIMPLE_CHEAT_NAME_FOV_SCALE, &fovScale);
     return true;
 }
 
@@ -79,10 +78,7 @@ bool commandFpsHandle(Command command) {
         return false;
     }
 
-    config->graphics.fpsCap = fpsCap;
-    configSave(config);
-    snprintf(buffer, 64, "FPS Cap set to %d", fpsCap);
-    serverChatMessage(server, buffer);
+    setValue(SIMPLE_CHEAT_NAME_FPS_CAP, &fpsCap);
     return true;
 }
 

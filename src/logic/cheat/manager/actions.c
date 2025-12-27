@@ -160,6 +160,28 @@ static bool hasTrackedAppliedState(SimpleCheatName cheat) {
     }
 }
 
+static void updateConfigValueCheat(Config *config, SimpleCheatName cheat, void *value) {
+    if (!config || !value) return;
+    
+    switch (cheat) {
+        case SIMPLE_CHEAT_NAME_FOV:
+            config->graphics.fov = *(int *)value;
+            break;
+        case SIMPLE_CHEAT_NAME_FOV_SCALE:
+            config->graphics.fovScale = *(int *)value;
+            break;
+        case SIMPLE_CHEAT_NAME_FPS_CAP:
+            config->graphics.fpsCap = *(int *)value;
+            break;
+        case SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME:
+            strncpy(config->game.hostname, (const char *)value, sizeof(config->game.hostname) - 1);
+            config->game.hostname[sizeof(config->game.hostname) - 1] = '\0';
+            break;
+        default:
+            break;
+    }
+}
+
 CheatResult cheatManagerSetValue(CheatManager *manager, SimpleCheatName cheat, void *value) {
     if (!manager || !value) return CHEAT_RESULT_API_FAILED;
     
@@ -167,6 +189,12 @@ CheatResult cheatManagerSetValue(CheatManager *manager, SimpleCheatName cheat, v
     if (hasTrackedAppliedState(cheat) && isValueCheatUnchanged(manager, cheat, value)) {
         return CHEAT_RESULT_NO_CHANGE;
     }
+    
+    // Update Config with desired value (always update Config regardless of conditions)
+    updateConfigValueCheat(manager->config, cheat, value);
+    
+    // Persist to INI immediately after Config change
+    configSave(manager->config);
     
     // Check conditions for this value cheat
     if (!checkSimpleCheatConditions(manager, cheat)) {
