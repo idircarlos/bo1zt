@@ -3,7 +3,7 @@
 
 #include "widget.h"
 
-#define WIDGET_ENTITIES_RECT rectCreate(200, 400, 300, 50)
+#define WIDGET_ENTITIES_RECT rectCreate(200, 400, 400, 40)
 #define WIDGET_ENTITIES_FONT_SIZE 0
 
 Widget* entitiesWidgetCreate(int *currentEntities, int *maxEntities);

@@ -9,7 +9,7 @@ const char *uiWidgetsGetName(int index);
 bool uiWidgetsIsEnabled(int index);
 const char *uiWidgetsGetFont(int index);
 Color uiWidgetsGetTextColor(int index);
-bool uiWidgetsIsHideOnDefaultChecked(int index);
+bool uiWidgetsIsHideOutsideGameChecked(int index);
 bool uiWidgetsIsSavable();
 void uiWidgetsReset();
 Rect uiWidgetsGetRect(int index);

@@ -9,6 +9,7 @@
 #include "utils/map.h"
 #include "logger.h"
 #include "logic/state.h"
+#include "logic/game.h"
 #include <ui.h>
 #include <string.h>
 #include <stdio.h>
@@ -23,6 +24,7 @@
 #define WIDGET_ENTITIES "Entities"
 
 #define WIDGET_TRANSFORMING "WIDGET_TRANSFORMING"
+#define WIDGET_GAME_WAS_RUNNING "WIDGET_GAME_WAS_RUNNING"
 
 #define N_FONTS 21
 
@@ -40,7 +42,7 @@ typedef struct {
     bool enabled;
     int fontIndex;
     Color color;
-    bool hideOnDefault;
+    bool hideOutsideGame;
     bool resetable;
     Rect rect;
     int fontSize;
@@ -67,7 +69,7 @@ static uiColorButton *widgetColorBtn = NULL;
 static uiCombobox *widgetFontCombobox = NULL;
 static uiLabel *fontLabel = NULL;
 static uiLabel *colorLabel = NULL;
-static uiCheckbox *hideOnDefaultCheckbox = NULL;
+static uiCheckbox *hideOutsideGameCheckbox = NULL;
 static uiButton *btnReset = NULL;
 static uiButton *btnSave = NULL;
 static uiTableModelHandler tableHandler;
@@ -121,6 +123,10 @@ static const char* fontNames[N_FONTS] = {
     "Wingdings"
 };
 
+
+static void updateWidgetVisibility(WidgetObj *obj, bool isGameRunning);
+static void updateAllWidgetsVisibility();
+
 // Table model functions
 static int tableModelNumColumns(uiTableModelHandler *mh, uiTableModel *m) {
     (void)mh;
@@ -164,7 +170,8 @@ static void tableModelSetCellValue(uiTableModelHandler *mh, uiTableModel *m, int
     if (column == 0) {
         bool checked = uiTableValueInt(val) != 0;
         widgets[row]->status.enabled = checked;
-        checked ? widgetShow(widgets[row]->widget) : widgetHide(widgets[row]->widget);
+        State *state = controllerGetState(controller);
+        updateWidgetVisibility(widgets[row], gameRunning(&state->activeGame));
         uiControlEnable(uiControl(btnSave));
     }
 }
@@ -214,10 +221,26 @@ static uiAttributedString *buildHintAttributedString() {
 static void resetWidgetStatus(WidgetObj *obj) {
     obj->status.fontIndex = 0;
     obj->status.color = colorCreate(255, 255, 255, 255);
-    obj->status.hideOnDefault = false;
+    obj->status.hideOutsideGame = false;
     obj->status.resetable = false;
     widgetSetFont(obj->widget,fontNames[obj->status.fontIndex]);
     widgetSetTextColor(obj->widget, obj->status.color);
+}
+
+static void updateWidgetVisibility(WidgetObj *obj, bool isGameRunning) {
+    if (!obj->status.enabled || (obj->status.hideOutsideGame && !isGameRunning)) {
+        widgetHide(obj->widget);
+    } else {
+        widgetShow(obj->widget);
+    }
+}
+
+static void updateAllWidgetsVisibility() {
+    State *state = controllerGetState(controller);
+    bool isGameRunning = gameRunning(&state->activeGame);
+    for (int i = 0; i < N_WIDGETS; i++) {
+        updateWidgetVisibility(widgets[i], isGameRunning);
+    }
 }
 
 static WidgetObj *createWidgetObj(WidgetName widgetName, Widget *widget) {
@@ -228,7 +251,7 @@ static WidgetObj *createWidgetObj(WidgetName widgetName, Widget *widget) {
     obj->status.enabled = false;
     obj->status.fontIndex = 0;
     obj->status.color = colorCreate(255, 255, 255, 255);
-    obj->status.hideOnDefault = false;
+    obj->status.hideOutsideGame = false;
     obj->status.resetable = false;
     obj->widget = widget;
     widgets[widgetName] = obj; 
@@ -239,7 +262,7 @@ static void updateWidgetObj(WidgetObj *obj, WidgetProps props) {
     obj->status.enabled = props.enabled;
     obj->status.fontIndex = props.fontIndex;
     obj->status.color = props.color;
-    obj->status.hideOnDefault = props.hideOnDefault;
+    obj->status.hideOutsideGame = props.hideOutsideGame;
     obj->status.resetable = props.resetable;
     obj->status.rect = props.rect;
     obj->status.fontSize = props.fontSize;
@@ -247,7 +270,6 @@ static void updateWidgetObj(WidgetObj *obj, WidgetProps props) {
     widgetSetTextColor(obj->widget, obj->status.color);
     widgetSetPosition(obj->widget, obj->status.rect);
     widgetSetFontSize(obj->widget, obj->status.fontSize);
-    props.enabled ? widgetShow(obj->widget) : widgetHide(obj->widget);
 }
 
 
@@ -261,7 +283,7 @@ static void onTableSelectionChanged(uiTable *table, void *data) {
     WidgetObj *obj = widgets[selectedWidgetIndex];
     uiComboboxSetSelected(widgetFontCombobox, obj->status.fontIndex);
     setColorButton(widgetColorBtn, obj->status.color);
-    uiCheckboxSetChecked(hideOnDefaultCheckbox, obj->status.hideOnDefault);
+    uiCheckboxSetChecked(hideOutsideGameCheckbox, obj->status.hideOutsideGame);
     if (obj->status.resetable) uiControlEnable(uiControl(btnReset));
     else uiControlDisable(uiControl(btnReset));
     if (selection) {
@@ -301,13 +323,16 @@ static void onColorChanged(uiColorButton *button, void *data) {
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     (void)checkbox;
     (void)data;
-    // TODO: Show/Hide on update()
     if (selectedWidgetIndex >= 0) {
-        bool hideOnDefault = uiCheckboxChecked(hideOnDefaultCheckbox);
-        widgets[selectedWidgetIndex]->status.hideOnDefault = hideOnDefault;
+        bool hideOutsideGame = uiCheckboxChecked(hideOutsideGameCheckbox);
+        widgets[selectedWidgetIndex]->status.hideOutsideGame = hideOutsideGame;
         widgets[selectedWidgetIndex]->status.resetable = true;
         uiControlEnable(uiControl(btnReset));
         uiControlEnable(uiControl(btnSave));
+        
+        // Update visibility using centralized logic
+        State *state = controllerGetState(controller);
+        updateWidgetVisibility(widgets[selectedWidgetIndex], gameRunning(&state->activeGame));
     }
 }
 
@@ -319,7 +344,7 @@ static void onResetButtonClick(uiButton *button, void *data) {
     controllerResetWidgetConfig(controller, selectedWidgetIndex);
     uiComboboxSetSelected(widgetFontCombobox, 0);
     setColorButton(widgetColorBtn, colorCreate(255, 255, 255, 255));
-    uiCheckboxSetChecked(hideOnDefaultCheckbox, false);
+    uiCheckboxSetChecked(hideOutsideGameCheckbox, false);
     uiControlDisable(uiControl(btnReset));
     uiControlEnable(uiControl(btnSave));
     obj->status.resetable = false;
@@ -333,7 +358,7 @@ static void onSaveButtonClick(uiButton *button, void *data) {
         config->widgets[i].enabled = widgets[i]->status.enabled;
         strcpy(config->widgets[i].font, fontNames[widgets[i]->status.fontIndex]);
         config->widgets[i].textColor = widgets[i]->status.color;
-        config->widgets[i].hideOnDefault = widgets[i]->status.hideOnDefault;
+        config->widgets[i].hideOutsideGame = widgets[i]->status.hideOutsideGame;
         config->widgets[i].rect = widgetGetPosition(widgets[i]->widget);
         config->widgets[i].fontSize = widgetGetFontSize(widgets[i]->widget);
     }
@@ -354,7 +379,7 @@ static WidgetProps getWidgetPropsFromConfig(int index) {
         widgetConfig.enabled,
         fontIndex,
         widgetConfig.textColor,
-        widgetConfig.hideOnDefault,
+        widgetConfig.hideOutsideGame,
         false,
         widgetConfig.rect,
         widgetConfig.fontSize,
@@ -367,6 +392,7 @@ static void init() {
         WidgetProps props = getWidgetPropsFromConfig(i);
         updateWidgetObj(widgets[i], props);
     }
+    updateAllWidgetsVisibility();
     uiComboboxSetSelected(widgetFontCombobox, widgets[WIDGET_NAME_TIMER]->status.fontIndex);
     setColorButton(widgetColorBtn, widgets[WIDGET_NAME_TIMER]->status.color);
     selectedWidgetIndex = 0;
@@ -423,7 +449,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     
     colorLabel = uiNewLabel("Color ");
     widgetColorBtn = uiNewColorButton();
-    hideOnDefaultCheckbox = uiNewCheckbox(" Hide on Default");
+    hideOutsideGameCheckbox = uiNewCheckbox(" Hide Outside Game");
     btnReset = uiNewButton("Reset");
 
     uiControlDisable(uiControl(btnReset));
@@ -432,7 +458,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiGridAppend(customizationGrid, uiControl(widgetFontCombobox),      1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(customizationGrid, uiControl(colorLabel),              0, 1, 1, 1, 0, uiAlignStart, 0, uiAlignCenter);
     uiGridAppend(customizationGrid, uiControl(widgetColorBtn),          1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(customizationGrid, uiControl(hideOnDefaultCheckbox),   0, 2, 2, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(customizationGrid, uiControl(hideOutsideGameCheckbox), 0, 2, 2, 1, 1, uiAlignFill, 0, uiAlignFill);
     
     
     hintText = buildHintAttributedString();
@@ -448,7 +474,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiComboboxOnSelected(widgetFontCombobox, onFontChanged, NULL);
     uiColorButtonOnChanged(widgetColorBtn, onColorChanged, NULL);
-    uiCheckboxOnToggled(hideOnDefaultCheckbox, onCheckboxToggled, NULL);
+    uiCheckboxOnToggled(hideOutsideGameCheckbox, onCheckboxToggled, NULL);
     uiButtonOnClicked(btnReset, onResetButtonClick, NULL);
 
     uiBoxAppend(mainBox, uiControl(leftBox), 1);
@@ -474,6 +500,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     createWidgetObj(WIDGET_NAME_ENTITIES, entitiesWidgetCreate(&(activeGame->currentEntities), &(activeGame->maxEntities)));
     cache = mapCreate();
     mapPutBool(cache, WIDGET_TRANSFORMING, false);
+    mapPutBool(cache, WIDGET_GAME_WAS_RUNNING, false);
     init();
 
     return uiControl(outerBox);
@@ -514,6 +541,16 @@ static void update() {
         configSave(config);
     }
     mapPutBool(cache, WIDGET_TRANSFORMING, isTransformingNow);
+
+    // Dynamic show/hide based on game state changes
+    State *state = controllerGetState(controller);
+    bool isGameRunning = gameRunning(&state->activeGame);
+    bool wasGameRunning = mapGetBool(cache, WIDGET_GAME_WAS_RUNNING);
+    
+    if (isGameRunning != wasGameRunning) {
+        updateAllWidgetsVisibility();
+        mapPutBool(cache, WIDGET_GAME_WAS_RUNNING, isGameRunning);
+    }
 }
 
 
@@ -545,9 +582,9 @@ Color uiWidgetsGetTextColor(int index) {
     return widgets[index]->status.color;
 }
 
-bool uiWidgetsIsHideOnDefaultChecked(int index) {
+bool uiWidgetsIsHideOutsideGameChecked(int index) {
     if (index < 0 || index >= N_WIDGETS) return false;
-    return widgets[index]->status.hideOnDefault;
+    return widgets[index]->status.hideOutsideGame;
 }
 
 bool uiWidgetsIsSavable() {

@@ -51,7 +51,7 @@ typedef struct {
     bool enabled;
     char font[256];
     Color textColor;
-    bool hideOnDefault;
+    bool hideOutsideGame;
     // Non-reseteable props
     Rect rect;
     int fontSize;

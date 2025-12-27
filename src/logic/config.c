@@ -135,19 +135,19 @@ static bool configLoad(Config *config) {
         char keyEnabled[128];
         char keyFont[128];
         char keyTextColor[128];
-        char keyHideOnDefault[128];
+        char keyHideOutsideGame[128];
         char keyRect[128];
         char keyFontSize[128];
         snprintf(keyEnabled, sizeof(keyEnabled), "Widgets:%sEnabled", uiWidgetsGetName(i));
         snprintf(keyFont, sizeof(keyFont), "Widgets:%sFont", uiWidgetsGetName(i));
         snprintf(keyTextColor, sizeof(keyTextColor), "Widgets:%sTextColor", uiWidgetsGetName(i));
-        snprintf(keyHideOnDefault, sizeof(keyHideOnDefault), "Widgets:%sHideOnDefault", uiWidgetsGetName(i));
+        snprintf(keyHideOutsideGame, sizeof(keyHideOutsideGame), "Widgets:%sHideOutsideGame", uiWidgetsGetName(i));
         snprintf(keyRect, sizeof(keyRect), "Widgets:%sRect", uiWidgetsGetName(i));
         snprintf(keyFontSize, sizeof(keyFontSize), "Widgets:%sFontSize", uiWidgetsGetName(i));
         config->widgets[i].enabled = iniparser_getboolean(dictionary, keyEnabled, config->widgets[i].enabled);
         strcpy(config->widgets[i].font, iniparser_getstring(dictionary, keyFont, config->widgets[i].font));
         config->widgets[i].textColor = colorFromString(iniparser_getstring(dictionary, keyTextColor, COLOR_INI_DEFAULT));
-        config->widgets[i].hideOnDefault = iniparser_getboolean(dictionary, keyHideOnDefault, config->widgets[i].hideOnDefault);
+        config->widgets[i].hideOutsideGame = iniparser_getboolean(dictionary, keyHideOutsideGame, config->widgets[i].hideOutsideGame);
         config->widgets[i].rect = rectFromString(iniparser_getstring(dictionary, keyRect, RECT_INI_DEFAULT));
         config->widgets[i].fontSize = iniparser_getint(dictionary, keyFontSize, config->widgets[i].fontSize);
     }
@@ -244,19 +244,19 @@ bool configSave(Config *config) {
         char keyEnabled[128];
         char keyFont[128];
         char keyTextColor[128];
-        char keyHideOnDefault[128];
+        char keyHideOutsideGame[128];
         char keyRect[128];
         char keyFontSize[128];
         snprintf(keyEnabled, sizeof(keyEnabled), "Widgets:%sEnabled", uiWidgetsGetName(i));
         snprintf(keyFont, sizeof(keyFont), "Widgets:%sFont", uiWidgetsGetName(i));
         snprintf(keyTextColor, sizeof(keyTextColor), "Widgets:%sTextColor", uiWidgetsGetName(i));
-        snprintf(keyHideOnDefault, sizeof(keyHideOnDefault), "Widgets:%sHideOnDefault", uiWidgetsGetName(i));
+        snprintf(keyHideOutsideGame, sizeof(keyHideOutsideGame), "Widgets:%sHideOutsideGame", uiWidgetsGetName(i));
         snprintf(keyRect, sizeof(keyRect), "Widgets:%sRect", uiWidgetsGetName(i));
         snprintf(keyFontSize, sizeof(keyFontSize), "Widgets:%sFontSize", uiWidgetsGetName(i));
         ret += iniparser_set(dictionary, keyEnabled, strfmt(valueBuffer, "%d", config->widgets[i].enabled));
         ret += iniparser_set(dictionary, keyFont, strfmt(valueBuffer, "%s", config->widgets[i].font));
         ret += iniparser_set(dictionary, keyTextColor, strfmt(valueBuffer, COLOR_INI_FMT, config->widgets[i].textColor.r, config->widgets[i].textColor.g, config->widgets[i].textColor.b, config->widgets[i].textColor.a));
-        ret += iniparser_set(dictionary, keyHideOnDefault, strfmt(valueBuffer, "%d", config->widgets[i].hideOnDefault));
+        ret += iniparser_set(dictionary, keyHideOutsideGame, strfmt(valueBuffer, "%d", config->widgets[i].hideOutsideGame));
         ret += iniparser_set(dictionary, keyRect, strfmt(valueBuffer, RECT_INI_FMT, config->widgets[i].rect.x, config->widgets[i].rect.y, config->widgets[i].rect.w, config->widgets[i].rect.h));
         ret += iniparser_set(dictionary, keyFontSize, strfmt(valueBuffer, "%d", config->widgets[i].fontSize));
     }
@@ -360,7 +360,7 @@ void configResetWidget(Config *config, int index) {
     widget.enabled = false;
     strcpy(widget.font, "Digital-7 Mono");
     widget.textColor = colorCreate(255, 255, 255, 255);
-    widget.hideOnDefault = false;    
+    widget.hideOutsideGame = false;    
     config->widgets[index] = widget;
 }
 
