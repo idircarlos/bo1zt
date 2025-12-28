@@ -1,4 +1,5 @@
 #include "logic/command/graphics.h"
+#include "controller/controller_internal.h"
 #include "logic/cheat.h"
 #include "logic/cheat/manager.h"
 #include "logic/cheat/manager/actions.h"
@@ -6,12 +7,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static Server *server;
 static Controller *controller;
+static Server *server;
 
-void commandGraphicsInit(Server *serverInstance, Controller *controllerInstance) {
-    server = serverInstance;
+
+void commandGraphicsInit(Controller *controllerInstance) {
     controller = controllerInstance;
+    server = _controllerGetServer(controller);
 }
 
 static bool toggle(CheatName cheat) {

@@ -3,8 +3,7 @@
 
 #include "logic/command.h"
 
-// Forward declaration for API compatibility
-typedef struct Server Server;
+typedef struct Controller Controller;
 
 void commandHacksInit(Controller *controller);
 

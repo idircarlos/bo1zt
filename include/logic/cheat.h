@@ -210,14 +210,14 @@ typedef struct {
 } RoundCheat;
 
 typedef struct {
-    // Read-only. We only want to read from these addresse
+    // Level info
     uintptr_t levelName;
     uintptr_t levelElapsed;
     uintptr_t movementSpeed;
+    // Game info
     uintptr_t isZombiesGameOngoingOffset;
     uintptr_t isZombiesGamePausedOffset;
     uintptr_t nResetsOffset;
-    uintptr_t lastChatMessage;
     // Claymore count
     uintptr_t entityCountOffset;
     uintptr_t entityBaseOffset;
@@ -226,6 +226,8 @@ typedef struct {
     uintptr_t maxSnapshotEntitiesOffset;
     // Chat status
     uintptr_t chatStatusOffset;
+    // Chat input buffer - We write in this address
+    uintptr_t chatInputBufferOffset;
 } GameCheat;
 
 typedef struct {

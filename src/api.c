@@ -173,6 +173,11 @@ bool apiIsChatOpen(Api *api) {
     return rawApiIsChatOpen(api->raw);
 }
 
+bool apiWriteToChatInput(Api *api, const char *text) {
+    if (!api) return false;
+    return rawApiWriteToChatInput(api->raw, text);
+}
+
 // GSC backend forwards
 
 bool apiAddPerks(Api *api, List *perks) {

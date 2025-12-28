@@ -1,9 +1,12 @@
 #include "gui/binds.h"
+#include "controller.h"
 #include "gui/binds/keymap.h"
 #include "gui/binds/colors.h"
 #include "gui/binds/layout.h"
 #include "logger.h"
 #include "logic/command.h"
+#include "logic/command/manager.h"
+#include "controller/controller_internal.h"
 #include <ui.h>
 #include <windows.h>
 #include <string.h>
@@ -31,6 +34,7 @@ static KeyBind keyBinds[MAX_KEYS];
 static int keyBindCount = 0;
 
 static Controller *controller;
+static CommandManager *commandManager;
 static uiFlexBox *flexBox;
 static uiEntry *entryCommand;
 static uiButton *btnReset;
@@ -103,7 +107,7 @@ static void executeCommands(const char *commandString) {
         }
         
         if (cmd[0] != '\0') {
-            Command builtCmd = commandBuild(cmd);
+            Command builtCmd = commandBuild(commandManager, cmd);
             if (builtCmd.name != COMMAND_NONE && builtCmd.name != COMMAND_UNKNOWN) {
                 commandHandle(builtCmd);
             }
@@ -472,9 +476,13 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 }
 
 static void update(void) {
+    commandManager = _controllerGetCommandManager(controller);
+    // Update command history polling for chat arrow keys
+    commandManagerUpdate(commandManager);
+    
     if (!controller || !controllerIsGameAttached(controller)) return;
     if (!controllerIsGameWindowFocused(controller)) return;
-    if (controllerIsChatOpen(controller)) return;
+    if (controllerIsChatOpen(controller) || controllerIsZombiesGamePaused(controller)) return;
     
     bool processedThisFrame[MAX_KEYS] = {false};
     

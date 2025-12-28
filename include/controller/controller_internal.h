@@ -10,6 +10,7 @@
 #include "logic/state.h"
 #include "logic/config.h"
 #include "logic/cheat/manager.h"
+#include "logic/command/manager.h"
 
 struct Controller {
     Process *process;
@@ -19,11 +20,13 @@ struct Controller {
     State *state;
     Config *config;
     CheatManager *cheatManager;
+    CommandManager *commandManager;
 };
 
 Api *_controllerGetApi(Controller *controller);
 GSC *_controllerGetGsc(Controller *controller);
 Server *_controllerGetServer(Controller *controller);
 CheatManager *_controllerGetCheatManager(Controller *controller);
+CommandManager *_controllerGetCommandManager(Controller *controller);
 
 #endif // CONTROLLER_INTERNAL_H_

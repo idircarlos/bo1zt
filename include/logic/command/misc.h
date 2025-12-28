@@ -2,10 +2,10 @@
 #define COMMAND_MISC_H_
 
 #include "logic/command.h"
-#include "logic/server.h"
-#include "api.h"
 
-void commandMiscInit(Server *server, Controller *controller, Api *api);
+typedef struct Controller Controller;
+
+void commandMiscInit(Controller *controller);
 
 bool commandGiveHandle(Command command);
 bool commandTpHandle(Command command);

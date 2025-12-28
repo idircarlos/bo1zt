@@ -23,11 +23,13 @@ bool controllerDetachGame(Controller *controller);
 bool controllerIsGameRunning(Controller *controller);
 bool controllerIsTimRunning(Controller *controller);
 bool controllerIsZombiesGameOngoing(Controller *controller);
+bool controllerIsZombiesGamePaused(Controller *controller);
 void controllerWaitUntilGameCloses(Controller *controller); // This method should be called from a different thread to not block the main thread (UI)
 bool controllerIsGameWindowFocused(Controller *controller);
 bool controllerIsGameWindowAttached(Controller *controller);
 bool controllerIsGameReady(Controller *controller);
 bool controllerIsChatOpen(Controller *controller);
+bool controllerWriteToChatInput(Controller *controller, const char *text);
 int controllerGetLevelElapsedTime(Controller *controller);
 float controllerGetMovementSpeed(Controller *controller);
 Level controllerGetLevelName(Controller *controller);

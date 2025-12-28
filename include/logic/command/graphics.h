@@ -2,9 +2,10 @@
 #define COMMAND_GRAPHICS_H_
 
 #include "logic/command.h"
-#include "logic/server.h"
 
-void commandGraphicsInit(Server *server, Controller *controller);
+typedef struct Controller Controller;
+
+void commandGraphicsInit(Controller *controller);
 
 bool commandFovHandle(Command command);
 bool commandFovscaleHandle(Command command);

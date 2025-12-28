@@ -3,6 +3,7 @@
 #include "logic/cheat.h"
 #include "logic/cheat/manager.h"
 #include "logic/cheat/manager/handlers.h"
+#include "logic/command/manager.h"
 #include "logic/config.h"
 #include "logic/game.h"
 #include "logic/game/level.h"
@@ -26,8 +27,8 @@ Controller* controllerCreate() {
     controller->server = NULL;
     controller->gsc = NULL;
     controller->cheatManager = NULL;
+    controller->commandManager = NULL;
     controllerAttachGame(controller);
-    controller->cheatManager = cheatManagerCreate(controller);
     return controller;
 }
 
@@ -49,6 +50,11 @@ bool controllerIsTimRunning(Controller *controller) {
 bool controllerIsZombiesGameOngoing(Controller *controller) {
     (void)controller;
     return apiIsZombiesGameOngoing(controller->api);
+}
+
+bool controllerIsZombiesGamePaused(Controller *controller) {
+    (void)controller;
+    return apiIsZombiesGamePaused(controller->api);
 }
 
 bool controllerIsGameAttached(Controller *controller) {
@@ -79,6 +85,8 @@ bool controllerAttachGame(Controller *controller) {
     if (!controller->api) controller->api = apiCreate(controller);
     if (!controller->server) controller->server = serverCreate(controller);
     if (!controller->gsc) controller->gsc = gscCreate(controller->server);
+    controller->cheatManager = cheatManagerCreate(controller);
+    controller->commandManager = commandManagerCreate(controller);
     controller->state->isGameAttached = controllerIsGameAttached(controller);
     controller->state->isTimRunning = controllerIsTimRunning(controller);
     controller->state->isZombiesGameOngoing = controllerIsZombiesGameOngoing(controller);
@@ -137,6 +145,12 @@ bool controllerIsChatOpen(Controller *controller) {
     if (!controller) return false;
     if (!controller->process) return false;
     return apiIsChatOpen(controller->api);
+}
+
+bool controllerWriteToChatInput(Controller *controller, const char *text) {
+    if (!controller) return false;
+    if (!controller->process) return false;
+    return apiWriteToChatInput(controller->api, text);
 }
 
 int controllerGetLevelElapsedTime(Controller *controller) {
@@ -413,4 +427,9 @@ CheatManager *controllerGetCheatManager(Controller *controller) {
 CheatManager *_controllerGetCheatManager(Controller *controller) {
     if (!controller) return NULL;
     return controller->cheatManager;
+}
+
+CommandManager *_controllerGetCommandManager(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->commandManager;
 }

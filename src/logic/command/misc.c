@@ -1,4 +1,5 @@
 #include "logic/command/misc.h"
+#include "controller/controller_internal.h"
 #include "logic/cheat.h"
 #include "logic/game/perk.h"
 #include "logic/game/level.h"
@@ -13,14 +14,14 @@
 #include <string.h>
 #include <math.h>
 
-static Server *server;
 static Controller *controller;
+static Server *server;
 static Api *api;
 
-void commandMiscInit(Server *serverInstance, Controller *controllerInstance, Api *apiInstance) {
-    server = serverInstance;
+void commandMiscInit(Controller *controllerInstance) {
     controller = controllerInstance;
-    api = apiInstance;
+    server = _controllerGetServer(controller);
+    api =_controllerGetApi(controller);
 }
 
 static Perk getPerkFromAbbreviation(const char *perkAbbreviation) {

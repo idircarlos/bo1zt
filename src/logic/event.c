@@ -1,4 +1,5 @@
 #include "logic/event.h"
+#include "logic/command/manager.h"
 #include "logic/gsc.h"
 #include "controller.h"
 #include "controller/controller_internal.h"
@@ -14,6 +15,7 @@
 
 static Controller *controller;
 static GSC *gsc;
+static CommandManager *commandManager;
 
 static bool pendingSpecialRound = false;
 
@@ -28,7 +30,7 @@ static bool _eventValidIDUpdate(int eventId, int *pEventValue);
 void eventInit(Controller *controllerInstance) {
     controller = controllerInstance;
     gsc = _controllerGetGsc(controller);
-    commandInit(controller);
+    commandManager = _controllerGetCommandManager(controller);
 }
 
 Event eventPoll() {
@@ -52,7 +54,7 @@ bool eventHandle(Event event) {
 }
 
 static bool eventHandleChatMessage(Event event) {
-    Command command = commandBuild(event.data.chat.message);
+    Command command = commandBuild(commandManager, event.data.chat.message);
     return commandHandle(command);
 }
 

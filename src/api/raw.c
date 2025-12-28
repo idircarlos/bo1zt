@@ -1396,3 +1396,25 @@ bool rawApiIsChatOpen(RawApi *rawApi) {
     }
     return chatStatus == 0x20; // 0x20 -> Chat is opened
 }
+
+bool rawApiWriteToChatInput(RawApi *rawApi, const char *text) {
+    if (!rawApi || !rawApi->controller) {
+        return false;
+    }
+    
+    Process *process = controllerGetProcess(rawApi->controller);
+    if (!process) {
+        return false;
+    }
+
+    if (!rawApiIsChatOpen(rawApi)) {
+        LOG_WARN("Writting to Chat Input when chat is not open shouldn't happen!\n");
+        return false;
+    }
+
+    char buffer[256] = {0};
+    if (text) {
+        strncpy(buffer, text, sizeof(buffer) - 1);
+    }
+    return processWrite(process, GAME_CHEAT.chatInputBufferOffset, buffer, sizeof(buffer));
+}
