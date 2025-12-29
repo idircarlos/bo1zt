@@ -1,3 +1,4 @@
+#include maps\_zombiemode_utility; 
 #include common_scripts\utility;
 
 init_() {
@@ -21,9 +22,14 @@ onPlayerSpawned() {
 onZombieKilled() {
     self endon("disconnect");
     self waittill("spawned_player");
+    round_zombies_left = 0;
     while(1) {
-        level waittill("zom_kill", zombie);
-        self notify("bo1zt::Level::TotalZombiesKilled", level.total_zombies_killed);
+        temp_zombies_left = get_enemy_count() + level.zombie_total; 
+        if (round_zombies_left != temp_zombies_left) {
+            round_zombies_left = temp_zombies_left;
+            self notify("bo1zt::Level::RoundZombiesLeft", round_zombies_left);
+        }
+        wait 0.05;
     }
 }
 

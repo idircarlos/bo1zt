@@ -16,7 +16,7 @@ void roundInit(Round *round, int number, int players) {
 bool roundStart(Round *round, int startTimestamp, bool special) {
     round->startTimestamp = startTimestamp;
     round->isSpecial = special;
-    round->zombiesLeft = roundZombieCount(round); // Not computing dogs/monkeys since I wasn't able to track their kills
+    round->zombiesLeft = special ? 0 : roundZombieCount(round); // We are not computing for dogs/monkeys rounds, instead it is being overriden from a custom bo1zt event.
     round->drops = 0;
     return true;
 }

@@ -104,10 +104,13 @@ static bool eventHandleVMNotify(Event event) {
     if (strcmp(event.data.vmNotify.eventName, "power_on") == 0) {
         return gamePowerOn(game, event.timestamp);
     }
-    if (strncmp(event.data.vmNotify.eventName, "bo1zt::Level::TotalZombiesKilled", 32) == 0) {
-        int currentZombies = game->totalZombies;
-        int totalZombiesKilled = event.data.vmNotify.eventValue;
-        int zombiesKilledThisFrame = totalZombiesKilled - currentZombies;
+    if (strncmp(event.data.vmNotify.eventName, "bo1zt::Level::RoundZombiesLeft", 30) == 0) {
+        int currentRoundZombiesLeft = game->currentRound.zombiesLeft;
+        int roundZombiesLeft = event.data.vmNotify.eventValue;
+        if (currentRoundZombiesLeft == 0) {
+            game->currentRound.zombiesLeft = roundZombiesLeft;
+        }
+        int zombiesKilledThisFrame = currentRoundZombiesLeft - roundZombiesLeft;
         for (int i = 0; i < zombiesKilledThisFrame; i++) {
             gameZombieKilled(game);
         }
