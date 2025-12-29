@@ -24,7 +24,8 @@ Level levelGetFromId(const char *levelId) {
 bool levelIsMonitored(Level level) {
     switch (level) {
         case LEVEL_KINO_DER_TOTEN: return true;
-        case LEVEL_MAIN_MENU: return false;
+        case LEVEL_FIVE: return true;
+        case LEVEL_ASCENSION: return true;
         default: return false;
     }
 }
