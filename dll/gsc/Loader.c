@@ -40,6 +40,18 @@ static uint8_t modDir[GSC_SIZE_PATH];
 static uint8_t entryFile[GSC_SIZE_PATH + 16];
 static int funcHandle = 0;
 
+// Order matters since scripts depends on others!
+static const char* gscScripts[] = {
+    "api/static_box.gsc",
+    "api/perks.gsc",
+    "api.gsc",
+    "listeners.gsc",
+    "workers.gsc",
+    "main.gsc",
+};
+
+static const size_t gscScriptsCount = sizeof(gscScripts) / sizeof(gscScripts[0]);
+
 // Aux
 static void stripExt(uint8_t* fname) {
     uint8_t* end = fname + strlen((char*)fname);
@@ -73,93 +85,74 @@ static void __cdecl Thread_Timer_hk(uint8_t a1, int a2, int a3, int a4) {
 
 // Load custom GSC script
 static int32_t __cdecl Scr_LoadScript_hk(int32_t scriptInstance, const uint8_t* scriptName) {
-    uint8_t scriptFile[GSC_SIZE_PATH + 16];
+    LOG_INFO("[GSC] Loading script %s", scriptName);
+    int result = Scr_LoadScript(scriptInstance, scriptName);
+
     uint8_t mapnameBuffer[GSC_SIZE_PATH];
-    uint8_t* mapname = NULL;
-    uint8_t* sourceBuffer = NULL;
-    uint8_t* dataBuffer = NULL;
-    uint8_t* compressBuffer = NULL;
-    uint32_t gscSize = 0;
-    int cmpStatus = 0;
-    RawFileData* fileData = NULL;
-    mz_ulong gscCompressSize = 0;
-    mz_ulong dataSize = 0;
-    XAsset entry = { 0 };
-    int result = 0;
+    uint8_t* mapname = Dvar_FindVar((uint8_t*)"mapname");
 
-    result = Scr_LoadScript(scriptInstance, scriptName);
-
-    mapname = Dvar_FindVar((uint8_t*)"mapname");
     sprintf((char*)mapnameBuffer, "maps/%s", mapname);
 
-    if (strcmp((char*)mapnameBuffer, (char*)scriptName) == 0 
-        && strcmp((char*)mapnameBuffer, "maps/frontend") != 0) {
-        
-        FILE* gscScript = fopen((char*)entryFile, "rb");
-        if (gscScript) {
+    if (strcmp((char*)mapnameBuffer, (char*)scriptName) == 0 && strcmp((char*)mapnameBuffer, "maps/frontend") != 0) {
+        for (int i = 0; i < gscScriptsCount; i++) {
+            snprintf((char*)entryFile, sizeof(entryFile), "%s/%s", modDir, gscScripts[i]);
+
+            if (!FileExists((char*)entryFile)) {
+                LOG_WARN("[GSC] Script not found: %s", entryFile);
+                continue;
+            }
+
+            LOG_INFO("[GSC] Loading bo1zt script: %s", entryFile);
+
+            FILE* gscScript = fopen((char*)entryFile, "rb");
+            if (!gscScript) continue;
+
             fseek(gscScript, 0, SEEK_END);
-            gscSize = ftell(gscScript);
+            uint32_t gscSize = ftell(gscScript);
             fseek(gscScript, 0, SEEK_SET);
 
-            sourceBuffer = (uint8_t*)malloc((sizeof(uint8_t) * gscSize) + 1);
-            if (!sourceBuffer) {
-                LOG_ERROR("[GSC] Failed allocating memory for source");
-                fclose(gscScript);
-                return result;
-            }
+            uint8_t* sourceBuffer = (uint8_t*)malloc(gscSize + 1);
+            if (!sourceBuffer) { fclose(gscScript); continue; }
 
-            fread(sourceBuffer, sizeof(uint8_t), gscSize, gscScript);
+            fread(sourceBuffer, 1, gscSize, gscScript);
             sourceBuffer[gscSize] = 0;
 
-            gscCompressSize = mz_compressBound(gscSize + 1);
-            dataBuffer = (uint8_t*)malloc((sizeof(uint8_t) * gscCompressSize) + sizeof(RawFileData));
-            if (!dataBuffer) {
-                LOG_ERROR("[GSC] Failed allocating memory for data");
-                fclose(gscScript);
-                free(sourceBuffer);
-                return result;
-            }
+            mz_ulong gscCompressSize = mz_compressBound(gscSize + 1);
+            uint8_t* dataBuffer = (uint8_t*)malloc(gscCompressSize + sizeof(RawFileData));
+            if (!dataBuffer) { free(sourceBuffer); fclose(gscScript); continue; }
 
-            compressBuffer = (uint8_t*)(dataBuffer + sizeof(RawFileData));
-            cmpStatus = mz_compress(compressBuffer, &gscCompressSize, sourceBuffer, gscSize + 1);
+            uint8_t* compressBuffer = (uint8_t*)(dataBuffer + sizeof(RawFileData));
+            int cmpStatus = mz_compress(compressBuffer, &gscCompressSize, sourceBuffer, gscSize + 1);
             free(sourceBuffer);
 
             if (cmpStatus == MZ_OK) {
-                fileData = (RawFileData*)dataBuffer;
+                RawFileData* fileData = (RawFileData*)dataBuffer;
                 fileData->compressedSize = gscCompressSize;
                 fileData->deflatedSize = gscSize + 1;
 
-                dataSize = gscCompressSize + sizeof(RawFileData);
+                XAsset entry = { 0 };
                 entry.type = ASSET_TYPE_RAWFILE;
                 entry.header.rawFile = (RawFile*)malloc(sizeof(RawFile));
-
-                if (!entry.header.rawFile) {
-                    LOG_ERROR("[GSC] Failed allocating memory for rawfile");
-                    fclose(gscScript);
-                    free(dataBuffer);
-                    return result;
-                }
-
                 entry.header.rawFile->buffer = dataBuffer;
-                entry.header.rawFile->len = dataSize;
+                entry.header.rawFile->len = gscCompressSize + sizeof(RawFileData);
                 entry.header.rawFile->name = entryFile;
 
-                LOG_INFO("[GSC] Linking asset %s", entryFile);
                 DB_LinkXAssetEntry(&entry, 0);
 
+                uint8_t scriptFile[GSC_SIZE_PATH];
                 snprintf((char*)scriptFile, sizeof(scriptFile), "%s", entryFile);
                 stripExt(scriptFile);
+
                 Scr_LoadScript(0, scriptFile);
 
                 free(dataBuffer);
                 free(entry.header.rawFile);
 
-                LOG_INFO("[GSC] Retrieving function handle");
-                funcHandle = Scr_GetFunctionHandle(0, scriptFile, (uint8_t*)"main");
-                if (funcHandle) {
-                    LOG_INFO("[GSC] main @ %p", (void*)(uintptr_t)funcHandle);
-                } else {
-                    LOG_ERROR("[GSC] Failed to retrieve main handle");
+                if (strcmp((char*)scriptFile, "bo1zt/gsc/main") == 0) {
+                    funcHandle = Scr_GetFunctionHandle(0, scriptFile, (uint8_t*)"main");
+                    if (funcHandle) {
+                        LOG_INFO("[GSC] main handle for %s @ %p", scriptFile, (void*)(uintptr_t)funcHandle);
+                    }
                 }
             }
             fclose(gscScript);
@@ -298,7 +291,7 @@ static DWORD WINAPI GSCInitThread(LPVOID lpParam) {
     LOG_INFO("[GSC] Assign_Hotfix detour applied");
     cdl_jmp_dbg(&assignHotfix);
     LOG_INFO("[GSC] DB_LinkXAssetEntry detour applied");
-    //cdl_jmp_dbg(&linkAsset);
+    cdl_jmp_dbg(&linkAsset);
     LOG_INFO("[GSC] Scr_LoadScript detour applied");
     cdl_jmp_dbg(&loadScript);
     LOG_INFO("[GSC] Scr_LoadGameType detour applied");
