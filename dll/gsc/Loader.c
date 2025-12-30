@@ -57,6 +57,7 @@ static const char* gscScripts[] = {
     "api/box.gsc",
     "api/perks.gsc",
     "api/music.gsc",
+    "api/level.gsc",
     "api.gsc",
     "listeners.gsc",
     "workers.gsc",
