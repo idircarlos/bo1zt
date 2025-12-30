@@ -23,7 +23,7 @@ static const char* (__cdecl *getEventNameById)(int, int) = (const char* (__cdecl
 
 // Event names
 static const char* eventNames[] = { "start_of_round", "end_of_round", "end_game", "dog_round_starting", "monkey_round", "thief_round", "power_on", "perk_bought",
-                                    "perk_lost", "powerup_grabbed", "powerup_dropped", "zom_kill",  "fade_introblack", "fade_in_complete", "chest_has_been_used" };
+                                    "perk_lost", "powerup_grabbed", "powerup_dropped",  "fade_introblack", "fade_in_complete", "chest_has_been_used" };
 static const int eventNamesCount = sizeof(eventNames) / sizeof(eventNames[0]);
 
 // Function prototypes
