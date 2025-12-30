@@ -42,11 +42,6 @@ bool controllerIsGameRunning(Controller *controller) {
     return processIsRunning(GAME_EXECUTABLE_NAME);
 }
 
-bool controllerIsTimRunning(Controller *controller) {
-    (void)controller;
-    return processIsRunning(TIM_EXECUTABLE_NAME);
-}
-
 bool controllerIsZombiesGameOngoing(Controller *controller) {
     (void)controller;
     return apiIsZombiesGameOngoing(controller->api);
@@ -88,7 +83,6 @@ bool controllerAttachGame(Controller *controller) {
     controller->cheatManager = cheatManagerCreate(controller);
     controller->commandManager = commandManagerCreate(controller);
     controller->state->isGameAttached = controllerIsGameAttached(controller);
-    controller->state->isTimRunning = controllerIsTimRunning(controller);
     controller->state->isZombiesGameOngoing = controllerIsZombiesGameOngoing(controller);
     controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
     controller->state->gameResets = apiGetGameResets(controller->api);
@@ -281,7 +275,6 @@ State *controllerGetState(Controller *controller) {
 
 void controllerUpdateState(Controller *controller) {
     if (!controller || !controller->state) return;
-    controller->state->isTimRunning = controllerIsTimRunning(controller);
     if (!controllerIsGameAttached(controller)) {
         stateGameClear(controller->state);
         return;

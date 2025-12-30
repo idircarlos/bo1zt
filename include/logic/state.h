@@ -7,7 +7,6 @@
 typedef struct State {
     Game activeGame;
     bool isGameAttached;
-    bool isTimRunning;
     bool isZombiesGameOngoing;
     bool isZombiesGamePaused;
     int gameResets;

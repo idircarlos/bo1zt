@@ -7,7 +7,6 @@
 #include "logic/config.h"
 
 #define GAME_EXECUTABLE_NAME "BlackOps.exe"
-#define TIM_EXECUTABLE_NAME "Black Ops TIM.exe"
 #define GAME_WINDOW_NAME_PREFIX "Call of Duty"
 #define DLL_NAME "bo1zt.dll"
 
@@ -21,7 +20,6 @@ bool controllerIsGameAttached(Controller *controller);
 bool controllerAttachGame(Controller *controller);
 bool controllerDetachGame(Controller *controller);
 bool controllerIsGameRunning(Controller *controller);
-bool controllerIsTimRunning(Controller *controller);
 bool controllerIsZombiesGameOngoing(Controller *controller);
 bool controllerIsZombiesGamePaused(Controller *controller);
 void controllerWaitUntilGameCloses(Controller *controller); // This method should be called from a different thread to not block the main thread (UI)

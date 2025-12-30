@@ -10,9 +10,8 @@ typedef struct CheatManager CheatManager;
 // Condition flags for cheat application
 typedef enum {
     CHEAT_COND_NONE = 0,
-    CHEAT_COND_NO_TIM = 1 << 0,           // TIM must not be running
-    CHEAT_COND_GAME_ONGOING = 1 << 1,     // Zombies game must be ongoing
-    CHEAT_COND_GAME_READY = 1 << 2,       // Black Ops game must be ready
+    CHEAT_COND_GAME_ONGOING = 1 << 0,     // Zombies game must be ongoing
+    CHEAT_COND_GAME_READY = 1 << 1,       // Black Ops game must be ready
 } CheatCondition;
 
 // Result of cheat operation

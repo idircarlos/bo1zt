@@ -22,7 +22,6 @@
 #define CLOSING_TEXT "Closing"
 
 #define CACHE_GAME_ATTACHED "GAME_ATTACHED"
-#define CACHE_TIM_RUNNING "TIM_RUNNING"
 #define CACHE_RESETS "RESETS"
 #define CACHE_OPENING_GAME "OPENING_GAME"
 #define CACHE_CLOSING_GAME "CLOSING_GAME"
@@ -48,16 +47,9 @@ static uiAttributedString *statusRunningText = NULL;
 static uiAttributedString *statusOpeningText = NULL;
 static uiAttributedString *statusClosingText = NULL;
 
-static uiArea *timArea = NULL;
-static uiAreaHandler timHandler;
-static uiAttributedString *timCurrentText = NULL;
-static uiAttributedString *timNotRunningText = NULL;
-static uiAttributedString *timRunningText = NULL;
-
 static uiLabel *statusLabel = NULL;
 static uiLabel *resetsLabel = NULL;
 static uiLabel *resetsNumLabel = NULL;
-static uiLabel *timLabel = NULL;
 static uiCheckbox *patchMovementCheckbox = NULL;
 static uiCheckbox *showFpsCheckbox = NULL;
 static uiLabel *hostnameLabel = NULL;
@@ -206,29 +198,6 @@ static void handlerStatusDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *
 
     uiLoadControlFont(&font);
     params.String = statusCurrentText;
-    params.DefaultFont = &font;
-    params.Width = p->AreaWidth;
-    params.Align = uiDrawTextAlignLeft;
-
-    layout = uiDrawNewTextLayout(&params);
-    uiDrawText(p->Context, layout, 0, -0.5);
-    uiDrawFreeTextLayout(layout);
-
-    uiFreeFontButtonFont(&font);
-}
-
-static void handlerTimDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
-    (void)a;
-    (void)area;
-    if (!timCurrentText)
-        return;
-
-    uiFontDescriptor font;
-    uiDrawTextLayoutParams params;
-    uiDrawTextLayout *layout;
-
-    uiLoadControlFont(&font);
-    params.String = timCurrentText;
     params.DefaultFont = &font;
     params.Width = p->AreaWidth;
     params.Align = uiDrawTextAlignLeft;
@@ -398,7 +367,6 @@ static void buildBinds() {
 static void init() {
     cache = mapCreate();
     mapPutBool(cache, CACHE_GAME_ATTACHED, false);
-    mapPutBool(cache, CACHE_TIM_RUNNING, false);
     mapPutInt(cache, CACHE_RESETS, 0);
     mapPutBool(cache, CACHE_OPENING_GAME, false);
     mapPutBool(cache, CACHE_CLOSING_GAME, false);
@@ -424,9 +392,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     statusOpeningText = buildInfoAttributedString(OPENING_TEXT, attrBlue, &statusHandler, handlerStatusDraw);
     statusClosingText = buildInfoAttributedString(CLOSING_TEXT, attrOrange, &statusHandler, handlerStatusDraw);
     statusCurrentText = statusNotRunningText;
-    timNotRunningText = buildInfoAttributedString(NOT_RUNNING_TEXT, attrRed, &timHandler, handlerTimDraw);
-    timRunningText = buildInfoAttributedString(RUNNING_TEXT, attrGreen, &timHandler, handlerTimDraw);
-    timCurrentText = timNotRunningText;
 
     // --- Game Group ---
     uiGroup *gameGroup = uiNewGroup("Game");
@@ -437,8 +402,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiGridSetPadded(grid, 1);
     statusLabel = uiNewLabel("Status");
     statusArea = uiNewArea(&statusHandler);
-    timLabel = uiNewLabel("TIM");
-    timArea = uiNewArea(&timHandler);
     resetsLabel = uiNewLabel("Resets");
     resetsNumLabel = uiNewLabel("0");
     hostnameLabel = uiNewLabel("Hostname");
@@ -472,8 +435,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiGridAppend(grid, uiControl(statusLabel),              0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(statusArea),               1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    //uiGridAppend(grid, uiControl(timLabel),                 0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    //uiGridAppend(grid, uiControl(timArea),                  1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(resetsLabel),              0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(resetsNumLabel),           1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(hostnameLabel),            0, 2, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
@@ -532,19 +493,6 @@ static void update() {
     } else if (mapGetBool(cache, CACHE_CLOSING_GAME)) {
         statusCurrentText = statusClosingText;
         uiAreaQueueRedrawAll(statusArea);
-    }
-    bool timRunning = state->isTimRunning;
-    if (timRunning != mapGetBool(cache, CACHE_TIM_RUNNING)) {
-        timCurrentText = timRunning ? timRunningText : timNotRunningText;
-        uiAreaQueueRedrawAll(timArea);
-        mapPutBool(cache, CACHE_TIM_RUNNING, timRunning);
-        if (timRunning) {
-            uiControlDisable(uiControl(hostnameLabel));
-            uiControlDisable(uiControl(hostnameEntry));
-        } else {
-            uiControlEnable(uiControl(hostnameLabel));
-            uiControlEnable(uiControl(hostnameEntry));
-        }
     }
     int resets = state->gameResets;
     if (resets != mapGetInt(cache, CACHE_RESETS)) {

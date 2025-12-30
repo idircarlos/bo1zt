@@ -21,11 +21,6 @@ static bool checkConditions(CheatManager *manager, CheatCondition conditions) {
     if (!manager || !manager->controller) return false;
     if (conditions == CHEAT_COND_NONE) return true;
     
-    // Check NO_TIM condition - TIM must not be running
-    if ((conditions & CHEAT_COND_NO_TIM) && controllerIsTimRunning(manager->controller)) {
-        return false;
-    }
-    
     // Check GAME_ONGOING condition - zombies game must be ongoing
     if ((conditions & CHEAT_COND_GAME_ONGOING) && !controllerIsZombiesGameOngoing(manager->controller)) {
         return false;

@@ -31,8 +31,8 @@ This tool is being created just for fun while learning reverse engineering funda
 |   Set Headshots |   Box Never Moves      |   Disable FOG               |   Fix Movement Speed PC Issue          |
 |                 |   Small Crosshair      |   Fullbright mode           |   Commands                             |
 |                 |   Instant Kill         |   Colorized mode            |   Show FPS                             |
-|                 |   Fast Gameplay        |   Customize UI              |   TIM Compatibility                    |
-|                 |   Third Person         |                             |   Setup Camos (*soon!*)                |
+|                 |   Fast Gameplay        |   Customize UI              |   Bind Manager                         |
+|                 |   Third Person         |                             |   Character Selection                  |
 |                 |   No Shellshock        |                             |   Add Floating Widgets                 |
 |                 |   Increase Knife Range |                             |   Open/Close Game                      |
 |                 |                        |                             |   Persisted Settings                   |

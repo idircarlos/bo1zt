@@ -8,8 +8,6 @@
 
 #define UI_CUSTOMIZER_CONTROL_GROUP_SIZE 1
 
-#define CACHE_TIM_RUNNING "TIM_RUNNING"
-
 static Map *cache = NULL;
 
 // Controller instance
@@ -104,7 +102,6 @@ static void buildCustomizer() {
 
 static void init() {
     cache = mapCreate();
-    mapPutBool(cache, CACHE_TIM_RUNNING, false);
     GraphicsConfig config = controllerGetGraphicsConfig(controller);
     uiSpinboxSetValue(fovSpin, config.fov);
     uiSpinboxSetValue(fovScaleSpin, config.fovScale);
@@ -214,30 +211,6 @@ static void update() {
     }
     if (uiCheckboxChecked(colorizedCheckbox) != graphics->colorized) {
         uiCheckboxSetChecked(colorizedCheckbox, graphics->colorized);
-    }
-    
-    // Handle TIM running state
-    State *state = controllerGetState(controller);
-    bool timRunning = state->isTimRunning;
-    if (timRunning != mapGetBool(cache, CACHE_TIM_RUNNING)) {
-        if (timRunning) {
-            uiDisableSpinbox(fovSpin);
-            uiDisableSpinbox(fovScaleSpin);
-            uiDisableSpinbox(fpsCapSpin);
-            uiControlDisable(uiControl(fovLabel));
-            uiControlDisable(uiControl(fovScaleLabel));
-            uiControlDisable(uiControl(fpsCapLabel));
-            uiControlDisable(uiControl(unlimitFpsCheckbox));
-        } else {
-            uiEnableSpinbox(fovSpin);
-            uiEnableSpinbox(fovScaleSpin);
-            uiEnableSpinbox(fpsCapSpin);
-            uiControlEnable(uiControl(fovLabel));
-            uiControlEnable(uiControl(fovScaleLabel));
-            uiControlEnable(uiControl(fpsCapLabel));
-            uiControlEnable(uiControl(unlimitFpsCheckbox));
-        }
-        mapPutBool(cache, CACHE_TIM_RUNNING, timRunning);
     }
 }
 

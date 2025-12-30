@@ -6,7 +6,6 @@ State *stateCreate(void) {
     State *state = (State *)malloc(sizeof(State));
     gameInit(&state->activeGame, 1);
     state->isGameAttached = false;
-    state->isTimRunning = false;
     state->isZombiesGameOngoing = false;
     state->isZombiesGamePaused = false;
     state->gameResets = 0;
@@ -14,7 +13,6 @@ State *stateCreate(void) {
 }
 
 void stateGameClear(State *state) {
-    // We don't clear TIM state because is not related to the game
     state->isGameAttached = false;
     state->isZombiesGameOngoing = false;
     state->isZombiesGamePaused = false;
