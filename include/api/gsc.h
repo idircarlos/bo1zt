@@ -18,4 +18,6 @@ bool gscApiSetStaticBox(GscApi *gscApi, bool enabled);
 
 bool gscApiPlayEasterEggSong(GscApi *gscApi);
 
+int gscApiGetRound(GscApi *gscApi);
+
 #endif // API_GSC_H_

@@ -46,5 +46,6 @@ bool apiRemovePerks(Api *api, List *perks);
 bool apiGetStaticBox(Api *api);
 bool apiSetStaticBox(Api *api, bool enabled);
 bool apiPlayEasterEggSong(Api *api);
+int apiGetRound(Api *api);
 
 #endif // API_H_

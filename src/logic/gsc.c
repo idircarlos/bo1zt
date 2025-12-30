@@ -7,6 +7,8 @@
 #include <string.h>
 
 #define GSC_DVAR_VALUE_MAX_LEN 1024
+#define GSC_SLEEP_MS 10
+#define GSC_TIMEOUT 3000
 
 char *_gscMethodBuildDvarValue(const char *methodString, const char *argsString);
 
@@ -14,7 +16,8 @@ static const char *GSC_METHOD_NAMES[] = {
     "AddPerks",
     "RemovePerks",
     "StaticBox",
-    "PlayEasterEggSong"
+    "PlayEasterEggSong",
+    "GetRound",
 };
 
 static int GSC_METHOD_NAMES_SIZE = sizeof(GSC_METHOD_NAMES)/sizeof(GSC_METHOD_NAMES[0]);
@@ -46,7 +49,9 @@ void gscDestroy(GSC *gsc) {
 }
 
 GSCResponse gscCall(GSC *gsc, GSCMethod method, GSCArgs args) {
-    if (!gsc) return NULL;
+    GSCResponse result = { .status = GSC_STATUS_FAIL, .response = "" };
+    
+    if (!gsc) return result;
 
     const char *methodString = gscMethodToString(method);
     const char *argsString = gscArgsToString(args);
@@ -60,7 +65,7 @@ GSCResponse gscCall(GSC *gsc, GSCMethod method, GSCArgs args) {
     char *dvarValue = _gscMethodBuildDvarValue(methodString, argsString);
     if (!dvarValue) {
         poolRelease(gsc->pool, index);
-        return NULL;
+        return result;
     }
 
     gsc->pool->responses[index] = NULL;
@@ -68,18 +73,33 @@ GSCResponse gscCall(GSC *gsc, GSCMethod method, GSCArgs args) {
     serverSetDVarString(gsc->server, dvarKey, dvarValue);
     free(dvarValue);
 
-    while (gsc->pool->responses[index] == NULL) {
-        Sleep(10);
+    int requestElapsedTime = 0;
+    while (gsc->pool->responses[index] == NULL && requestElapsedTime < GSC_TIMEOUT) {
+        Sleep(GSC_SLEEP_MS);
+        requestElapsedTime = requestElapsedTime + GSC_SLEEP_MS;
     }
 
-    GSCResponse resp = gsc->pool->responses[index];
+    if (requestElapsedTime >= GSC_TIMEOUT) {
+        LOG_WARN("GSC call %s timed out after %dms\n", methodString, GSC_TIMEOUT);
+        poolRelease(gsc->pool, index);
+        result.status = GSC_STATUS_TIMEOUT;
+        return result;
+    }
+
+    const char *resp = gsc->pool->responses[index];
     poolRelease(gsc->pool, index);
 
-    LOG_INFO("Received %s -> [%s]\n", methodString, resp);
-    return resp;
+    result.status = GSC_STATUS_SUCCESS;
+    if (resp) {
+        strncpy(result.response, resp, sizeof(result.response) - 1);
+        result.response[sizeof(result.response) - 1] = '\0';
+    }
+
+    LOG_INFO("Received %s -> [%s]\n", methodString, result.response);
+    return result;
 }
 
-void gscWriteResponse(GSC *gsc, int index, GSCResponse response) {
+void gscWriteResponse(GSC *gsc, int index, const char *response) {
     if (!gsc || !gsc->pool) return;
     poolWriteResponseDirect(gsc->pool, index, response);
 }

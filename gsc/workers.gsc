@@ -39,6 +39,9 @@ _RunWorker(workerId) {
                 case "PlayEasterEggSong":
                     result = bo1zt\gsc\api\music::PlayEasterEggSong();
                     break;
+                case "GetRound":
+                    result = bo1zt\gsc\api\level::GetRound();
+                    break;
                 default:
                     break;
             }

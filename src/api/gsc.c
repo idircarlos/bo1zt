@@ -20,8 +20,8 @@ typedef struct {
     GSCArgs args;
 } GscApiCallData;
 
-static int _apiThreadHandler(void *data);
-static int _apiOnThreadError(void *data);
+static int _gscApiAsyncHandler(void *data);
+static bool _gscApiCallAsync(GSC *gsc, GSCMethod method, GSCArgs args);
 static bool _gscApiCallPerks(GscApi *gscApi, GSCMethod method, List *perks);
 static GSCArgs _buildPerkArgs(List *perks);
 
@@ -49,7 +49,6 @@ bool gscApiRemovePerks(GscApi *gscApi, List *perks) {
     return _gscApiCallPerks(gscApi, GSC_REMOVE_PERKS, perks);
 }
 
-// Aux
 static bool _gscApiCallPerks(GscApi *gscApi, GSCMethod method, List *perks) {
     if (!gscApi || !gscApi->controller || listIsEmpty(perks)) {
         return false;
@@ -66,17 +65,33 @@ static bool _gscApiCallPerks(GscApi *gscApi, GSCMethod method, List *perks) {
         return false;
     }
 
+    return _gscApiCallAsync(gsc, method, gscArgs);
+}
+
+static int _gscApiAsyncHandler(void *data) {
+    GscApiCallData *callData = (GscApiCallData *)data;
+    GSCResponse response = gscCall(callData->gsc, callData->method, callData->args);
+    if (response.status == GSC_STATUS_FAIL) {
+        LOG_ERROR("Async GSC call to %s(%s) failed.\n", gscMethodToString(callData->method), gscArgsToString(callData->args));
+    } else if (response.status == GSC_STATUS_TIMEOUT) {
+        LOG_ERROR("Async GSC call to %s(%s) timed out.\n", gscMethodToString(callData->method), gscArgsToString(callData->args));
+    }
+    gscArgsFree(&callData->args);
+    free(callData);
+    return 1;
+}
+
+static bool _gscApiCallAsync(GSC *gsc, GSCMethod method, GSCArgs args) {
     GscApiCallData *callData = (GscApiCallData *)malloc(sizeof(GscApiCallData));
     if (!callData) {
-        gscArgsFree(&gscArgs);
+        gscArgsFree(&args);
         return false;
     }
 
     callData->gsc = gsc;
     callData->method = method;
-    callData->args = gscArgs;
-    Thread *thread = threadCreate(_apiThreadHandler, (void *)callData);
-    threadCreateWatchdog(thread, 3000, _apiOnThreadError, callData);
+    callData->args = args;
+    threadCreate(_gscApiAsyncHandler, (void *)callData);
 
     return true;
 }
@@ -99,21 +114,6 @@ static GSCArgs _buildPerkArgs(List *perks) {
     return gscArgs;
 }
 
-static int _apiOnThreadError(void *data) {
-    if (!data) return 0;
-    GscApiCallData *callData = (GscApiCallData*)data;
-    LOG_ERROR("GSC API Call Failed calling %s(%s).\n", gscMethodToString(callData->method), gscArgsToString(callData->args));
-    return 1;
-}
-
-static int _apiThreadHandler(void *data) {
-    GscApiCallData *callData = (GscApiCallData *)data;
-    gscCall(callData->gsc, callData->method, callData->args);
-    gscArgsFree(&callData->args);
-    free(callData);
-    return 1;
-}
-
 bool gscApiGetStaticBox(GscApi *gscApi) {
     if (!gscApi || !gscApi->controller) {
         return false;
@@ -127,7 +127,7 @@ bool gscApiGetStaticBox(GscApi *gscApi) {
     GSCArgs gscArgs = gscArgsCreate(0);
     GSCResponse response = gscCall(gsc, GSC_STATIC_BOX, gscArgs);
     
-    bool result = (response != NULL && strcmp(response, "1") == 0);
+    bool result = (response.status == GSC_STATUS_SUCCESS && strcmp(response.response, "1") == 0);
     return result;
 }
 
@@ -141,25 +141,11 @@ bool gscApiSetStaticBox(GscApi *gscApi, bool enabled) {
         return false;
     }
 
-    GSCArgs gscArgs = {0};
-    gscArgs.args = (const char **)malloc(1 * sizeof(const char *));
+    GSCArgs gscArgs = gscArgsCreate(1);
     if (!gscArgs.args) return false;
-    gscArgs.count = 1;
     gscArgs.args[0] = enabled ? "1" : "0";
 
-    GscApiCallData *callData = (GscApiCallData *)malloc(sizeof(GscApiCallData));
-    if (!callData) {
-        free(gscArgs.args);
-        return false;
-    }
-
-    callData->gsc = gsc;
-    callData->method = GSC_STATIC_BOX;
-    callData->args = gscArgs;
-    Thread *thread = threadCreate(_apiThreadHandler, (void *)callData);
-    threadCreateWatchdog(thread, 3000, _apiOnThreadError, callData);
-
-    return true;
+    return _gscApiCallAsync(gsc, GSC_STATIC_BOX, gscArgs);
 }
 
 bool gscApiPlayEasterEggSong(GscApi *gscApi) {
@@ -173,16 +159,31 @@ bool gscApiPlayEasterEggSong(GscApi *gscApi) {
     }
 
     GSCArgs gscArgs = gscArgsCreate(0);
-    GscApiCallData *callData = (GscApiCallData *)malloc(sizeof(GscApiCallData));
-    if (!callData) {
+    return _gscApiCallAsync(gsc, GSC_PLAY_EASTER_EGG_SONG, gscArgs);
+}
+
+int gscApiGetRound(GscApi *gscApi) {
+    if (!gscApi || !gscApi->controller) {
         return false;
     }
 
-    callData->gsc = gsc;
-    callData->method = GSC_PLAY_EASTER_EGG_SONG;
-    callData->args = gscArgs;
-    Thread *thread = threadCreate(_apiThreadHandler, (void *)callData);
-    threadCreateWatchdog(thread, 3000, _apiOnThreadError, callData);
+    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    if (!gsc) {
+        return false;
+    }
 
-    return true;
+    GSCArgs gscArgs = gscArgsCreate(0);
+    GSCResponse response = gscCall(gsc, GSC_GET_ROUND, gscArgs);
+    
+    bool success = (response.status == GSC_STATUS_SUCCESS && strcmp(response.response, "error") != 0);
+    if (!success) {
+        LOG_WARN("Received an error on GSC GetRound. Returning 1 as fallback\n");
+        return 1;
+    }
+    int round = atoi(response.response);
+    if (round == 0) {
+        LOG_WARN("Invalid response from GSC GetRound. Returning 1 as fallback\n");
+        return 1;
+    }
+    return round;
 }

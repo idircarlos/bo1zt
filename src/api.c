@@ -204,3 +204,8 @@ bool apiPlayEasterEggSong(Api *api) {
     if (!api || !api->gsc) return false;
     return gscApiPlayEasterEggSong(api->gsc);
 }
+
+int apiGetRound(Api *api) {
+    if (!api || !api->gsc) return false;
+    return gscApiGetRound(api->gsc);
+}

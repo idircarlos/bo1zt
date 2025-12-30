@@ -4,6 +4,7 @@
 #include "logic/command/hacks.h"
 #include "logic/command/graphics.h"
 #include "logic/command/misc.h"
+#include "win/thread.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -101,7 +102,10 @@ Command commandBuild(CommandManager *manager, const char *message) {
 }
 
 
-bool commandHandle(Command command) {
+int _commandThreadHandler(void *data) {
+    if (!data) return 0;
+    Command *commandPtr = (Command*)data;
+    Command command = *commandPtr;
     switch (command.name) {
         case COMMAND_NOCLIP: return commandNoclipHandle(command);
         case COMMAND_GOD: return commandGodHandle(command);
@@ -140,6 +144,22 @@ bool commandHandle(Command command) {
         case COMMAND_REVIVES: return commandRevivesHandle(command);
         default: return false;
     }
+    commandFree(commandPtr);
+    return 1;
+}
+
+int _commandThreadHandlerOnError(void *data) {
+    if (!data) return 1;
+    Command *command = (Command*)data;
+    free(command);
+    return 1;
+}
+
+bool commandHandle(Command command) {
+    Command *commandCpy = commandCopy(&command);
+    Thread *commandThread = threadCreate(_commandThreadHandler, commandCpy);
+    threadCreateWatchdog(commandThread, 3000,  _commandThreadHandlerOnError, commandCpy);
+    return true;
 }
 
 const char *commandToString(const Command *command) {
