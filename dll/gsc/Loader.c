@@ -54,7 +54,7 @@ static const size_t nativeGscScriptsCount = sizeof(nativeGscScripts) / sizeof(na
 
 // Order matters since scripts depends on others!
 static const char* gscScripts[] = {
-    "api/static_box.gsc",
+    "api/box.gsc",
     "api/perks.gsc",
     "api/music.gsc",
     "api.gsc",

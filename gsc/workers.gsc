@@ -31,9 +31,9 @@ _RunWorker(workerId) {
                     break;
                 case "StaticBox":
                     if (args.size == 0) {
-                        result = bo1zt\gsc\api\static_box::GetStaticBox();
+                        result = bo1zt\gsc\api\box::GetStaticBox();
                     } else {
-                        bo1zt\gsc\api\static_box::SetStaticBox(args);
+                        bo1zt\gsc\api\box::SetStaticBox(args);
                     }
                     break;
                 case "PlayEasterEggSong":
