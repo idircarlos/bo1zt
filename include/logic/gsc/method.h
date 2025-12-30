@@ -6,6 +6,7 @@ typedef enum {
     GSC_ADD_PERKS,
     GSC_REMOVE_PERKS,
     GSC_STATIC_BOX,
+    GSC_PLAY_EASTER_EGG_SONG,
 } GSCMethod;
 
 #endif // GSC_METHOD_H

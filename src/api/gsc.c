@@ -3,6 +3,7 @@
 #include "controller/controller_internal.h"
 #include "logger.h"
 #include "logic/gsc.h"
+#include "logic/gsc/method.h"
 #include "logic/gsc/misc.h"
 #include "logic/game/perk.h"
 #include "win/thread.h"
@@ -154,6 +155,31 @@ bool gscApiSetStaticBox(GscApi *gscApi, bool enabled) {
 
     callData->gsc = gsc;
     callData->method = GSC_STATIC_BOX;
+    callData->args = gscArgs;
+    Thread *thread = threadCreate(_apiThreadHandler, (void *)callData);
+    threadCreateWatchdog(thread, 3000, _apiOnThreadError, callData);
+
+    return true;
+}
+
+bool gscApiPlayEasterEggSong(GscApi *gscApi) {
+    if (!gscApi || !gscApi->controller) {
+        return false;
+    }
+
+    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    if (!gsc) {
+        return false;
+    }
+
+    GSCArgs gscArgs = gscArgsCreate(0);
+    GscApiCallData *callData = (GscApiCallData *)malloc(sizeof(GscApiCallData));
+    if (!callData) {
+        return false;
+    }
+
+    callData->gsc = gsc;
+    callData->method = GSC_PLAY_EASTER_EGG_SONG;
     callData->args = gscArgs;
     Thread *thread = threadCreate(_apiThreadHandler, (void *)callData);
     threadCreateWatchdog(thread, 3000, _apiOnThreadError, callData);

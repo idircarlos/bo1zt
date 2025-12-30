@@ -14,6 +14,7 @@ static const char *GSC_METHOD_NAMES[] = {
     "AddPerks",
     "RemovePerks",
     "StaticBox",
+    "PlayEasterEggSong"
 };
 
 static int GSC_METHOD_NAMES_SIZE = sizeof(GSC_METHOD_NAMES)/sizeof(GSC_METHOD_NAMES[0]);

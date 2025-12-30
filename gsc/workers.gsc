@@ -36,6 +36,9 @@ _RunWorker(workerId) {
                         bo1zt\gsc\api\static_box::SetStaticBox(args);
                     }
                     break;
+                case "PlayEasterEggSong":
+                    result = bo1zt\gsc\api\music::PlayEasterEggSong();
+                    break;
                 default:
                     break;
             }

@@ -41,9 +41,22 @@ static uint8_t entryFile[GSC_SIZE_PATH + 16];
 static int funcHandle = 0;
 
 // Order matters since scripts depends on others!
+static const char* nativeGscScripts[] = {
+    "maps/zombie_theater_amb",
+    "maps/zombie_pentagon_amb",
+    "maps/zombie_cod5_sumpf",
+    "maps/zombie_cod5_asylum",
+    "maps/zombie_cod5_factory",
+    "maps/zombie_cosmodrome_amb",
+};
+
+static const size_t nativeGscScriptsCount = sizeof(nativeGscScripts) / sizeof(nativeGscScripts[0]);
+
+// Order matters since scripts depends on others!
 static const char* gscScripts[] = {
     "api/static_box.gsc",
     "api/perks.gsc",
+    "api/music.gsc",
     "api.gsc",
     "listeners.gsc",
     "workers.gsc",
@@ -94,6 +107,11 @@ static int32_t __cdecl Scr_LoadScript_hk(int32_t scriptInstance, const uint8_t* 
     sprintf((char*)mapnameBuffer, "maps/%s", mapname);
 
     if (strcmp((char*)mapnameBuffer, (char*)scriptName) == 0 && strcmp((char*)mapnameBuffer, "maps/frontend") != 0) {
+        for (int i = 0; i < nativeGscScriptsCount; i++) {
+            LOG_INFO("[GSC] Loading native script: %s", nativeGscScripts[i]);
+            Scr_LoadScript(0, (uint8_t*)nativeGscScripts[i]);
+        }
+
         for (int i = 0; i < gscScriptsCount; i++) {
             snprintf((char*)entryFile, sizeof(entryFile), "%s/%s", modDir, gscScripts[i]);
 

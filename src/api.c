@@ -199,3 +199,8 @@ bool apiSetStaticBox(Api *api, bool enabled) {
     if (!api || !api->gsc) return false;
     return gscApiSetStaticBox(api->gsc, enabled);
 }
+
+bool apiPlayEasterEggSong(Api *api) {
+    if (!api || !api->gsc) return false;
+    return gscApiPlayEasterEggSong(api->gsc);
+}

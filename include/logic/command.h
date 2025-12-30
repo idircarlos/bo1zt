@@ -36,6 +36,7 @@ typedef enum {
     COMMAND_TP,
     COMMAND_PERK,
     COMMAND_RESTART,
+    COMMAND_MUSIC,
     COMMAND_UWU,
     // Special rounds
     COMMAND_DOGS,

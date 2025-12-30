@@ -1,4 +1,5 @@
 #include "logic/command/misc.h"
+#include "api.h"
 #include "controller/controller_internal.h"
 #include "logic/cheat.h"
 #include "logic/game/perk.h"
@@ -21,7 +22,7 @@ static Api *api;
 void commandMiscInit(Controller *controllerInstance) {
     controller = controllerInstance;
     server = _controllerGetServer(controller);
-    api =_controllerGetApi(controller);
+    api = _controllerGetApi(controller);
 }
 
 static Perk getPerkFromAbbreviation(const char *perkAbbreviation) {
@@ -226,6 +227,11 @@ bool commandSphHandle(Command command) {
 bool commandRestartHandle(Command command) {
     (void)command;
     return serverExecuteCommand(server, "map_restart");
+}
+
+bool commandMusicHandle(Command command) {
+    (void)command;
+    return apiPlayEasterEggSong(api);
 }
 
 bool commandTradeHandle(Command command) {

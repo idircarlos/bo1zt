@@ -1,3 +1,4 @@
+#include "logic/command.h"
 #include "logic/command/manager.h"
 #include "logic/command/manager/manager_internal.h"
 #include "logic/command/graphics.h"
@@ -44,6 +45,7 @@ static Map *createCommandsMap(void) {
     mapPutInt(map, "give", COMMAND_GIVE);
     mapPutInt(map, "tp", COMMAND_TP);
     mapPutInt(map, "restart", COMMAND_RESTART);
+    mapPutInt(map, "music", COMMAND_MUSIC);
     mapPutInt(map, "uwu", COMMAND_UWU);
 
     // Special rounds

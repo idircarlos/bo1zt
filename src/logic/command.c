@@ -135,6 +135,7 @@ bool commandHandle(Command command) {
         case COMMAND_ENTITIES: return commandEntitiesHandle(command);
         case COMMAND_SPH: return commandSphHandle(command);
         case COMMAND_RESTART: return commandRestartHandle(command);
+        case COMMAND_MUSIC: return commandMusicHandle(command);
         case COMMAND_TRADE: return commandTradeHandle(command);
         case COMMAND_REVIVES: return commandRevivesHandle(command);
         default: return false;

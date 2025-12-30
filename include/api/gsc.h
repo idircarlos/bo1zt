@@ -16,4 +16,6 @@ bool gscApiRemovePerks(GscApi *gscApi, List *perks);
 bool gscApiGetStaticBox(GscApi *gscApi);
 bool gscApiSetStaticBox(GscApi *gscApi, bool enabled);
 
+bool gscApiPlayEasterEggSong(GscApi *gscApi);
+
 #endif // API_GSC_H_
