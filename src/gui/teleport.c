@@ -79,12 +79,16 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     // --- Botón Go (a la derecha del grid)
     goBtn = uiNewButton("Go");
-    uiButtonOnClicked(goBtn, onTeleportGoButtonClick, NULL);
     uiButton *loadBtn = uiNewButton("Load Position");
     uiButton *saveBtn = uiNewButton("Save Position");
+
+    uiButtonOnClicked(goBtn, onTeleportGoButtonClick, NULL);
     uiButtonOnClicked(saveBtn, onTeleportSaveButtonClick, NULL);
     uiButtonOnClicked(loadBtn, onTeleportLoadButtonClick, NULL);
     
+    uiSpinboxSetValue(xSpin, 0);
+    uiSpinboxSetValue(ySpin, 0);
+    uiSpinboxSetValue(zSpin, 0);
     
     uiGridAppend(teleportGrid, uiControl(xSpin),        0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(teleportGrid, uiControl(ySpin),        0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);

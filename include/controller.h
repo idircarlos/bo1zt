@@ -44,7 +44,7 @@ WeaponName controllerGetPlayerCurrentWeapon(Controller *controller);
 WeaponName controllerGetPlayerWeapon(Controller *controller, int slot);
 bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int slot);
 bool controllerGivePlayerAmmo(Controller *controller);
-bool controllerSetRound(Controller *controller, int currentRound, int nextRound);
+bool controllerSetRound(Controller *controller, int round);
 State *controllerGetState(Controller *controller);
 void controllerUpdateState(Controller *controller);
 void controllerInitTrainerConfig(Controller *controller);

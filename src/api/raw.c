@@ -416,7 +416,7 @@ bool rawApiSetRound(RawApi *rawApi, int currentRound, int nextRound) {
         LOG_ERROR("Process is null\n");
         return false;
     }
-
+    nextRound = nextRound - 1; // This is needed since this value overrides the current level round. We substract one to jump to the desired round after completing it.
     uint8_t pattern[ROUND_CHANGE_PATTERN_SIZE];
     memcpy(pattern, ROUND_CHEAT.pattern, ROUND_CHEAT.patternSize);
     memcpy(pattern, &currentRound, 4*sizeof(uint8_t));

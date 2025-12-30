@@ -23,7 +23,7 @@ WeaponName apiGetPlayerCurrentWeapon(Api *api);
 WeaponName apiGetPlayerWeapon(Api *api, int slot);
 bool apiSetPlayerWeapon(Api *api, WeaponName weapon, int slot);
 bool apiGivePlayerAmmo(Api *api);
-bool apiSetRound(Api *api, int currentRound, int nextRound);
+bool apiSetRound(Api *api, int round);
 bool apiIsGameReady(Api *api);
 Level apiGetLevelName(Api *api);
 double apiGetLevelElapsedTime(Api *api);

@@ -98,9 +98,10 @@ bool apiGivePlayerAmmo(Api *api) {
     return rawApiGivePlayerAmmo(api->raw);
 }
 
-bool apiSetRound(Api *api, int currentRound, int nextRound) {
+bool apiSetRound(Api *api, int round) {
     if (!api) return false;
-    return rawApiSetRound(api->raw, currentRound, nextRound);
+    int currentRound = gscApiGetRound(api->gsc);
+    return rawApiSetRound(api->raw, currentRound, round);
 }
 
 bool apiIsGameReady(Api *api) {

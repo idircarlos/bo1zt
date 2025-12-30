@@ -269,10 +269,9 @@ bool controllerGivePlayerAmmo(Controller *controller) {
     return apiGivePlayerAmmo(controller->api);
 }
 
-bool controllerSetRound(Controller *controller, int currentRound, int nextRound) {
+bool controllerSetRound(Controller *controller, int round) {
     if (!controller || !controller->process) return false;
-    int currentRoundGsc = apiGetRound(controller->api);
-    return apiSetRound(controller->api, currentRoundGsc, nextRound);
+    return apiSetRound(controller->api, round);
 }
 
 State *controllerGetState(Controller *controller) {

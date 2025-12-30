@@ -5,20 +5,21 @@
 #include "logger.h"
 #include "resource_ids.h"
 #include "gui/player.h"
-#include "gui/round.h"
+#include "gui/character.h"
 #include "gui/weapons.h"
 #include "gui/teleport.h"
 #include "gui/hacks.h"
 #include "gui/graphics.h"
 #include "gui/game.h"
+#include "gui/about.h"
 
 #define WINDOW_WIDTH 100
 #define WINDOW_HEIGHT 540
-#define UI_CONTROL_GROUP_SIZE 7
+#define UI_CONTROL_GROUP_SIZE 8
 
 
 // UIControlGroup
-static UIControlGroup *controlGroups[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+static UIControlGroup *controlGroups[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
 // Controller instance
 static Controller *controller = NULL;
@@ -74,34 +75,42 @@ static uiControl* buildWindowContent() {
     UIControlGroup *cheatsControlGroup = uiHacksBuildControlGroup();
     UIControlGroup *weaponsControlGroup = uiWeaponsBuildControlGroup();
     UIControlGroup *teleportControlGroup = uiTeleportBuildControlGroup();
-    UIControlGroup *roundControlGroup = uiRoundBuildControlGroup();
+    UIControlGroup *characterControlGroup = uiCharacterBuildControlGroup();
     UIControlGroup *graphicsControlGroup = uiGraphicsBuildControlGroup();
     UIControlGroup *gameControlGroup = uiGameBuildControlGroup();
+    UIControlGroup *aboutControlGroup = uiAboutBuildControlGroup();
 
     // Save Control Groups for update
     controlGroups[0] = playerControlGroup;
     controlGroups[1] = cheatsControlGroup;
     controlGroups[2] = weaponsControlGroup;
     controlGroups[3] = teleportControlGroup;
-    controlGroups[4] = roundControlGroup;
+    controlGroups[4] = characterControlGroup;
     controlGroups[5] = graphicsControlGroup;
     controlGroups[6] = gameControlGroup;
+    controlGroups[7] = aboutControlGroup;
     
     // UI Groups
     uiControl *playerGroup = playerControlGroup->build(controller, window);
     uiControl *cheatGroup = cheatsControlGroup->build(controller, window);
     uiControl *weaponsGroup = weaponsControlGroup->build(controller, window);
     uiControl *teleportGroup = teleportControlGroup->build(controller, window);
-    uiControl *roundGroup = roundControlGroup->build(controller, window);
+    uiControl *characterGroup = characterControlGroup->build(controller, window);
     uiControl *graphicsGroup = graphicsControlGroup->build(controller, window);
     uiControl *gameGroup = gameControlGroup->build(controller, window);
+    uiControl *aboutGroup = aboutControlGroup->build(controller, window);
 
-    
-    // --- VBox para Weapons + Teleport ---
-    uiBox *twVBox = uiNewVerticalBox();
-    uiBoxSetPadded(twVBox, 1);
-    uiBoxAppend(twVBox, weaponsGroup, 1);
-    uiBoxAppend(twVBox, teleportGroup, 1); 
+    // --- VBox Character + Teleport ---
+    uiBox *ctVBox = uiNewVerticalBox();
+    uiBoxSetPadded(ctVBox, 1);
+    uiBoxAppend(ctVBox, characterGroup, 1);
+    uiBoxAppend(ctVBox, teleportGroup, 1);
+
+    // --- VBox Weapons + About ---
+    uiBox *waVBox = uiNewVerticalBox();
+    uiBoxSetPadded(waVBox, 1);
+    uiBoxAppend(waVBox, weaponsGroup, 1);
+    uiBoxAppend(waVBox, aboutGroup, 1);
 
     // --- Main Grid ---
     uiGrid *mainGrid = uiNewGrid();
@@ -113,9 +122,9 @@ static uiControl* buildWindowContent() {
     uiGridAppend(mainGrid, gameGroup,   2, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     // Fila 1
-    uiGridAppend(mainGrid, graphicsGroup, 0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(mainGrid, roundGroup,    1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(mainGrid, uiControl(twVBox),        2, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, graphicsGroup,       0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, uiControl(ctVBox),   1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(mainGrid, uiControl(waVBox),   2, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     return uiControl(mainGrid);
 }

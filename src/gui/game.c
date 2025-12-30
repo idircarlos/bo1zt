@@ -62,6 +62,8 @@ static uiCheckbox *patchMovementCheckbox = NULL;
 static uiCheckbox *showFpsCheckbox = NULL;
 static uiLabel *hostnameLabel = NULL;
 static uiEntry *hostnameEntry = NULL;
+static uiButton *changeRoundButton = NULL;
+static uiSpinbox *changeRoundSpin = NULL;
 static uiButton *bindsButton = NULL;
 static uiButton *widgetsButton = NULL;
 static uiButton *launchButton = NULL;
@@ -284,6 +286,15 @@ static void onEntryChange(uiEntry *entry, void *data) {
     configSave(config);
 }
 
+static void onChangeRoundSpinChanged(uiSpinbox *spin, void *data) {
+    (void)data;
+    if (uiSpinboxValue(spin) < 4) {
+        uiControlDisable(uiControl(changeRoundButton));
+    } else {
+        uiControlEnable(uiControl(changeRoundButton));
+    }
+}
+
 static void onLaunchButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
@@ -310,6 +321,13 @@ static void onLaunchButtonClick(uiButton *button, void *data) {
     // Run a new thread to avoid blocking the UI while game starts.
     Thread *gameLauncherThread = threadCreate(threadLaunchGame, NULL);
     threadCreateWatchdog(gameLauncherThread, 15000, onLaunchGameError, NULL);
+}
+
+static void onChangeRoundButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    int round = uiSpinboxValue(changeRoundSpin);
+    controllerSetRound(controller, round);
 }
 
 static void onBindsButtonClick(uiButton *button, void *data) {
@@ -425,6 +443,8 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     resetsNumLabel = uiNewLabel("0");
     hostnameLabel = uiNewLabel("Hostname");
     hostnameEntry = uiNewEntry();
+    changeRoundButton = uiNewButton("Change Round");
+    changeRoundSpin = uiNewSpinbox(0, 255);
     patchMovementCheckbox = uiNewCheckbox(" Fix Movement Speed");
     showFpsCheckbox = uiNewCheckbox(" Show FPS");
     bindsButton = uiNewButton("Bind Keys");
@@ -434,6 +454,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     locationEntry = uiNewEntry();
 
     uiControlDisable(uiControl(closeButton));
+    uiControlDisable(uiControl(changeRoundButton));
     uiControlHide(uiControl(locationEntry));
 
     uiCheckboxOnToggled(patchMovementCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_FIX_MOVEMENT_SPEED);
@@ -441,6 +462,9 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiEntryOnChanged(hostnameEntry, onEntryChange, NULL);
 
+    uiSpinboxOnChanged(changeRoundSpin, onChangeRoundSpinChanged, NULL);
+
+    uiButtonOnClicked(changeRoundButton, onChangeRoundButtonClick, NULL);
     uiButtonOnClicked(bindsButton, onBindsButtonClick, NULL);
     uiButtonOnClicked(widgetsButton, onWidgetsButtonClick, NULL);
     uiButtonOnClicked(launchButton, onLaunchButtonClick, NULL);
@@ -448,14 +472,16 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiGridAppend(grid, uiControl(statusLabel),              0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(statusArea),               1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(timLabel),                 0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(timArea),                  1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(resetsLabel),              0, 2, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(resetsNumLabel),           1, 2, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(hostnameLabel),            0, 3, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
-    uiGridAppend(grid, uiControl(hostnameEntry),            1, 3, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(patchMovementCheckbox),    0, 4, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(showFpsCheckbox),          1, 4, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    //uiGridAppend(grid, uiControl(timLabel),                 0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    //uiGridAppend(grid, uiControl(timArea),                  1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(resetsLabel),              0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(resetsNumLabel),           1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(hostnameLabel),            0, 2, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(grid, uiControl(hostnameEntry),            1, 2, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(patchMovementCheckbox),    0, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(showFpsCheckbox),          1, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(changeRoundButton),        0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(changeRoundSpin),          1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(bindsButton),              0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(widgetsButton),            1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(launchButton),             0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
