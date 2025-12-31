@@ -6,6 +6,7 @@
 #include "logic/gsc/method.h"
 #include "logic/gsc/misc.h"
 #include "logic/game/perk.h"
+#include "logic/game/weapon.h"
 #include "win/thread.h"
 #include <stdlib.h>
 #include <string.h>
@@ -23,7 +24,9 @@ typedef struct {
 static int _gscApiAsyncHandler(void *data);
 static bool _gscApiCallAsync(GSC *gsc, GSCMethod method, GSCArgs args);
 static bool _gscApiCallPerks(GscApi *gscApi, GSCMethod method, List *perks);
+static bool _gscApiCallWeapons(GscApi *gscApi, List *weapons);
 static GSCArgs _buildPerkArgs(List *perks);
+static GSCArgs _buildWeaponArgs(List *weapons);
 
 GscApi *gscApiCreate(Controller *controller) {
     if (!controller) return NULL;
@@ -114,6 +117,43 @@ static GSCArgs _buildPerkArgs(List *perks) {
     return gscArgs;
 }
 
+static GSCArgs _buildWeaponArgs(List *weapons) {
+    size_t count = listSize(weapons);
+    GSCArgs gscArgs = {0};
+
+    gscArgs.args = (const char **)malloc(count * sizeof(const char *));
+    if (!gscArgs.args) return gscArgs;
+    gscArgs.count = 0;
+
+    for (size_t i = 0; i < count; i++) {
+        Weapon weapon = (Weapon)listGetInt(weapons, i);
+        const char *weaponName = gscGetWeaponName(weapon);
+        if (weaponName != NULL) {
+            gscArgs.args[gscArgs.count++] = weaponName;
+        }
+    }
+    return gscArgs;
+}
+
+static bool _gscApiCallWeapons(GscApi *gscApi, List *weapons) {
+    if (!gscApi || !gscApi->controller || listIsEmpty(weapons)) {
+        return false;
+    }
+
+    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    if (!gsc) {
+        return false;
+    }
+
+    GSCArgs gscArgs = _buildWeaponArgs(weapons);
+    if (gscArgs.count == 0) {
+        gscArgsFree(&gscArgs);
+        return false;
+    }
+
+    return _gscApiCallAsync(gsc, GSC_GIVE_WEAPONS, gscArgs);
+}
+
 bool gscApiGetStaticBox(GscApi *gscApi) {
     if (!gscApi || !gscApi->controller) {
         return false;
@@ -186,4 +226,23 @@ int gscApiGetRound(GscApi *gscApi) {
         return 1;
     }
     return round;
+}
+
+bool gscApiGiveWeapons(GscApi *gscApi, List *weapons) {
+    return _gscApiCallWeapons(gscApi, weapons);
+}
+
+bool gscApiTakeWeapons(GscApi *gscApi) {
+    if (!gscApi || !gscApi->controller) {
+        return false;
+    }
+
+    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    if (!gsc) {
+        return false;
+    }
+
+    GSCArgs gscArgs = gscArgsCreate(0);
+
+    return _gscApiCallAsync(gsc, GSC_TAKE_WEAPONS, gscArgs);
 }

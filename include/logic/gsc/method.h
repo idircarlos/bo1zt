@@ -8,6 +8,8 @@ typedef enum {
     GSC_STATIC_BOX,
     GSC_PLAY_EASTER_EGG_SONG,
     GSC_GET_ROUND,
+    GSC_GIVE_WEAPONS,
+    GSC_TAKE_WEAPONS,
 } GSCMethod;
 
 #endif // GSC_METHOD_H

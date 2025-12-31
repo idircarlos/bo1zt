@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "logic/gsc/misc.h"
 #include "logic/game/perk.h"
+#include "logic/game/weapon.h"
 
 const char* gscGetPerkName(Perk perk) {
     switch (perk) {
@@ -9,6 +10,78 @@ const char* gscGetPerkName(Perk perk) {
         case PERK_SPEED_COLA: return GSC_PERK_SPEED_COLA;
         case PERK_DOUBLE_TAP: return GSC_PERK_DOUBLE_TAP;
         case PERK_MULE_KICK: return GSC_PERK_MULE_KICK;
+        default: return NULL;
+    }
+}
+
+const char* gscGetWeaponName(Weapon weapon) {
+    switch (weapon) {
+        case WEAPON_M1911: return GSC_WEAPON_M1911;
+        case WEAPON_MUSTANG_AND_SALLY: return GSC_WEAPON_MUSTANG_AND_SALLY;
+        case WEAPON_PYTHON: return GSC_WEAPON_PYTHON;
+        case WEAPON_COBRA: return GSC_WEAPON_COBRA;
+        case WEAPON_CZ75: return GSC_WEAPON_CZ75;
+        case WEAPON_CALAMITY: return GSC_WEAPON_CALAMITY;
+        case WEAPON_M14: return GSC_WEAPON_M14;
+        case WEAPON_MNESIA: return GSC_WEAPON_MNESIA;
+        case WEAPON_M16: return GSC_WEAPON_M16;
+        case WEAPON_SKULLCRUSHER: return GSC_WEAPON_SKULLCRUSHER;
+        case WEAPON_G11: return GSC_WEAPON_G11;
+        case WEAPON_G115_GENERATOR: return GSC_WEAPON_G115_GENERATOR;
+        case WEAPON_FAMAS: return GSC_WEAPON_FAMAS;
+        case WEAPON_G16_GL35: return GSC_WEAPON_G16_GL35;
+        case WEAPON_AK74U: return GSC_WEAPON_AK74U;
+        case WEAPON_AK74FU2: return GSC_WEAPON_AK74FU2;
+        case WEAPON_MP5K: return GSC_WEAPON_MP5K;
+        case WEAPON_MP115_KOLLIDER: return GSC_WEAPON_MP115_KOLLIDER;
+        case WEAPON_MP40: return GSC_WEAPON_MP40;
+        case WEAPON_THE_AFTERBURNER: return GSC_WEAPON_THE_AFTERBURNER;
+        case WEAPON_MPL: return GSC_WEAPON_MPL;
+        case WEAPON_MPL_LF: return GSC_WEAPON_MPL_LF;
+        case WEAPON_PM63: return GSC_WEAPON_PM63;
+        case WEAPON_TOKYO_AND_ROSE: return GSC_WEAPON_TOKYO_AND_ROSE;
+        case WEAPON_SPECTRE: return GSC_WEAPON_SPECTRE;
+        case WEAPON_PHANTOM: return GSC_WEAPON_PHANTOM;
+        case WEAPON_CZ75_DUAL_WIELD: return GSC_WEAPON_CZ75_DUAL_WIELD;
+        case WEAPON_CALAMITY_AND_JAME: return GSC_WEAPON_CALAMITY_AND_JAME;
+        case WEAPON_STAKEOUT: return GSC_WEAPON_STAKEOUT;
+        case WEAPON_RAID: return GSC_WEAPON_RAID;
+        case WEAPON_OLYMPIA: return GSC_WEAPON_OLYMPIA;
+        case WEAPON_HADES: return GSC_WEAPON_HADES;
+        case WEAPON_SPAS_12: return GSC_WEAPON_SPAS_12;
+        case WEAPON_SPAZ_24: return GSC_WEAPON_SPAZ_24;
+        case WEAPON_HS10: return GSC_WEAPON_HS10;
+        case WEAPON_TYPHOID_AND_MARY: return GSC_WEAPON_TYPHOID_AND_MARY;
+        case WEAPON_AUG: return GSC_WEAPON_AUG;
+        case WEAPON_AUG_50M3: return GSC_WEAPON_AUG_50M3;
+        case WEAPON_GALIL: return GSC_WEAPON_GALIL;
+        case WEAPON_LAMENTATION: return GSC_WEAPON_LAMENTATION;
+        case WEAPON_COMMANDO: return GSC_WEAPON_COMMANDO;
+        case WEAPON_PREDATOR: return GSC_WEAPON_PREDATOR;
+        case WEAPON_FN_FAL: return GSC_WEAPON_FN_FAL;
+        case WEAPON_EPC_WN: return GSC_WEAPON_EPC_WN;
+        case WEAPON_DRAGUNOV: return GSC_WEAPON_DRAGUNOV;
+        case WEAPON_D115_DISASSEMBLER: return GSC_WEAPON_D115_DISASSEMBLER;
+        case WEAPON_L96A1: return GSC_WEAPON_L96A1;
+        case WEAPON_L115_ISOLATOR: return GSC_WEAPON_L115_ISOLATOR;
+        case WEAPON_RPK: return GSC_WEAPON_RPK;
+        case WEAPON_R115_RESONATOR: return GSC_WEAPON_R115_RESONATOR;
+        case WEAPON_HK21: return GSC_WEAPON_HK21;
+        case WEAPON_H115_OSCILATOR: return GSC_WEAPON_H115_OSCILATOR;
+        case WEAPON_M72_LAW: return GSC_WEAPON_M72_LAW;
+        case WEAPON_M72_ANARCHY: return GSC_WEAPON_M72_ANARCHY;
+        case WEAPON_CHINA_LAKE: return GSC_WEAPON_CHINA_LAKE;
+        case WEAPON_CHINA_BEACH: return GSC_WEAPON_CHINA_BEACH;
+        case WEAPON_RAY_GUN: return GSC_WEAPON_RAY_GUN;
+        case WEAPON_PORTERS_X2_RAY_GUN: return GSC_WEAPON_PORTERS_X2_RAY_GUN;
+        case WEAPON_THUNDERGUN: return GSC_WEAPON_THUNDERGUN;
+        case WEAPON_ZEUSCANNON: return GSC_WEAPON_ZEUSCANNON;
+        case WEAPON_CROSSBOW: return GSC_WEAPON_CROSSBOW;
+        case WEAPON_AWFUL_LAWTON: return GSC_WEAPON_AWFUL_LAWTON;
+        case WEAPON_BALLISTIC_KNIFE: return GSC_WEAPON_BALLISTIC_KNIFE;
+        case WEAPON_KRAUSS_REFIBRILLATOR: return GSC_WEAPON_KRAUSS_REFIBRILLATOR;
+        case WEAPON_BALLISTIC_KNIFE_BOWIE: return GSC_WEAPON_BALLISTIC_KNIFE_BOWIE;
+        case WEAPON_KRAUSS_REFIBRILLATOR_BOWIE: return GSC_WEAPON_KRAUSS_REFIBRILLATOR_BOWIE;
         default: return NULL;
     }
 }

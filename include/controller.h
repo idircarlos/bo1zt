@@ -5,6 +5,7 @@
 #include "logic/cheat.h"
 #include "logic/state.h"
 #include "logic/config.h"
+#include "utils/list.h"
 
 #define GAME_EXECUTABLE_NAME "BlackOps.exe"
 #define GAME_WINDOW_NAME_PREFIX "Call of Duty"
@@ -38,10 +39,8 @@ bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, voi
 bool controllerIsCheatCheckboxChecked(Controller *controller, CheatName cheat);
 int controllerUiGraphicsGetFpsCap(Controller *controller);
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller);
-WeaponName controllerGetPlayerCurrentWeapon(Controller *controller);
-WeaponName controllerGetPlayerWeapon(Controller *controller, int slot);
-bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int slot);
-bool controllerGivePlayerAmmo(Controller *controller);
+bool controllerGiveWeapons(Controller *controller, List *weapons);
+bool controllerTakeWeapons(Controller *controller);
 bool controllerSetRound(Controller *controller, int round);
 State *controllerGetState(Controller *controller);
 void controllerUpdateState(Controller *controller);

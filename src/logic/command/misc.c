@@ -6,6 +6,7 @@
 #include "logic/game/level.h"
 #include "logic/game/trade.h"
 #include "logic/game.h"
+#include "logic/game/weapon.h"
 #include "logic/server.h"
 #include "logic/state.h"
 #include "logger.h"
@@ -35,6 +36,14 @@ static Perk getPerkFromAbbreviation(const char *perkAbbreviation) {
     return PERK_INVALID;
 }
 
+static Weapon getWeaponFromAbbreviation(const char *weaponAbbreviation) {
+    if (strcmp("ray", weaponAbbreviation) == 0) return WEAPON_RAY_GUN;
+    if (strcmp("tg", weaponAbbreviation) == 0) return WEAPON_THUNDERGUN;
+    if (strcmp("bow", weaponAbbreviation) == 0) return WEAPON_AWFUL_LAWTON;
+    if (strcmp("mas", weaponAbbreviation) == 0) return WEAPON_MUSTANG_AND_SALLY;
+    return WEAPON_INVALID;
+}
+
 static List *buildPerkList(Command command) {
     List *perks = listCreate();
     for (int i = 2; i < command.argc; i++) {
@@ -46,6 +55,19 @@ static List *buildPerkList(Command command) {
         listAddInt(perks, perk);
     }
     return perks;
+}
+
+static List *buildWeaponList(Command command) {
+    List *weapons = listCreate();
+    for (int i = 1; i < command.argc; i++) {
+        Weapon weapon = getWeaponFromAbbreviation(command.argv[i]);
+        if (weapon == WEAPON_INVALID) {
+            LOG_WARN("Invalid weapon abbreviation: %s\n", command.argv[i]);
+            continue;
+        }
+        listAddInt(weapons, weapon);
+    }
+    return weapons;
 }
 
 bool commandPerkHandle(Command command) {
@@ -80,11 +102,19 @@ bool commandGiveHandle(Command command) {
         serverChatMessage(server, "Usage: /give ammo | <weapon>");
         return false;
     }
+    if (strcmp("ammo", command.argv[1]) == 0) {
+        serverExecuteCommand(server, "give ammo");
+    }
 
-    char buffer[64];
-    snprintf(buffer, 64, "give %s", command.argv[1]);
-    serverExecuteCommand(server, buffer);
-    return true;
+    List *weapons = buildWeaponList(command);
+    if (listIsEmpty(weapons)) {
+        listDestroy(weapons);
+        return false;
+    }
+
+    bool success = apiGiveWeapons(api, weapons);
+    listDestroy(weapons);
+    return success;
 }
 
 bool commandTpHandle(Command command) {

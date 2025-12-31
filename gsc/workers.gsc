@@ -42,6 +42,12 @@ _RunWorker(workerId) {
                 case "GetRound":
                     result = bo1zt\gsc\api\level::GetRound();
                     break;
+                case "GiveWeapons":
+                    result = bo1zt\gsc\api\weapons::GiveWeapons(args);
+                    break;
+                case "TakeWeapons":
+                    result = bo1zt\gsc\api\weapons::TakeWeapons();
+                    break;
                 default:
                     break;
             }

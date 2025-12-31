@@ -78,26 +78,6 @@ TeleportCoords *apiGetPlayerCurrentCoords(Api *api) {
     return rawApiGetPlayerCurrentCoords(api->raw);
 }
 
-WeaponName apiGetPlayerCurrentWeapon(Api *api) {
-    if (!api) return WEAPON_UNKNOWNWEAPON;
-    return rawApiGetPlayerCurrentWeapon(api->raw);
-}
-
-WeaponName apiGetPlayerWeapon(Api *api, int slot) {
-    if (!api) return WEAPON_UNKNOWNWEAPON;
-    return rawApiGetPlayerWeapon(api->raw, slot);
-}
-
-bool apiSetPlayerWeapon(Api *api, WeaponName weapon, int slot) {
-    if (!api) return false;
-    return rawApiSetPlayerWeapon(api->raw, weapon, slot);
-}
-
-bool apiGivePlayerAmmo(Api *api) {
-    if (!api) return false;
-    return rawApiGivePlayerAmmo(api->raw);
-}
-
 bool apiSetRound(Api *api, int round) {
     if (!api) return false;
     int currentRound = gscApiGetRound(api->gsc);
@@ -209,4 +189,14 @@ bool apiPlayEasterEggSong(Api *api) {
 int apiGetRound(Api *api) {
     if (!api || !api->gsc) return false;
     return gscApiGetRound(api->gsc);
+}
+
+bool apiGiveWeapons(Api *api, List *weapons) {
+    if (!api || !api->gsc) return false;
+    return gscApiGiveWeapons(api->gsc, weapons);
+}
+
+bool apiTakeWeapons(Api *api) {
+    if (!api || !api->gsc) return false;
+    return gscApiTakeWeapons(api->gsc);
 }

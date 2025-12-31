@@ -243,24 +243,14 @@ TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller) {
     return apiGetPlayerCurrentCoords(controller->api);
 }
 
-WeaponName controllerGetPlayerCurrentWeapon(Controller *controller) {
-    if (!controller || !controller->process) return WEAPON_UNKNOWNWEAPON;
-    return apiGetPlayerCurrentWeapon(controller->api);
+bool controllerGiveWeapons(Controller *controller, List *weapons) {
+    if (!controller) return false;
+    return apiGiveWeapons(controller->api, weapons);
 }
 
-WeaponName controllerGetPlayerWeapon(Controller *controller, int slot) {
-    if (!controller || !controller->process) return WEAPON_UNKNOWNWEAPON;
-    return apiGetPlayerWeapon(controller->api, slot);
-}
-
-bool controllerSetPlayerWeapon(Controller *controller, WeaponName weapon, int slot) {
-    if (!controller || !controller->process) return false;
-    return apiSetPlayerWeapon(controller->api, weapon, slot);
-}
-
-bool controllerGivePlayerAmmo(Controller *controller) {
-    if (!controller || !controller->process) return false;
-    return apiGivePlayerAmmo(controller->api);
+bool controllerTakeWeapons(Controller *controller) {
+    if (!controller) return false;
+    return apiTakeWeapons(controller->api);
 }
 
 bool controllerSetRound(Controller *controller, int round) {
@@ -292,11 +282,7 @@ void controllerUpdateState(Controller *controller) {
         activeGame->currentEntities = apiGetCurrentSnapshotEntities(controller->api);
         activeGame->maxEntities = apiGetMaxSnapshotEntities(controller->api);
         int levelElapsed = controllerGetLevelElapsedTime(controller);
-        gameUpdateElapsed(activeGame, levelElapsed);
-        Round *round = &activeGame->currentRound;
-        if (roundRunning(round)) {
-            roundUpdateElapsed(round, levelElapsed);
-        }
+        if (levelElapsed > 0) gameUpdateElapsed(activeGame, levelElapsed);
     }
 }
 

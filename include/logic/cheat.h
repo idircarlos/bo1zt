@@ -6,7 +6,6 @@
 
 #define MAX_CHEAT_VALUE_SIZE 1024 // 1KB max size for flexibility
 #define MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE 1024 // 1KB max size for flexibility
-#define NUM_WEAPON_IDS 81
 #define ROUND_CHANGE_PATTERN_SIZE 8
 #define MAX_COMMANDS_LENGTH 256
 
@@ -111,97 +110,6 @@ typedef struct {
     float z;
 } TeleportCoords;
 
-typedef enum {
-    WEAPON_UNKNOWNWEAPON = 0,
-    WEAPON_DEFAULTWEAPON = 1,
-    INVISIBLE_MACHINE_GUN = 2,
-    AK47 = 3,
-    M1911 = 4,
-    MUSTAND_AND_SALLY = 8,
-    MUSTAND_AND_SALLY_BROKEN = 9,
-    PYTHON = 10,
-    COBRA = 11,
-    CZ_75 = 12,
-    CALAMITY = 13,
-    M14 = 14,
-    MNESIA = 15,
-    M16 = 16,
-    SKULLCRUSHER = 17,
-    G11 = 19,
-    G115_GENERATOR = 20,
-    FAMAS = 21,
-    G16_GL35 = 22,
-    AK74U = 23,
-    AK74FU2 = 24,
-    MP5K = 25,
-    MP115_KOLLIDER = 26,
-    MP40 = 27,
-    THE_AFTERBURNER = 28,
-    MPL = 29,
-    MPL_LF = 30,
-    PM63 = 31,
-    TOKYO_AND_ROSE = 32,
-    TOKYO_AND_ROSE_BROKEN = 33,
-    SPECTRE = 34,
-    PHANTOM = 35,
-    CZ_75_DUAL_WIELD = 36,
-    CZ_75_DUAL_WIELD_BROKEN = 37,
-    CALAMITY_AND_JANE = 38,
-    CALAMITY_AND_JANE_BROKEN = 39,
-    STAKEOUT = 40,
-    RAID = 41,
-    OLYMPIA = 42,
-    HADES = 43,
-    SPAS_12 = 44,
-    SPAZ_24 = 45,
-    HS10 = 46,
-    TYPHOID_AND_MARY = 47,
-    TYPHOID_AND_MARY_BROKEN = 48,
-    AUG = 49,
-    AUG_50M3 = 50,
-    GALIL = 52,
-    LAMENTATION = 53,
-    COMMANDO = 54,
-    PREDATOR = 55,
-    FN_FAL = 56,
-    EPC_WN = 57,
-    DRAGUNOV = 58,
-    D115_DISASSEMBLER = 59,
-    L96A1 = 60,
-    L115_ISOLATOR = 61,
-    RPK = 62,
-    R115_RESONATOR = 63,
-    HK21 = 64,
-    H115_OSCILLATOR = 65,
-    M72_LAW = 66,
-    M72_ANARCHY = 67,
-    CHINA_LAKE = 68,
-    CHINA_BEACH = 69,
-    RAY_GUN = 71,
-    PORTERS_X2_RAY_GUN = 72,
-    THUNDERGUN = 73,
-    ZEUSCANNON = 74,
-    CROSSBOW_EXPLOSIVE_TIP = 75,
-    AWFUL_LAWTON = 76,
-    BALLISTIC_KNIFE = 77,
-    THE_KRAUSS_REFIBRILLATOR = 78,
-    BALLISTIC_KNIFE_BUTCHER_KNIFE = 79,
-    THE_KRAUSS_REFIBRILLATOR_BUTCHER_KNIFE = 80
-} WeaponName;
-
-typedef struct {
-    uint32_t weaponOffset;
-    uint32_t clipOffset;
-    uint32_t ammoOffset;
-} Weapon;
-
-typedef struct {
-    uint32_t currentWeaponOffset;
-    Weapon weapon1;
-    Weapon weapon2;
-    Weapon weapon3;
-} WeaponCheat;
-
 typedef struct {
     uintptr_t regionOffset;
     size_t regionSize;
@@ -268,9 +176,6 @@ extern SimpleCheat SIMPLE_CHEAT_SET_HEADSHOTS;
 // Teleport box
 extern TeleportCheat TELEPORT_CHEAT;
 
-// Weapons box
-extern WeaponCheat WEAPON_CHEAT;
-
 // Round Change box
 extern RoundCheat ROUND_CHEAT;
 
@@ -317,8 +222,6 @@ extern ServerCheat SERVER_CHEAT_CBUF_ADDTEXT;
 extern ServerCheat SERVER_CHEAT_GET_DVAR_PTR;
 
 SimpleCheat cheatGetSimpleCheat(SimpleCheatName cheatName);
-const char *cheatGetWeaponName(WeaponName weapon);
-WeaponName cheatGetSanitizedWeapon(int index);
 CustomizerCheat cheatGetCustomizerCheat(SimpleCheatName cheatName);
 
 #endif // CHEAT_H_

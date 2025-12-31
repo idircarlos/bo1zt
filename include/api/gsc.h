@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include "controller.h"
+#include "logic/cheat.h"
 #include "utils/list.h"
 
 typedef struct GscApi GscApi;
@@ -19,5 +20,8 @@ bool gscApiSetStaticBox(GscApi *gscApi, bool enabled);
 bool gscApiPlayEasterEggSong(GscApi *gscApi);
 
 int gscApiGetRound(GscApi *gscApi);
+
+bool gscApiGiveWeapons(GscApi *gscApi, List *weapons);
+bool gscApiTakeWeapons(GscApi *gscApi);
 
 #endif // API_GSC_H_

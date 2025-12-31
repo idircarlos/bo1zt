@@ -18,6 +18,8 @@ static const char *GSC_METHOD_NAMES[] = {
     "StaticBox",
     "PlayEasterEggSong",
     "GetRound",
+    "GiveWeapons",
+    "TakeWeapons",
 };
 
 static int GSC_METHOD_NAMES_SIZE = sizeof(GSC_METHOD_NAMES)/sizeof(GSC_METHOD_NAMES[0]);

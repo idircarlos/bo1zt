@@ -19,10 +19,6 @@ bool apiIsCheatEnabled(Api *api, CheatName cheatName);
 bool apiSetCheatEnabled(Api *api, CheatName cheatName, bool enabled);
 bool apiSetSimpleCheat(Api *api, SimpleCheatName simpleCheatName, void *value);
 TeleportCoords *apiGetPlayerCurrentCoords(Api *api);
-WeaponName apiGetPlayerCurrentWeapon(Api *api);
-WeaponName apiGetPlayerWeapon(Api *api, int slot);
-bool apiSetPlayerWeapon(Api *api, WeaponName weapon, int slot);
-bool apiGivePlayerAmmo(Api *api);
 bool apiSetRound(Api *api, int round);
 bool apiIsGameReady(Api *api);
 Level apiGetLevelName(Api *api);
@@ -47,5 +43,7 @@ bool apiGetStaticBox(Api *api);
 bool apiSetStaticBox(Api *api, bool enabled);
 bool apiPlayEasterEggSong(Api *api);
 int apiGetRound(Api *api);
+bool apiGiveWeapons(Api *api, List *weapons);
+bool apiTakeWeapons(Api *api);
 
 #endif // API_H_

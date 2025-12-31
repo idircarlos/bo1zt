@@ -83,7 +83,6 @@ bool _rawApiSetShowFps(Process *process, bool enabled);
 
 bool _rawApiChangeName(Process *process, char *name);
 bool _rawApiSetSpeed(Process *process, uint32_t value);
-bool _rawApiGiveWeaponAmmo(Process *process, Weapon weapon);
 bool _rawApiTeleport(Process *process, TeleportCoords value);
 bool _rawApiChangeHostname(Process *process, char *hostname);
 bool _rawApiFov(Process *process, float value);
@@ -318,91 +317,6 @@ TeleportCoords *rawApiGetPlayerCurrentCoords(RawApi *rawApi) {
     processRead(process, TELEPORT_CHEAT.zOffset, &coords->z, sizeof(coords->z));
 
     return coords;
-}
-
-WeaponName rawApiGetPlayerCurrentWeapon(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
-        return WEAPON_UNKNOWNWEAPON;
-    }
-    
-    Process *process = controllerGetProcess(rawApi->controller);
-    if (!process) {
-        LOG_ERROR("Process is null\n");
-        return WEAPON_UNKNOWNWEAPON;
-    }
-
-    uint8_t weapon;
-    bool success = processRead(process, WEAPON_CHEAT.currentWeaponOffset, &weapon, sizeof(uint8_t));
-    if (!success) {
-        printf("Failed to read Current WeaponName value\n");
-        return WEAPON_UNKNOWNWEAPON;
-    }
-    return (WeaponName)weapon;
-}
-
-WeaponName rawApiGetPlayerWeapon(RawApi *rawApi, int slot) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
-        return WEAPON_UNKNOWNWEAPON;
-    }
-    
-    Process *process = controllerGetProcess(rawApi->controller);
-    if (!process) {
-        LOG_ERROR("Process is null\n");
-        return WEAPON_UNKNOWNWEAPON;
-    }
-
-    if (slot < 1 || slot > 3) {
-        printf("Slot %d is invalid. Posible slots are 1, 2 or 3.\n", slot);
-        return WEAPON_UNKNOWNWEAPON;
-    }
-    uint32_t slotOffset = slot == 1 ? WEAPON_CHEAT.weapon1.weaponOffset : (slot == 2 ? WEAPON_CHEAT.weapon2.weaponOffset : WEAPON_CHEAT.weapon3.weaponOffset);
-    uint8_t weapon;
-    bool success = processRead(process, slotOffset, &weapon, sizeof(weapon));
-    if (!success) {
-        printf("Failed to read Player Weapon value on slot %d\n", slot);
-        return WEAPON_UNKNOWNWEAPON;
-    }
-    return (WeaponName)weapon;
-}
-
-bool rawApiSetPlayerWeapon(RawApi *rawApi, WeaponName weapon, int slot) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
-        return false;
-    }
-    
-    Process *process = controllerGetProcess(rawApi->controller);
-    if (!process) {
-        LOG_ERROR("Process is null\n");
-        return false;
-    }
-
-    if (slot < 1 || slot > 3) {
-        printf("Slot %d is invalid. Posible slots are 1, 2 or 3.\n", slot);
-        return false;
-    }
-    uint32_t slotOffset = slot == 1 ? WEAPON_CHEAT.weapon1.weaponOffset : (slot == 2 ? WEAPON_CHEAT.weapon2.weaponOffset : WEAPON_CHEAT.weapon3.weaponOffset);
-    uint8_t weaponValue = (uint8_t)weapon;
-    return processWrite(process, slotOffset, &weapon, sizeof(weaponValue));
-}
-
-bool rawApiGivePlayerAmmo(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
-        return false;
-    }
-    
-    Process *process = controllerGetProcess(rawApi->controller);
-    if (!process) {
-        LOG_ERROR("Process is null\n");
-        return false;
-    }
-
-    return _rawApiGiveWeaponAmmo(process, WEAPON_CHEAT.weapon1) &&
-           _rawApiGiveWeaponAmmo(process, WEAPON_CHEAT.weapon2) &&
-           _rawApiGiveWeaponAmmo(process, WEAPON_CHEAT.weapon3);
 }
 
 bool rawApiSetRound(RawApi *rawApi, int currentRound, int nextRound) {
@@ -1207,12 +1121,6 @@ bool _rawApiSetSpeed(Process *process, uint32_t value) {
     }
     LOG_DEBUG("Writting %d in %x\n", value, cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(uint32_t));
-}
-
-bool _rawApiGiveWeaponAmmo(Process *process, Weapon weapon) {
-    uint32_t bullets = 1000;
-    return processWrite(process, weapon.clipOffset, &bullets, sizeof(bullets)) &&
-           processWrite(process, weapon.ammoOffset, &bullets, sizeof(bullets));
 }
 
 bool _rawApiTeleport(Process *process, TeleportCoords value) {

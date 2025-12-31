@@ -75,6 +75,10 @@ bool gameEnd(Game *game, int endTimestamp) {
 
 bool gameUpdateElapsed(Game *game, int levelElapsed) {
     game->elapsed = levelElapsed - game->startTimestamp;
+    Round *round = &game->currentRound;
+    if (roundRunning(round)) {
+        roundUpdateElapsed(round, levelElapsed);
+    }
     return true;
 }
 

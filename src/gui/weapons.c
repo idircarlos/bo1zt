@@ -1,4 +1,6 @@
 #include "gui/weapons.h"
+#include "logic/game/weapon.h"
+#include "utils/list.h"
 
 // Controller instance
 static Controller *controller;
@@ -8,24 +10,103 @@ static uiWindow *parent;
 
 // Give Weapon
 static uiCombobox *weaponsCombo = NULL;
+static uiButton *takeWeaponsBtn = NULL;
 static uiButton *giveAmmoBtn = NULL;
 static uiButton *giveWeaponBtn = NULL;
-static uiRadioButtons *weaponSlotsRadioButtons = NULL;
+
+static const char *weaponList [] = {
+    "M1911",
+    "Mustang and Sally",
+    "Python",
+    "Cobra",
+    "CZ75",
+    "Calamity",
+    "M14",
+    "Mnesia",
+    "M16",
+    "Skullcrusher",
+    "G11",
+    "G115 Generator",
+    "Famas",
+    "G16 GL35",
+    "AK74u",
+    "AK74fu2",
+    "MP5K",
+    "MP115 Kollider",
+    "MP40",
+    "The Afterburner",
+    "MPL",
+    "MPL-LF",
+    "PM63",
+    "Tokyo and Rose",
+    "Spectre",
+    "Phantom",
+    "CZ75 Dual Wield",
+    "Calamity and Jame",
+    "Stakeout",
+    "Raid",
+    "Olympia",
+    "Hades",
+    "Spas-12",
+    "Spaz-24",
+    "HS10",
+    "Typhoid and Mary",
+    "AUG",
+    "AUG-50M3",
+    "Galil",
+    "Lamentation",
+    "Commando",
+    "Predator",
+    "FN FAL",
+    "EPC WN",
+    "Dragunov",
+    "D115 Disassembler",
+    "L96A1",
+    "L115 Isolator",
+    "RPK",
+    "R115 Resonator",
+    "HK21",
+    "H115 Oscilator",
+    "M72 LAW",
+    "M72 Anarchy",
+    "China Lake",
+    "China Beach",
+    "Ray Gun",
+    "Porter's X2 Ray Gun",
+    "Thundergun",
+    "ZeusCannon",
+    "Crowssbow",
+    "Awful Lawton",
+    "Ballistic Knife",
+    "The Krauss Refibrillator",
+    "Ballistic Knife + Bowie",
+    "The Krauss Refibrillator + Bowie"
+};
+
+static const int weaponListCount = sizeof(weaponList) / sizeof(weaponList[0]);
 
 // Handlers
+static void onTakeWeaponsButtonClicked(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    controllerTakeWeapons(controller);
+}
+
 static void onGiveWeaponButtonClicked(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    int slot = uiRadioButtonsSelected(weaponSlotsRadioButtons) + 1;
     int index = uiComboboxSelected(weaponsCombo);
-    WeaponName weapon = cheatGetSanitizedWeapon(index);
-    controllerSetPlayerWeapon(controller, weapon, slot);
+    Weapon weapon = (Weapon)index;
+    List *weapons = listCreate();
+    listAddInt(weapons, weapon);
+    controllerGiveWeapons(controller, weapons);
+    listDestroy(weapons);
 }
 
 static void onGiveAmmoButtonClicked(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    controllerGivePlayerAmmo(controller);
+    // controllerGivePlayerAmmo(controller);
 }
 
 static void onWeaponSlotsSelected(uiRadioButtons *radioButtons, void *data) {
@@ -42,55 +123,39 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiBox *weaponsVBox = uiNewVerticalBox();
     uiBoxSetPadded(weaponsVBox, 1);
 
-    // Combobox con lista de armas
+    // Weapon list
     weaponsCombo = uiNewCombobox();
-    for (int i = 0; i < NUM_WEAPON_IDS; i++) {
-        const char *weaponName = cheatGetWeaponName((WeaponName)i);
-        if (weaponName != NULL) {
-            uiComboboxAppend(weaponsCombo, weaponName);
-        }
+    for (int i = 0; i < weaponListCount; i++) {
+        uiComboboxAppend(weaponsCombo, weaponList[i]);
     } 
     uiComboboxSetSelected(weaponsCombo, 2);
 
-    // Botones de armas
+    takeWeaponsBtn = uiNewButton("Take Weapons");
+    uiButtonOnClicked(takeWeaponsBtn, onTakeWeaponsButtonClicked, NULL);
+
     giveWeaponBtn = uiNewButton("Give Weapon");
-    uiControlDisable(uiControl(giveWeaponBtn));
     uiButtonOnClicked(giveWeaponBtn, onGiveWeaponButtonClicked, NULL);
 
     giveAmmoBtn = uiNewButton("Give Ammo");
     uiButtonOnClicked(giveAmmoBtn, onGiveAmmoButtonClicked, NULL);
-
-    weaponSlotsRadioButtons = uiNewRadioButtons();
-    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 1 ");
-    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 2 ");
-    uiRadioButtonsAppend(weaponSlotsRadioButtons, " Slot 3 ");
-
-    uiRadioButtonsOnSelected(weaponSlotsRadioButtons, onWeaponSlotsSelected, NULL);
     
 
-    // Caja horizontal para los dos botones
     uiBox *weaponsButtonsHBox = uiNewHorizontalBox();
     uiBoxSetPadded(weaponsButtonsHBox, 1);
-    uiBoxAppend(weaponsButtonsHBox, uiControl(weaponSlotsRadioButtons), 0);
-    uiBoxAppend(weaponsButtonsHBox, uiControl(giveAmmoBtn), 1);
+    uiBoxAppend(weaponsButtonsHBox, uiControl(takeWeaponsBtn), 1);
     uiBoxAppend(weaponsButtonsHBox, uiControl(giveWeaponBtn), 1);
+    uiBoxAppend(weaponsButtonsHBox, uiControl(giveAmmoBtn), 1);
 
-    // Añadir al VBox principal
     uiBoxAppend(weaponsVBox, uiControl(weaponsCombo), 0);
     uiBoxAppend(weaponsVBox, uiControl(weaponsButtonsHBox), 1);
 
-    // Añadir el VBox al grupo
     uiGroupSetChild(weaponGroup, uiControl(weaponsVBox));
     uiGroupSetMargined(weaponGroup, 1);
     return uiControl(weaponGroup);
 }
 
 static void update() {
-    WeaponName w2 = controllerGetPlayerWeapon(controller, 2);
-    WeaponName w3 = controllerGetPlayerWeapon(controller, 3);
-
-    w2 == WEAPON_UNKNOWNWEAPON ? uiDisableRadioButton(weaponSlotsRadioButtons, 1) : uiEnableRadioButton(weaponSlotsRadioButtons, 1);
-    w3 == WEAPON_UNKNOWNWEAPON ? uiDisableRadioButton(weaponSlotsRadioButtons, 2) : uiEnableRadioButton(weaponSlotsRadioButtons, 2);
+    // Nothing
 }
 
 UIControlGroup *uiWeaponsBuildControlGroup() {
