@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include "controller.h"
-#include "logic/cheat.h"
 #include "utils/list.h"
 
 typedef struct GscApi GscApi;

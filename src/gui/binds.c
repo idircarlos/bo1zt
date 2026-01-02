@@ -59,17 +59,6 @@ static inline bool hasCommand(const KeyBind *kb) {
     return kb != NULL && kb->command != NULL && kb->command[0] != '\0';
 }
 
-static char *trimWhitespace(char *str) {
-    while (*str == ' ' || *str == '\t') str++;
-    if (*str == '\0') return str;
-    
-    char *end = str + strlen(str) - 1;
-    while (end > str && (*end == ' ' || *end == '\t')) end--;
-    *(end + 1) = '\0';
-    
-    return str;
-}
-
 static void executeCommands(const char *commandString) {
     if (commandString == NULL || commandString[0] == '\0') return;
     

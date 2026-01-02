@@ -2,8 +2,10 @@
 #include "api/raw.h"
 #include "api/gsc.h"
 #include "controller.h"
+#include "controller/controller_internal.h"
 #include "logic/cheat.h"
 #include "logger.h"
+#include "logic/server.h"
 #include <stdlib.h>
 
 struct Api {
@@ -189,6 +191,11 @@ bool apiPlayEasterEggSong(Api *api) {
 int apiGetRound(Api *api) {
     if (!api || !api->gsc) return false;
     return gscApiGetRound(api->gsc);
+}
+
+bool apiGiveAmmo(Api *api) {
+    if (!api) return false;
+    return serverExecuteCommand(_controllerGetServer(api->controller), "give ammo");
 }
 
 bool apiGiveWeapons(Api *api, List *weapons) {

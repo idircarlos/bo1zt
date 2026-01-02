@@ -243,6 +243,11 @@ TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller) {
     return apiGetPlayerCurrentCoords(controller->api);
 }
 
+bool controllerGiveAmmo(Controller *controller) {
+    if (!controller) return false;
+    return apiGiveAmmo(controller->api);
+}
+
 bool controllerGiveWeapons(Controller *controller, List *weapons) {
     if (!controller) return false;
     return apiGiveWeapons(controller->api, weapons);

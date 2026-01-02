@@ -70,6 +70,10 @@ static const char* nativeGscScripts[] = {
     "maps/zombie_cod5_sumpf",
     "maps/zombie_cod5_asylum",
     "maps/zombie_cod5_factory",
+    // Common
+    "maps/_zombiemode_weap_black_hole_bomb",
+    "maps/_zombiemode_weap_nesting_dolls",
+    "maps/_zombiemode_weap_quantum_bomb",
 };
 
 static const size_t nativeGscScriptsCount = sizeof(nativeGscScripts) / sizeof(nativeGscScripts[0]);

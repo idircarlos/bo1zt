@@ -15,6 +15,10 @@ static uiButton *giveAmmoBtn = NULL;
 static uiButton *giveWeaponBtn = NULL;
 
 static const char *weaponList [] = {
+    "Cymbal Monkey",
+    "Black Hole",
+    "Nesting Dolls",
+    "Quantum Bomb",
     "M1911",
     "Mustang and Sally",
     "Python",
@@ -106,13 +110,7 @@ static void onGiveWeaponButtonClicked(uiButton *button, void *data) {
 static void onGiveAmmoButtonClicked(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    // controllerGivePlayerAmmo(controller);
-}
-
-static void onWeaponSlotsSelected(uiRadioButtons *radioButtons, void *data) {
-    (void)radioButtons;
-    (void)data;
-    uiControlEnable(uiControl(giveWeaponBtn));
+    controllerGiveAmmo(controller);
 }
 
 static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
@@ -127,8 +125,9 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     weaponsCombo = uiNewCombobox();
     for (int i = 0; i < weaponListCount; i++) {
         uiComboboxAppend(weaponsCombo, weaponList[i]);
-    } 
-    uiComboboxSetSelected(weaponsCombo, 2);
+    }
+    
+    uiComboboxSetSelected(weaponsCombo, 0);
 
     takeWeaponsBtn = uiNewButton("Take Weapons");
     uiButtonOnClicked(takeWeaponsBtn, onTakeWeaponsButtonClicked, NULL);

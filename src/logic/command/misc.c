@@ -37,6 +37,10 @@ static Perk getPerkFromAbbreviation(const char *perkAbbreviation) {
 }
 
 static Weapon getWeaponFromAbbreviation(const char *weaponAbbreviation) {
+    if (strcmp("mk", weaponAbbreviation) == 0) return WEAPON_CYMBAL_MONKEY;
+    if (strcmp("bh", weaponAbbreviation) == 0) return WEAPON_BLACK_HOLE;
+    if (strcmp("nd", weaponAbbreviation) == 0) return WEAPON_NESTING_DOLLS;
+    if (strcmp("qb", weaponAbbreviation) == 0) return WEAPON_QUANTUM_BOMB;
     if (strcmp("ray", weaponAbbreviation) == 0) return WEAPON_RAY_GUN;
     if (strcmp("tg", weaponAbbreviation) == 0) return WEAPON_THUNDERGUN;
     if (strcmp("bow", weaponAbbreviation) == 0) return WEAPON_AWFUL_LAWTON;

@@ -11,6 +11,10 @@
 #define GSC_PERK_STAMINA_PLUS                   "specialty_longersprint"
 #define GSC_PERK_MULE_KICK                      "specialty_additionalprimaryweapon"
 
+#define GSC_WEAPON_CYMBAL_MONKEY                "zombie_cymbal_monkey"
+#define GSC_WEAPON_BLACK_HOLE                   "zombie_black_hole_bomb"
+#define GSC_WEAPON_NESTING_DOLLS                "zombie_nesting_dolls"
+#define GSC_WEAPON_QUANTUM_BOMB                 "zombie_quantum_bomb"
 #define GSC_WEAPON_M1911                        "m1911_zm"
 #define GSC_WEAPON_MUSTANG_AND_SALLY            "m1911_upgraded_zm"
 #define GSC_WEAPON_PYTHON                       "python_zm"

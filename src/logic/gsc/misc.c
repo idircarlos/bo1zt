@@ -16,6 +16,10 @@ const char* gscGetPerkName(Perk perk) {
 
 const char* gscGetWeaponName(Weapon weapon) {
     switch (weapon) {
+        case WEAPON_CYMBAL_MONKEY: return GSC_WEAPON_CYMBAL_MONKEY;
+        case WEAPON_BLACK_HOLE: return GSC_WEAPON_BLACK_HOLE;
+        case WEAPON_NESTING_DOLLS: return GSC_WEAPON_NESTING_DOLLS;
+        case WEAPON_QUANTUM_BOMB: return GSC_WEAPON_QUANTUM_BOMB;
         case WEAPON_M1911: return GSC_WEAPON_M1911;
         case WEAPON_MUSTANG_AND_SALLY: return GSC_WEAPON_MUSTANG_AND_SALLY;
         case WEAPON_PYTHON: return GSC_WEAPON_PYTHON;

@@ -46,4 +46,7 @@ int apiGetRound(Api *api);
 bool apiGiveWeapons(Api *api, List *weapons);
 bool apiTakeWeapons(Api *api);
 
+// Others (such as using Server)
+bool apiGiveAmmo(Api *api);
+
 #endif // API_H_
