@@ -39,6 +39,7 @@ bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, voi
 bool controllerIsCheatCheckboxChecked(Controller *controller, CheatName cheat);
 int controllerUiGraphicsGetFpsCap(Controller *controller);
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller);
+bool controllerGiveAmmo(Controller *controller);
 bool controllerGiveWeapons(Controller *controller, List *weapons);
 bool controllerTakeWeapons(Controller *controller);
 bool controllerSetRound(Controller *controller, int round);
