@@ -30,54 +30,6 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     bool enabled = uiCheckboxChecked(checkbox);
     
     CheatManager *cheatManager = controllerGetCheatManager(controller);
-    if (!cheatManager) {
-        // Fallback: update Config directly if CheatManager not available
-        Config *config = controllerGetConfig(controller);
-        HacksConfig *hacks = &config->hacks;
-        
-        switch (cheatName) {
-            case CHEAT_NAME_GOD_MODE:
-                hacks->godMode = enabled;
-                break;
-            case CHEAT_NAME_NO_CLIP:
-                hacks->noClip = enabled;
-                break;
-            case CHEAT_NAME_INVISIBLE:
-                hacks->invisible = enabled;
-                break;
-            case CHEAT_NAME_INFINITE_AMMO:
-                hacks->infiniteAmmo = enabled;
-                break;
-            case CHEAT_NAME_INSTANT_KILL:
-                hacks->instantKill = enabled;
-                break;
-            case CHEAT_NAME_NO_RECOIL:
-                hacks->noRecoil = enabled;
-                break;
-            case CHEAT_NAME_SMALL_CROSSHAIR:
-                hacks->smallCrosshair = enabled;
-                break;
-            case CHEAT_NAME_FAST_GAMEPLAY:
-                hacks->fastGameplay = enabled;
-                break;
-            case CHEAT_NAME_NO_SHELLSHOCK:
-                hacks->noShellshock = enabled;
-                break;
-            case CHEAT_NAME_INCREASE_KNIFE_RANGE:
-                hacks->increaseKnifeRange = enabled;
-                break;
-            case CHEAT_NAME_BOX_NEVER_MOVES:
-                hacks->boxNeverMoves = enabled;
-                break;
-            case CHEAT_NAME_THIRD_PERSON:
-                hacks->thirdPerson = enabled;
-                break;
-            default:
-                break;
-        }
-        return;
-    }
-    
     CheatResult result = cheatManagerSetToggle(cheatManager, cheatName, enabled);
     
     // If API failed, revert checkbox to previous state

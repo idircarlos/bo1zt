@@ -116,6 +116,8 @@ static bool isValueCheatUnchanged(CheatManager *manager, SimpleCheatName cheat, 
             return manager->applied.fpsCap == *(int *)value;
         case SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME:
             return strcmp(manager->applied.hostname, (const char *)value) == 0;
+        case SIMPLE_CHEAT_NAME_CHARACTER:
+            return manager->applied.character == *(int *)value;
         default:
             return false;
     }
@@ -138,6 +140,9 @@ static void updateAppliedValueCheat(CheatManager *manager, SimpleCheatName cheat
             strncpy(manager->applied.hostname, (const char *)value, sizeof(manager->applied.hostname) - 1);
             manager->applied.hostname[sizeof(manager->applied.hostname) - 1] = '\0';
             break;
+        case SIMPLE_CHEAT_NAME_CHARACTER:
+            manager->applied.character = *(int *)value;
+            break;
         default:
             break;
     }
@@ -149,6 +154,7 @@ static bool hasTrackedAppliedState(SimpleCheatName cheat) {
         case SIMPLE_CHEAT_NAME_FOV_SCALE:
         case SIMPLE_CHEAT_NAME_FPS_CAP:
         case SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME:
+        case SIMPLE_CHEAT_NAME_CHARACTER:
             return true;
         default:
             return false;
@@ -172,9 +178,18 @@ static void updateConfigValueCheat(Config *config, SimpleCheatName cheat, void *
             strncpy(config->game.hostname, (const char *)value, sizeof(config->game.hostname) - 1);
             config->game.hostname[sizeof(config->game.hostname) - 1] = '\0';
             break;
+        case SIMPLE_CHEAT_NAME_CHARACTER:
+            config->game.character = *(int *)value;
+            break;
         default:
             break;
     }
+}
+
+static bool applyCharacter(CheatManager *manager, int character) {
+    Server *server = _controllerGetServer(manager->controller);
+    if (!server) return false;
+    return serverSetDVarInt(server, "bo1zt_character", character);
 }
 
 CheatResult cheatManagerSetValue(CheatManager *manager, SimpleCheatName cheat, void *value) {
@@ -196,11 +211,17 @@ CheatResult cheatManagerSetValue(CheatManager *manager, SimpleCheatName cheat, v
         return CHEAT_RESULT_CONDITION_NOT_MET;
     }
     
-    // Call API to apply the value cheat
-    Api *api = _controllerGetApi(manager->controller);
-    if (!api) return CHEAT_RESULT_API_FAILED;
+    bool apiResult = false;
     
-    bool apiResult = apiSetSimpleCheat(api, cheat, value);
+    // Character uses serverSetDVarInt instead of API
+    if (cheat == SIMPLE_CHEAT_NAME_CHARACTER) {
+        apiResult = applyCharacter(manager, *(int *)value);
+    } else {
+        Api *api = _controllerGetApi(manager->controller);
+        if (!api) return CHEAT_RESULT_API_FAILED;
+        apiResult = apiSetSimpleCheat(api, cheat, value);
+    }
+    
     if (!apiResult) {
         notifyCheatFailed(manager);
         return CHEAT_RESULT_API_FAILED;

@@ -32,7 +32,6 @@ static void onPlayerChangeNameButtonClick(uiButton *button, void *data) {
 static void onPlayerButtonClick(uiButton *button, void *data) {
     (void)button;
     SimpleCheatName simpleCheatName = (SimpleCheatName)(uintptr_t)data;
-    LOG_INFO("Cheat %d\n", simpleCheatName);
     void *value = NULL;
     int spinBoxValue;
 

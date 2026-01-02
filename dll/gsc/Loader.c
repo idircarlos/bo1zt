@@ -42,12 +42,34 @@ static int funcHandle = 0;
 
 // Order matters since scripts depends on others!
 static const char* nativeGscScripts[] = {
+    // Kino
     "maps/zombie_theater_amb",
+    "character/c_usa_dempsey_zt",
+    "character/c_rus_nikolai_zt",
+    "character/c_jap_takeo_zt",
+    "character/c_ger_richtofen_zt",
+    // Five
     "maps/zombie_pentagon_amb",
+    // Ascension
+    "maps/zombie_cosmodrome_amb",
+    "character/c_usa_dempsey_dlc2",
+    "character/c_rus_nikolai_dlc2",
+    "character/c_jap_takeo_dlc2",
+    "character/c_ger_richtofen_dlc2",
+    // Moon
+    "character/c_usa_dempsey_dlc5",
+    "character/c_rus_nikolai_dlc5",
+    "character/c_jap_takeo_dlc5",
+    "character/c_ger_richtofen_dlc5",
+    // Call of the Dead
+    "character/c_zom_sarah_michelle_gellar_player",
+    "character/c_zom_robert_englund_player",
+    "character/c_zom_danny_trejo_player",
+    "character/c_zom_michael_rooker_player",
+    // WaW Classics
     "maps/zombie_cod5_sumpf",
     "maps/zombie_cod5_asylum",
     "maps/zombie_cod5_factory",
-    "maps/zombie_cosmodrome_amb",
 };
 
 static const size_t nativeGscScriptsCount = sizeof(nativeGscScripts) / sizeof(nativeGscScripts[0]);
@@ -60,6 +82,7 @@ static const char* gscScripts[] = {
     "api/level.gsc",
     "api/weapons.gsc",
     "api.gsc",
+    "startup.gsc",
     "listeners.gsc",
     "workers.gsc",
     "main.gsc",

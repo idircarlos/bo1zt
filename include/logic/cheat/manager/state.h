@@ -34,6 +34,7 @@ typedef struct {
     int fovScale;
     int fpsCap;
     char hostname[256];
+    int character;
 } AppliedState;
 
 void appliedStateClear(AppliedState *applied);

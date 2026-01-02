@@ -106,6 +106,7 @@ static bool configLoad(Config *config) {
     strcpy(config->game.hostname, iniparser_getstring(dictionary, "Game:Hostname", config->game.hostname));
     strcpy(config->game.location, iniparser_getstring(dictionary, "Game:Location", config->game.location));
     normalizePath(config->game.location);
+    config->game.character = iniparser_getint(dictionary, "Game:Character", config->game.character);
     config->graphics.fov = iniparser_getint(dictionary, "Graphics:FOV", config->graphics.fov);
     config->graphics.fovScale = iniparser_getint(dictionary, "Graphics:FOVScale", config->graphics.fovScale);
     config->graphics.fpsCap = iniparser_getint(dictionary, "Graphics:FPSCap", config->graphics.fpsCap);
@@ -212,6 +213,7 @@ bool configSave(Config *config) {
     ret += iniparser_set(dictionary, "Game:ShowFPS", strfmt(valueBuffer, "%d", config->game.showFps));
     ret += iniparser_set(dictionary, "Game:Hostname", strfmt(valueBuffer, "%s", config->game.hostname));
     ret += iniparser_set(dictionary, "Game:Location", strfmt(valueBuffer, "%s", config->game.location));
+    ret += iniparser_set(dictionary, "Game:Character", strfmt(valueBuffer, "%d", config->game.character));
     ret += iniparser_set(dictionary, "Graphics", NULL);
     ret += iniparser_set(dictionary, "Graphics:FOV", strfmt(valueBuffer, "%d", config->graphics.fov));
     ret += iniparser_set(dictionary, "Graphics:FOVScale", strfmt(valueBuffer, "%d", config->graphics.fovScale));
@@ -313,6 +315,7 @@ void configResetGame(Config *config) {
     game.showFps = false;
     strcpy(game.hostname, "");
     strcpy(game.location, "");
+    game.character = 4; // CHARACTER_RANDOM
     config->game = game;
 }
 

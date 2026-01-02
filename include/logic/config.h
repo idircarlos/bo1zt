@@ -14,6 +14,7 @@ typedef struct {
     bool showFps;
     char hostname[256];
     char location[256];
+    int character;
 } GameConfig;
 
 typedef struct {

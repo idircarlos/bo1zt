@@ -213,24 +213,7 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
     
-    CheatManager *cheatManager = controllerGetCheatManager(controller);
-    if (!cheatManager) {
-        // Fallback: update Config directly if CheatManager not available
-        Config *config = controllerGetConfig(controller);
-        switch (cheatName) {
-            case CHEAT_NAME_FIX_MOVEMENT_SPEED:
-                config->game.fixMovementSpeed = enabled;
-                break;
-            case CHEAT_NAME_SHOW_FPS:
-                config->game.showFps = enabled;
-                break;
-            default:
-                break;
-        }
-        configSave(config);
-        return;
-    }
-    
+    CheatManager *cheatManager = controllerGetCheatManager(controller);    
     CheatResult result = cheatManagerSetToggle(cheatManager, cheatName, enabled);
     
     // If API failed, revert checkbox to previous state

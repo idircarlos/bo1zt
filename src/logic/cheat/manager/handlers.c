@@ -38,6 +38,12 @@ static bool checkSimpleCheatConditions(CheatManager *manager, SimpleCheatName ch
     return checkConditions(manager, def->condition);
 }
 
+static bool applyCharacter(CheatManager *manager, int character) {
+    Server *server = _controllerGetServer(manager->controller);
+    if (!server) return false;
+    return serverSetDVarInt(server, "bo1zt_character", character);
+}
+
 void cheatManagerHandleGameStart(CheatManager *manager) {
     if (!manager || !manager->config) return;
     
@@ -95,6 +101,13 @@ void cheatManagerHandleStateChange(CheatManager *manager) {
         if (apiSetSimpleCheat(api, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, game->hostname)) {
             strncpy(manager->applied.hostname, game->hostname, sizeof(manager->applied.hostname) - 1);
             manager->applied.hostname[sizeof(manager->applied.hostname) - 1] = '\0';
+        }
+    }
+    
+    // Character
+    if (manager->applied.character != game->character && checkSimpleCheatConditions(manager, SIMPLE_CHEAT_NAME_CHARACTER)) {
+        if (applyCharacter(manager, game->character)) {
+            manager->applied.character = game->character;
         }
     }
 }
@@ -155,6 +168,13 @@ void cheatManagerHandleGameAttach(CheatManager *manager) {
         if (apiSetSimpleCheat(api, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, game->hostname)) {
             strncpy(manager->applied.hostname, game->hostname, sizeof(manager->applied.hostname) - 1);
             manager->applied.hostname[sizeof(manager->applied.hostname) - 1] = '\0';
+        }
+    }
+    
+    // Character
+    if (checkSimpleCheatConditions(manager, SIMPLE_CHEAT_NAME_CHARACTER)) {
+        if (applyCharacter(manager, game->character)) {
+            manager->applied.character = game->character;
         }
     }
 }
