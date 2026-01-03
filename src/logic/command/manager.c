@@ -10,55 +10,75 @@
 #include <stdlib.h>
 #include <windows.h>
 
+typedef struct {
+    CommandIteratorFn userFn;
+    void *userData;
+} CommandForEachContext;
+
+static CommandEntry *createEntry(CommandName name, const char *usage, const char *description) {
+    CommandEntry *entry = (CommandEntry *)malloc(sizeof(CommandEntry));
+    if (!entry) return NULL;
+    entry->name = name;
+    entry->usage = usage;
+    entry->description = description;
+    return entry;
+}
+
+static void registerCommand(Map *map, const char *cmd, CommandName name, 
+                           const char *usage, const char *description) {
+    CommandEntry *entry = createEntry(name, usage, description);
+    if (entry) mapPut(map, cmd, entry);
+}
+
 static Map *createCommandsMap(void) {
     Map *map = mapCreate();
 
     // Hacks
-    mapPutInt(map, "god", COMMAND_GOD);
-    mapPutInt(map, "noclip", COMMAND_NOCLIP);
-    mapPutInt(map, "invis", COMMAND_INVISIBLE);
-    mapPutInt(map, "infammo", COMMAND_INFAMMO);
-    mapPutInt(map, "insta", COMMAND_INSTA);
-    mapPutInt(map, "norecoil", COMMAND_NORECOIL);
-    mapPutInt(map, "noshellshock", COMMAND_NOSHELLSHOCK);
-    mapPutInt(map, "speed", COMMAND_SPEED);
-    mapPutInt(map, "knife", COMMAND_KNIFE);
-    mapPutInt(map, "crosshair", COMMAND_CROSSHAIR);
-    mapPutInt(map, "staticbox", COMMAND_STATICBOX);
-    mapPutInt(map, "thirdperson", COMMAND_THIRDPERSON);
+    registerCommand(map, "god", COMMAND_GOD, "/god", "Toggle god mode");
+    registerCommand(map, "noclip", COMMAND_NOCLIP, "/noclip", "Toggle noclip");
+    registerCommand(map, "invis", COMMAND_INVISIBLE, "/invis", "Toggle invisibility");
+    registerCommand(map, "infammo", COMMAND_INFAMMO, "/infammo", "Toggle infinite ammo");
+    registerCommand(map, "insta", COMMAND_INSTA, "/insta", "Toggle instant kill");
+    registerCommand(map, "norecoil", COMMAND_NORECOIL, "/norecoil", "Toggle no recoil");
+    registerCommand(map, "noshellshock", COMMAND_NOSHELLSHOCK, "/noshellshock", "Toggle no shellshock");
+    registerCommand(map, "speed", COMMAND_SPEED, "/speed", "Toggle fast gameplay");
+    registerCommand(map, "knife", COMMAND_KNIFE, "/knife", "Toggle increased knife range");
+    registerCommand(map, "crosshair", COMMAND_CROSSHAIR, "/crosshair", "Toggle small crosshair");
+    registerCommand(map, "staticbox", COMMAND_STATICBOX, "/staticbox", "Toggle box never moves");
+    registerCommand(map, "thirdperson", COMMAND_THIRDPERSON, "/thirdperson", "Toggle third person view");
 
     // Graphics
-    mapPutInt(map, "fov", COMMAND_FOV);
-    mapPutInt(map, "fovscale", COMMAND_FOVSCALE);
-    mapPutInt(map, "fps", COMMAND_FPS);
-    mapPutInt(map, "unlimitfps", COMMAND_UNLIMITFPS);
-    mapPutInt(map, "borderless", COMMAND_BORDERLESS);
-    mapPutInt(map, "disablehud", COMMAND_DISABLEHUD);
-    mapPutInt(map, "disablefog", COMMAND_DISABLEFOG);
-    mapPutInt(map, "fullbright", COMMAND_FULLBRIGHT);
-    mapPutInt(map, "colorized", COMMAND_COLORIZED);
+    registerCommand(map, "fov", COMMAND_FOV, "/fov <value>", "Set field of view");
+    registerCommand(map, "fovscale", COMMAND_FOVSCALE, "/fovscale <value>", "Set FOV scale");
+    registerCommand(map, "fps", COMMAND_FPS, "/fps <value>", "Set FPS cap");
+    registerCommand(map, "unlimitfps", COMMAND_UNLIMITFPS, "/unlimitfps", "Toggle unlimited FPS");
+    registerCommand(map, "borderless", COMMAND_BORDERLESS, "/borderless", "Toggle borderless window");
+    registerCommand(map, "disablehud", COMMAND_DISABLEHUD, "/disablehud", "Toggle HUD visibility");
+    registerCommand(map, "disablefog", COMMAND_DISABLEFOG, "/disablefog", "Toggle fog visibility");
+    registerCommand(map, "fullbright", COMMAND_FULLBRIGHT, "/fullbright", "Toggle fullbright");
+    registerCommand(map, "colorized", COMMAND_COLORIZED, "/colorized", "Toggle colorized mode");
 
     // GSC
-    mapPutInt(map, "perk", COMMAND_PERK);
+    registerCommand(map, "perk", COMMAND_PERK, "/perk <add | rm> <perks>", "Add/remove perks (jg qr sc dt su mk)");
 
     // Misc
-    mapPutInt(map, "give", COMMAND_GIVE);
-    mapPutInt(map, "tp", COMMAND_TP);
-    mapPutInt(map, "restart", COMMAND_RESTART);
-    mapPutInt(map, "music", COMMAND_MUSIC);
-    mapPutInt(map, "uwu", COMMAND_UWU);
+    registerCommand(map, "give", COMMAND_GIVE, "/give <ammo | weapon>", "Give ammo or weapon (ray tg bow mk bh)");
+    registerCommand(map, "tp", COMMAND_TP, "/tp [x y z]", "Teleport to coordinates");
+    registerCommand(map, "restart", COMMAND_RESTART, "/restart", "Restart the map");
+    registerCommand(map, "music", COMMAND_MUSIC, "/music", "Play easter egg song");
+    registerCommand(map, "uwu", COMMAND_UWU, "/uwu", "UwU");
 
     // Special rounds
-    mapPutInt(map, "dogs", COMMAND_DOGS);
-    mapPutInt(map, "monkeys", COMMAND_MONKEYS);
-    mapPutInt(map, "thief", COMMAND_THIEF);
+    registerCommand(map, "dogs", COMMAND_DOGS, "/dogs", "Show next dog round");
+    registerCommand(map, "monkeys", COMMAND_MONKEYS, "/monkeys", "Show next monkey round");
+    registerCommand(map, "thief", COMMAND_THIEF, "/thief", "Show next thief round");
 
     // Info
-    mapPutInt(map, "claymores", COMMAND_CLAYMORES);
-    mapPutInt(map, "entities", COMMAND_ENTITIES);
-    mapPutInt(map, "sph", COMMAND_SPH);
-    mapPutInt(map, "trade", COMMAND_TRADE);
-    mapPutInt(map, "revives", COMMAND_REVIVES);
+    registerCommand(map, "claymores", COMMAND_CLAYMORES, "/claymores", "Show claymore count");
+    registerCommand(map, "entities", COMMAND_ENTITIES, "/entities", "Show entity count");
+    registerCommand(map, "sph", COMMAND_SPH, "/sph [round]", "Show seconds per horde");
+    registerCommand(map, "trade", COMMAND_TRADE, "/trade [start | end | cancel | total]", "Manage trade timer");
+    registerCommand(map, "revives", COMMAND_REVIVES, "/revives", "Show quick revives drunk");
 
     return map;
 }
@@ -108,7 +128,21 @@ bool commandManagerIsValid(CommandManager *manager, const char *cmd) {
 CommandName commandManagerGetName(CommandManager *manager, const char *cmd) {
     if (!manager || !cmd) return COMMAND_UNKNOWN;
     if (!mapContains(manager->commandsMap, cmd)) return COMMAND_UNKNOWN;
-    return (CommandName)mapGetInt(manager->commandsMap, cmd);
+    CommandEntry *entry = (CommandEntry *)mapGet(manager->commandsMap, cmd);
+    return entry ? entry->name : COMMAND_UNKNOWN;
+}
+
+static void forEachAdapter(const char *key, void *value, void *userData) {
+    (void)key;
+    CommandForEachContext *ctx = (CommandForEachContext *)userData;
+    CommandEntry *entry = (CommandEntry *)value;
+    ctx->userFn(entry, ctx->userData);
+}
+
+void commandManagerForEach(CommandManager *manager, CommandIteratorFn fn, void *userData) {
+    if (!manager || !fn) return;
+    CommandForEachContext ctx = { fn, userData };
+    mapForEach(manager->commandsMap, forEachAdapter, &ctx);
 }
 
 void commandManagerUpdate(CommandManager *manager) {

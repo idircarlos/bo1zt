@@ -149,6 +149,19 @@ bool mapContains(struct Map *map, const char *key) {
     return entry ? true : false;
 }
 
+void mapForEach(struct Map *map, MapIteratorFn fn, void *userData) {
+    if (!map || !fn) return;
+    
+    size_t size = hash_sizes[map->size_index];
+    for (size_t i = 0; i < size; i++) {
+        struct MapEntry *entry = map->entries[i];
+        while (entry) {
+            fn(entry->key, entry->val, userData);
+            entry = entry->next;
+        }
+    }
+}
+
 // helper functions, definitions
 static struct Map *_MapCreateWithSize(size_t size_index) {
     struct Map *map;

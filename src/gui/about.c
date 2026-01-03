@@ -1,9 +1,7 @@
 #include "gui/about.h"
+#include "metadata.h"
 #include "resource_ids.h"
 
-#define VERSION "0.0.1a"
-#define GITHUB_URL "https://github.com/idircarlos/bo1zt"
-#define DISCORD_URL "https://discord.gg/zcFkKheNfG"
 
 // Controller instance
 static Controller *controller;
@@ -29,10 +27,10 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiBox *infoBox = uiNewVerticalBox();
     uiBoxSetPadded(infoBox, 1);
 
-    uiLabel *titleLabel = uiNewLabel("Black Ops 1 Zombies Trainer v" VERSION);
-    uiLink *discordLink = uiNewLink("Join our discord community", DISCORD_URL);
-    uiLink *githubLink = uiNewLink("See source code on Github", GITHUB_URL);
-    uiLabel *authorLabel = uiNewLabel("By rayito106 (aka idircarlos)");
+    uiLabel *titleLabel = uiNewLabel("Black Ops 1 Zombies Trainer v" BO1ZT_VERSION);
+    uiLink *discordLink = uiNewLink("Join our discord community", BO1ZT_DISCORD_URL);
+    uiLink *githubLink = uiNewLink("See source code on Github", BO1ZT_GITHUB_URL);
+    uiLabel *authorLabel = uiNewLabel("By " BO1ZT_BY);
 
     uiBoxAppend(infoBox, uiControl(titleLabel), 0);
     uiBoxAppend(infoBox, uiControl(discordLink), 0);

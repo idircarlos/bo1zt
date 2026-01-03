@@ -1,4 +1,5 @@
 #include "gui/binds.h"
+#include "gui/binds/help.h"
 #include "controller.h"
 #include "gui/binds/keymap.h"
 #include "gui/binds/colors.h"
@@ -7,6 +8,7 @@
 #include "logic/command.h"
 #include "logic/command/manager.h"
 #include "controller/controller_internal.h"
+#include "resource_ids.h"
 #include <ui.h>
 #include <windows.h>
 #include <string.h>
@@ -39,9 +41,16 @@ static uiFlexBox *flexBox;
 static uiEntry *entryCommand;
 static uiButton *btnReset;
 static uiButton *btnSave;
+static uiButton *btnHelp;
+static uiWindow *parent;
 static uiCustomButton *selectedKey = NULL;
 static bool hasUnsavedChanges = false;
 
+// Help window
+static UIControlGroup *helpControlGroup = NULL;
+static uiWindow *helpWindow = NULL;
+
+static void onHelpClick(uiButton *button, void *data);
 static void onKeyClick(uiCustomButton *button, void *data);
 static void onResetClick(uiButton *button, void *data);
 static void onSaveClick(uiButton *button, void *data);
@@ -429,10 +438,36 @@ static void onResetClick(uiButton *button, void *data) {
     LOG_INFO("Command cleared for key: %s\n", kb->keyName);
 }
 
+static int onHelpWindowClose(uiWindow *w, void *data) {
+    (void)data;
+    uiControlHide(uiControl(w));
+    return 0;
+}
+
+static void buildHelp(void) {
+    helpControlGroup = uiBindsHelpBuildControlGroup(commandManager);
+    
+    helpWindow = uiNewWindow("Commands Help", 500, 400, 0);
+    uiControl *helpGroup = helpControlGroup->build(controller, helpWindow);
+    
+    uiWindowOnClosing(helpWindow, onHelpWindowClose, NULL);
+    uiWindowSetMargined(helpWindow, 1);
+    uiWindowSetChild(helpWindow, uiControl(helpGroup));
+    uiWindowSetResizeable(helpWindow, false);
+    uiWindowSetMargined(helpWindow, true);
+    uiWindowSetIcon(helpWindow, IDI_ICON1);
+}
+
+static void onHelpClick(uiButton *button, void *data) {
+    (void)button; (void)data;
+    uiControlShow(uiControl(helpWindow));
+}
+
 static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
-    (void)parentInstance;
     controller = controllerInstance;
+    parent = parentInstance;
     keyBindCount = 0;
+    commandManager = _controllerGetCommandManager(controller);
 
     uiBox *outerBox = uiNewVerticalBox();
     uiBoxSetPadded(outerBox, 1);
@@ -458,8 +493,13 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiButtonOnClicked(btnSave, onSaveClick, NULL);
     uiFlexBoxAppend(flexBox, uiControl(btnSave), 1048, 309, 85, 26);
 
+    btnHelp = uiNewButton("Help");
+    uiButtonOnClicked(btnHelp, onHelpClick, NULL);
+    uiFlexBoxAppend(flexBox, uiControl(btnHelp), 756, 309, 85, 26);
+
     uiBoxAppend(outerBox, uiControl(flexBox), 1);
     init();
+    buildHelp();
 
     return uiControl(outerBox);
 }

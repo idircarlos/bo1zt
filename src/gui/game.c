@@ -294,9 +294,6 @@ static void onBindsButtonClick(uiButton *button, void *data) {
 static void onWidgetsButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    uiWindowSetResizeable(widgetsWindow, false);
-    uiWindowSetMargined(widgetsWindow, true);
-    uiWindowSetIcon(widgetsWindow, IDI_ICON1);
     uiControlShow(uiControl(widgetsWindow));
 }
 
@@ -334,6 +331,9 @@ static void buildWidgets() {
     uiWindowOnClosing(widgetsWindow, onWidgetsWindowClose, NULL);
     uiWindowSetMargined(widgetsWindow, 1);
     uiWindowSetChild(widgetsWindow, uiControl(widgetsGroup));
+    uiWindowSetResizeable(widgetsWindow, false);
+    uiWindowSetMargined(widgetsWindow, true);
+    uiWindowSetIcon(widgetsWindow, IDI_ICON1);
 }
 
 static void buildBinds() {
