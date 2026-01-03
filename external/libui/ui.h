@@ -4495,6 +4495,31 @@ _UI_EXTERN const char *uiLinkURL(uiLink *l);
  */
 _UI_EXTERN void uiLinkSetURL(uiLink *l, const char *url);
 
+/**
+ * Returns the entry's placeholder text.
+ *
+ * @param e uiEntry instance.
+ * @returns The placeholder text of the entry.\n
+ *          A `NUL` terminated UTF-8 string.\n
+ *          Caller is responsible for freeing the data with `uiFreeText()`.
+ * @memberof uiEntry
+ */
+_UI_EXTERN char *uiEntryPlaceholder(uiEntry *e);
+
+/**
+ * Sets the entry's placeholder text.
+ *
+ * The placeholder is displayed when the entry is empty and unfocused,
+ * providing a hint to the user about what to enter.
+ *
+ * @param e uiEntry instance.
+ * @param placeholder Placeholder text.\n
+ *                    A valid, `NUL` terminated UTF-8 string.\n
+ *                    Data is copied internally. Ownership is not transferred.
+ * @memberof uiEntry
+ */
+_UI_EXTERN void uiEntrySetPlaceholder(uiEntry *e, const char *placeholder);
+
 #ifdef __cplusplus
 }
 #endif

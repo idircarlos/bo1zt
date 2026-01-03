@@ -93,6 +93,29 @@ void uiEntrySetReadOnly(uiEntry *e, int readonly)
 		logLastError(L"error setting uiEntry read-only state");
 }
 
+char *uiEntryPlaceholder(uiEntry *e)
+{
+	WCHAR buf[256];
+	char *out;
+	int n;
+
+	if (SendMessageW(e->hwnd, EM_GETCUEBANNER, (WPARAM)buf, 256) == FALSE)
+		return emptyUTF8();
+	n = WideCharToMultiByte(CP_UTF8, 0, buf, -1, NULL, 0, NULL, NULL);
+	out = (char *)uiprivAlloc(n * sizeof(char), "char[]");
+	WideCharToMultiByte(CP_UTF8, 0, buf, -1, out, n, NULL, NULL);
+	return out;
+}
+
+void uiEntrySetPlaceholder(uiEntry *e, const char *placeholder)
+{
+	WCHAR *wplaceholder;
+
+	wplaceholder = toUTF16(placeholder);
+	SendMessageW(e->hwnd, EM_SETCUEBANNER, TRUE, (LPARAM)wplaceholder);
+	uiprivFree(wplaceholder);
+}
+
 static uiEntry *finishNewEntry(DWORD style)
 {
 	uiEntry *e;

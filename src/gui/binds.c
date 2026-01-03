@@ -482,6 +482,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiFlexBoxAppend(flexBox, uiControl(lblCommand), 18, 314, 72, 20);
 
     entryCommand = uiNewEntry();
+    uiEntrySetPlaceholder(entryCommand, "/perk add qr jg sc dt /give tg ray mk (You can add multiple commands separated by spaces)");
     uiEntryOnChanged(entryCommand, onEntryChanged, NULL);
     uiFlexBoxAppend(flexBox, uiControl(entryCommand), 96, 311, 646, 20);
 

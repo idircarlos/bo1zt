@@ -403,6 +403,8 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiControlDisable(uiControl(changeRoundButton));
     uiControlHide(uiControl(locationEntry));
 
+    uiEntrySetPlaceholder(hostnameEntry, "I am below scoreboard!");
+
     uiCheckboxOnToggled(patchMovementCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_FIX_MOVEMENT_SPEED);
     uiCheckboxOnToggled(showFpsCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_SHOW_FPS);
 
