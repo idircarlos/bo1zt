@@ -43,6 +43,7 @@
 #include <vssym32.h>
 #include <windowsx.h>
 #include <shobjidl.h>
+#include <shlwapi.h>
 #include <d2d1.h>
 #include <d2d1helper.h>
 #include <dwrite.h>

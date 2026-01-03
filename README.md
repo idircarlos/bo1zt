@@ -1,5 +1,5 @@
 <div style="display:flex;">
-  <img src="doc/icon.png" alt="bo1zt icon" width="128">
+  <img src="res/icon.png" alt="bo1zt icon" width="128">
 </div>
 
 # bo1zt

@@ -4359,6 +4359,142 @@ _UI_EXTERN void uiCustomButtonSetHoverColor(uiCustomButton *b, int r, int g, int
  * @memberof uiCustomButton
  */
 _UI_EXTERN void uiCustomButtonClearHoverColor(uiCustomButton *b);
+
+/**
+ * A control that displays an image.
+ *
+ * uiImageView is a control that can be added to containers like uiBox or uiGrid.
+ * It displays a PNG image that can be loaded from raw data or from a Windows
+ * resource embedded in the executable.
+ *
+ * @struct uiImageView
+ * @extends uiControl
+ * @ingroup static
+ */
+typedef struct uiImageView uiImageView;
+#define uiImageView(this) ((uiImageView *) (this))
+
+/**
+ * Creates a new image view with the specified dimensions.
+ *
+ * @param width Width of the image view in pixels.
+ * @param height Height of the image view in pixels.
+ * @returns A new uiImageView instance.
+ * @memberof uiImageView @static
+ */
+_UI_EXTERN uiImageView *uiNewImageView(int width, int height);
+
+/**
+ * Sets the image from raw PNG data.
+ *
+ * @param iv uiImageView instance.
+ * @param data Pointer to PNG data.
+ * @param size Size of the PNG data in bytes.
+ * @returns Non-zero on success, zero on failure.
+ * @memberof uiImageView
+ */
+_UI_EXTERN int uiImageViewSetFromData(uiImageView *iv, const void *data, size_t size);
+
+/**
+ * Sets the image from a Windows resource (RCDATA).
+ *
+ * Loads a PNG image from an RCDATA resource embedded in the executable.
+ * Uses the main executable module.
+ *
+ * @param iv uiImageView instance.
+ * @param resourceId The resource identifier.
+ * @returns Non-zero on success, zero on failure.
+ * @memberof uiImageView
+ */
+_UI_EXTERN int uiImageViewSetFromResource(uiImageView *iv, int resourceId);
+
+/**
+ * Gets the width of the image view.
+ *
+ * @param iv uiImageView instance.
+ * @returns Width in pixels.
+ * @memberof uiImageView
+ */
+_UI_EXTERN int uiImageViewWidth(uiImageView *iv);
+
+/**
+ * Gets the height of the image view.
+ *
+ * @param iv uiImageView instance.
+ * @returns Height in pixels.
+ * @memberof uiImageView
+ */
+_UI_EXTERN int uiImageViewHeight(uiImageView *iv);
+
+/**
+ * Sets the size of the image view.
+ *
+ * @param iv uiImageView instance.
+ * @param width New width in pixels.
+ * @param height New height in pixels.
+ * @memberof uiImageView
+ */
+_UI_EXTERN void uiImageViewSetSize(uiImageView *iv, int width, int height);
+
+/**
+ * A clickable hyperlink control.
+ *
+ * uiLink displays text styled as a hyperlink (blue, underlined) that opens
+ * a URL in the default browser when clicked.
+ *
+ * @struct uiLink
+ * @extends uiControl
+ * @ingroup static
+ */
+typedef struct uiLink uiLink;
+#define uiLink(this) ((uiLink *) (this))
+
+/**
+ * Creates a new link control.
+ *
+ * @param text The display text for the link.
+ * @param url The URL to open when clicked.
+ * @returns A new uiLink instance.
+ * @memberof uiLink @static
+ */
+_UI_EXTERN uiLink *uiNewLink(const char *text, const char *url);
+
+/**
+ * Returns the link's display text.
+ *
+ * @param l uiLink instance.
+ * @returns The text of the link. Caller must free with uiFreeText().
+ * @memberof uiLink
+ */
+_UI_EXTERN char *uiLinkText(uiLink *l);
+
+/**
+ * Sets the link's display text.
+ *
+ * @param l uiLink instance.
+ * @param text The new display text.
+ * @memberof uiLink
+ */
+_UI_EXTERN void uiLinkSetText(uiLink *l, const char *text);
+
+/**
+ * Returns the link's URL.
+ *
+ * @param l uiLink instance.
+ * @returns The URL string. Do not free.
+ * @memberof uiLink
+ */
+_UI_EXTERN const char *uiLinkURL(uiLink *l);
+
+/**
+ * Sets the link's URL.
+ *
+ * @param l uiLink instance.
+ * @param url The new URL.
+ * @memberof uiLink
+ */
+_UI_EXTERN void uiLinkSetURL(uiLink *l, const char *url);
+
 #ifdef __cplusplus
 }
 #endif

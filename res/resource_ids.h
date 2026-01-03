@@ -22,4 +22,7 @@
 #define IDR_PNG_SALE      505
 #define IDR_PNG_MINI      506
 
+// App icon PNG
+#define IDR_PNG_ICON      600
+
 #endif // RESOURCE_IDS_H_

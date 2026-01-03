@@ -39,8 +39,10 @@ libui_sources += [
 	'windows/grid.cpp',
 	'windows/group.cpp',
 	'windows/image.cpp',
+	'windows/imageview.cpp',
 	'windows/init.cpp',
 	'windows/label.cpp',
+	'windows/link.cpp',
 	'windows/main.cpp',
 	'windows/menu.cpp',
 	'windows/multilineentry.cpp',
@@ -81,7 +83,7 @@ if libui_mode == 'shared'
 endif
 
 # TODO prune this list
-foreach lib : ['user32', 'kernel32', 'gdi32', 'comctl32', 'uxtheme', 'msimg32', 'comdlg32', 'd2d1', 'dwrite', 'ole32', 'oleaut32', 'oleacc', 'uuid', 'windowscodecs']
+foreach lib : ['user32', 'kernel32', 'gdi32', 'comctl32', 'uxtheme', 'msimg32', 'comdlg32', 'd2d1', 'dwrite', 'ole32', 'oleaut32', 'oleacc', 'uuid', 'windowscodecs', 'shlwapi']
 	libui_deps += [
 		meson.get_compiler('cpp').find_library(lib,
 			required: true),
