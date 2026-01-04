@@ -1,6 +1,8 @@
 #include "gui/customizer.h"
 #include "logger.h"
 #include "logic/cheat.h"
+#include "logic/cheat/manager.h"
+#include "logic/cheat/manager/actions.h"
 #include "logic/config.h"
 #include "gui/gui_internal.h"
 #include <ui.h>
@@ -35,7 +37,7 @@ static uiSpinbox *maxSpin;
 static uiButton *btnReset;
 static uiButton *btnSave;
 
-static char* chatColors[] = {
+static const char* chatColors[] = {
     "Gray",
     "White",
     "Light Gray",
@@ -53,7 +55,7 @@ static char* chatColors[] = {
     "Purple",
 };
 
-static const size_t chatColorsCount = sizeof(chatColors) / sizeof(chatColors[0]);
+static const int chatColorsCount = sizeof(chatColors) / sizeof(chatColors[0]);
 
 static void init();
 
@@ -170,13 +172,10 @@ static void onChatNameComboChange(uiCombobox *combo, void *data) {
     (void)data;
     int selected = uiComboboxSelected(combo);
     ChatColor color = cheatGetChatColor(selected);
-    Config *config = controllerGetConfig(controller);
-    config->customizer.chatName = color;
     
-    // Apply immediately to game if attached
-    if (controllerIsGameAttached(controller)) {
-        controllerSetChatNameColor(controller, color);
-    }
+    CheatManager *cheatManager = controllerGetCheatManager(controller);
+    cheatManagerSetValue(cheatManager, SIMPLE_CHEAT_NAME_CUSTOMIZER_CHAT_NAME, &color);
+    
     
     uiControlEnable(uiControl(btnReset));
     uiControlEnable(uiControl(btnSave));

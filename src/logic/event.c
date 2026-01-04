@@ -61,6 +61,7 @@ static bool eventHandleChatMessage(Event event) {
 static bool eventHandleMapChange(Event event) {
     State *state = controllerGetState(controller);
     Game *game = &state->activeGame;
+    cheatManagerHandleGameEnd(_controllerGetCheatManager(controller));
     gameEnd(game, event.timestamp);
     gameClear(game);
     return true;
@@ -69,6 +70,7 @@ static bool eventHandleMapChange(Event event) {
 static bool eventHandleMapRestart(Event event) {
     State *state = controllerGetState(controller);
     Game *game = &state->activeGame;
+    cheatManagerHandleGameEnd(_controllerGetCheatManager(controller));
     gameEnd(game, event.timestamp);
     gameClear(game);
     return true;
@@ -91,6 +93,12 @@ static bool eventHandleVMNotify(Event event) {
     }
     if (strcmp(event.data.vmNotify.eventName, "end_of_round") == 0) {
         return gameRoundEnded(game, event.timestamp);
+    }
+    if (strcmp(event.data.vmNotify.eventName, "end_game") == 0) {
+        cheatManagerHandleGameEnd(_controllerGetCheatManager(controller));
+        gameEnd(game, event.timestamp);
+        gameClear(game);
+        return true;
     }
     if (strcmp(event.data.vmNotify.eventName, "dog_round_starting") == 0) {
         pendingSpecialRound = true;

@@ -46,6 +46,12 @@ static bool checkSimpleCheatConditions(CheatManager *manager, SimpleCheatName ch
     return checkConditions(manager, def->condition);
 }
 
+static bool applyCharacter(CheatManager *manager, int character) {
+    Server *server = _controllerGetServer(manager->controller);
+    if (!server) return false;
+    return serverSetDVarInt(server, "bo1zt_character", character);
+}
+
 CheatResult cheatManagerSetToggle(CheatManager *manager, CheatName cheat, bool enabled) {
     if (!manager || !manager->config) return CHEAT_RESULT_API_FAILED;
     
@@ -118,6 +124,8 @@ static bool isValueCheatUnchanged(CheatManager *manager, SimpleCheatName cheat, 
             return strcmp(manager->applied.hostname, (const char *)value) == 0;
         case SIMPLE_CHEAT_NAME_CHARACTER:
             return manager->applied.character == *(int *)value;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_CHAT_NAME:
+            return manager->applied.chatNameColor == *(ChatColor *)value;
         default:
             return false;
     }
@@ -143,6 +151,9 @@ static void updateAppliedValueCheat(CheatManager *manager, SimpleCheatName cheat
         case SIMPLE_CHEAT_NAME_CHARACTER:
             manager->applied.character = *(int *)value;
             break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_CHAT_NAME:
+            manager->applied.chatNameColor = *(ChatColor *)value;
+            break;
         default:
             break;
     }
@@ -155,6 +166,7 @@ static bool hasTrackedAppliedState(SimpleCheatName cheat) {
         case SIMPLE_CHEAT_NAME_FPS_CAP:
         case SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME:
         case SIMPLE_CHEAT_NAME_CHARACTER:
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_CHAT_NAME:
             return true;
         default:
             return false;
@@ -181,15 +193,12 @@ static void updateConfigValueCheat(Config *config, SimpleCheatName cheat, void *
         case SIMPLE_CHEAT_NAME_CHARACTER:
             config->game.character = *(int *)value;
             break;
+        case SIMPLE_CHEAT_NAME_CUSTOMIZER_CHAT_NAME:
+            config->customizer.chatName = *(ChatColor *)value;
+            break;
         default:
             break;
     }
-}
-
-static bool applyCharacter(CheatManager *manager, int character) {
-    Server *server = _controllerGetServer(manager->controller);
-    if (!server) return false;
-    return serverSetDVarInt(server, "bo1zt_character", character);
 }
 
 CheatResult cheatManagerSetValue(CheatManager *manager, SimpleCheatName cheat, void *value) {
@@ -216,6 +225,10 @@ CheatResult cheatManagerSetValue(CheatManager *manager, SimpleCheatName cheat, v
     // Character uses serverSetDVarInt instead of API
     if (cheat == SIMPLE_CHEAT_NAME_CHARACTER) {
         apiResult = applyCharacter(manager, *(int *)value);
+    } else if (cheat == SIMPLE_CHEAT_NAME_CUSTOMIZER_CHAT_NAME) {
+        Api *api = _controllerGetApi(manager->controller);
+        if (!api) return CHEAT_RESULT_API_FAILED;
+        apiResult = apiSetChatNameColor(api, *(ChatColor *)value);
     } else {
         Api *api = _controllerGetApi(manager->controller);
         if (!api) return CHEAT_RESULT_API_FAILED;

@@ -35,6 +35,7 @@ typedef struct {
     int fpsCap;
     char hostname[256];
     int character;
+    ChatColor chatNameColor;
 } AppliedState;
 
 void appliedStateClear(AppliedState *applied);

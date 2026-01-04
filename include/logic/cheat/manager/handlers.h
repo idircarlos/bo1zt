@@ -7,5 +7,6 @@ void cheatManagerHandleStateChange(CheatManager *manager);
 void cheatManagerHandleGameAttach(CheatManager *manager);
 void cheatManagerHandleGameDetach(CheatManager *manager);
 void cheatManagerHandleGameStart(CheatManager *manager);
+void cheatManagerHandleGameEnd(CheatManager *manager);
 
 #endif // CHEAT_MANAGER_HANDLERS_H_

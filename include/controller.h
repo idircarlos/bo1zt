@@ -36,7 +36,6 @@ bool controllerTryAttachGameWindow(Controller *controller);
 bool controllerGetCheat(Controller *controller, CheatName cheat);
 bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled);
 bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, void *value);
-bool controllerSetChatNameColor(Controller *controller, ChatColor color);
 bool controllerIsCheatCheckboxChecked(Controller *controller, CheatName cheat);
 int controllerUiGraphicsGetFpsCap(Controller *controller);
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller);

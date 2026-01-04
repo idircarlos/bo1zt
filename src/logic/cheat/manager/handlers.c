@@ -65,6 +65,16 @@ void cheatManagerHandleGameStart(CheatManager *manager) {
             notifyCheatFailed(manager);
         }
     }
+    
+    // Apply ChatNameColor if not GRAY
+    ChatColor chatColor = manager->config->customizer.chatName;
+    if (chatColor != CHAT_COLOR_GRAY) {
+        if (apiSetChatNameColor(api, chatColor)) {
+            manager->applied.chatNameColor = chatColor;
+        } else {
+            notifyCheatFailed(manager);
+        }
+    }
 }
 
 void cheatManagerHandleStateChange(CheatManager *manager) {
@@ -182,4 +192,33 @@ void cheatManagerHandleGameAttach(CheatManager *manager) {
 void cheatManagerHandleGameDetach(CheatManager *manager) {
     if (!manager) return;
     appliedStateClear(&manager->applied);
+}
+
+void cheatManagerHandleGameEnd(CheatManager *manager) {
+    if (!manager || !manager->config) return;
+    
+    Api *api = _controllerGetApi(manager->controller);
+    if (!api) return;
+    
+    // Disable all cheats that require GAME_ONGOING condition
+    for (int i = 0; i < NUM_CHEAT_REGISTRY; i++) {
+        CheatName cheat = CHEAT_REGISTRY[i].name;
+        CheatCondition condition = CHEAT_REGISTRY[i].condition;
+        
+        if (!(condition & CHEAT_COND_GAME_ONGOING)) continue;
+        
+        if (!getAppliedToggleValue(&manager->applied, cheat)) continue;
+        
+        bool apiResult = apiSetCheatEnabled(api, cheat, false);
+        if (apiResult) {
+            setAppliedToggleValue(&manager->applied, cheat, false);
+        }
+    }
+    
+    // Disable ChatName Color if it was applied
+    if (manager->applied.chatNameColor != CHAT_COLOR_GRAY) {
+        if (apiSetChatNameColor(api, CHAT_COLOR_GRAY)) {
+            manager->applied.chatNameColor = CHAT_COLOR_GRAY;
+        }
+    }
 }

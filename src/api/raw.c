@@ -1387,6 +1387,5 @@ bool rawApiSetChatNameColorValue(RawApi *rawApi, ChatColor color) {
         LOG_ERROR("Process is null\n");
         return false;
     }
-
     return _rawApiSetChatNameColorValue(process, rawApi->hooks, color);
 }
