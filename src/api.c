@@ -161,6 +161,21 @@ bool apiWriteToChatInput(Api *api, const char *text) {
     return rawApiWriteToChatInput(api->raw, text);
 }
 
+bool apiSetChatNameColor(Api *api, ChatColor color) {
+    if (!api) return false;
+    
+    // If Gray (default) we deactivate the hook
+    if (color == CHAT_COLOR_GRAY) {
+        return rawApiSetCheatEnabled(api->raw, CHEAT_NAME_CHAT_NAME_COLOR, false);
+    }
+    
+    // Otherwise activate hook and set color
+    bool activated = rawApiSetCheatEnabled(api->raw, CHEAT_NAME_CHAT_NAME_COLOR, true);
+    if (!activated) return false;
+    
+    return rawApiSetChatNameColorValue(api->raw, color);
+}
+
 // GSC backend forwards
 
 bool apiAddPerks(Api *api, List *perks) {

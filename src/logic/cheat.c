@@ -66,6 +66,7 @@
 #define CHEAT_ASM_OFFSET_INFINITE_AMMO 0x00697A10 // Address where the Infinite Ammo assembly instruction is located.
 #define CHEAT_ASM_OFFSET_SMALL_CROSSHAIR 0x00406DEA
 #define CHEAT_ASM_OFFSET_INSTANT_KILL 0x007CE731
+#define CHEAT_ASM_OFFSET_CHAT_NAME_COLOR 0x0097F6F4
 #define CHEAT_ASM_OFFSET_INVALID 0x00000000
 
 // Cheats Asm Instruction Sets
@@ -81,6 +82,23 @@
 #define CHEAT_ASM_INSTANT_KILL_INSTRUCTION_SET_OFF { 0x29, 0x98, 0x84, 0x01, 0x00, 0x00 } // sub [eax+184], ebx
 #define CHEAT_ASM_INSTANT_KILL_INSTRUCTION_SET_ON_SIZE 10
 #define CHEAT_ASM_INSTANT_KILL_INSTRUCTION_SET_OFF_SIZE 6
+
+#define CHEAT_ASM_CHAT_NAME_COLOR_INSTRUCTION_SET_ON {  \
+    0x81, 0xFA, 0x06, 0x9E, 0x89, 0x02,      /* cmp edx, 0x02899E06       */  \
+    0x74, 0x09,                              /* je color (+9 bytes)       */  \
+    0x88, 0x02,                              /* mov [edx], al             */  \
+    0xFF, 0x01,                              /* inc [ecx]                 */  \
+    0x0F, 0xB6, 0xC0,                        /* movzx eax, al             */  \
+    0xEB, 0x08,                              /* jmp end (+8 bytes)        */  \
+    /* color: */                                                              \
+    0xC6, 0x02, 0x32,                        /* mov byte [edx], 0x32      */  \
+    0xFF, 0x01,                              /* inc [ecx]                 */  \
+    0x0F, 0xB6, 0xC0,                        /* movzx eax, al             */  \
+    /* end: */                                                                \
+}
+#define CHEAT_ASM_CHAT_NAME_COLOR_INSTRUCTION_SET_OFF { 0x88, 0x02, 0xFF, 0x01, 0x0F, 0xB6, 0xC0 } // mov [edx],al; inc [ecx]; movzx eax,al
+#define CHEAT_ASM_CHAT_NAME_COLOR_INSTRUCTION_SET_ON_SIZE 25
+#define CHEAT_ASM_CHAT_NAME_COLOR_INSTRUCTION_SET_OFF_SIZE 7
 
 // Simple Cheats Offsets
 #define SIMPLE_CHEAT_OFFSET_CHANGE_NAME 0x01C0A678
@@ -220,6 +238,12 @@ CheatAsm CHEAT_ASM_INSTANT_KILL = {
     CHEAT_ASM_OFFSET_INSTANT_KILL,
     {CHEAT_ASM_INSTANT_KILL_INSTRUCTION_SET_ON, CHEAT_ASM_INSTANT_KILL_INSTRUCTION_SET_ON_SIZE}, 
     {CHEAT_ASM_INSTANT_KILL_INSTRUCTION_SET_OFF, CHEAT_ASM_INSTANT_KILL_INSTRUCTION_SET_OFF_SIZE},
+};
+
+CheatAsm CHEAT_ASM_CHAT_NAME_COLOR = {
+    CHEAT_ASM_OFFSET_CHAT_NAME_COLOR,
+    {CHEAT_ASM_CHAT_NAME_COLOR_INSTRUCTION_SET_ON, CHEAT_ASM_CHAT_NAME_COLOR_INSTRUCTION_SET_ON_SIZE}, 
+    {CHEAT_ASM_CHAT_NAME_COLOR_INSTRUCTION_SET_OFF, CHEAT_ASM_CHAT_NAME_COLOR_INSTRUCTION_SET_OFF_SIZE},
 };
 
 SimpleCheat SIMPLE_CHEAT_CHANGE_NAME = {
@@ -446,6 +470,26 @@ ServerCheat SERVER_CHEAT_GET_DVAR_PTR = {
     .offset = 0x005AE810,
 };
 
+ChatColor CHAT_COLOR_LOOKUP[] = {
+    CHAT_COLOR_GRAY,
+    CHAT_COLOR_WHITE,
+    CHAT_COLOR_LIGHT_GRAY,
+    CHAT_COLOR_BLACK,
+    CHAT_COLOR_RED,
+    CHAT_COLOR_GREEN,
+    CHAT_COLOR_YELLOW,
+    CHAT_COLOR_ORANGE,
+    CHAT_COLOR_DARK_ORANGE,
+    CHAT_COLOR_BROWN,
+    CHAT_COLOR_CYAN,
+    CHAT_COLOR_BLUE,
+    CHAT_COLOR_DARK_BLUE,
+    CHAT_COLOR_PINK,
+    CHAT_COLOR_PURPLE,
+};
+
+int CHAT_COLOR_COUNT = sizeof(CHAT_COLOR_LOOKUP) / sizeof(CHAT_COLOR_LOOKUP[0]);
+
 
 SimpleCheat SIMPLE_CHEAT_LOOKUP [] = {  SIMPLE_CHEAT_CHANGE_NAME, SIMPLE_CHEAT_SET_HEALTH, SIMPLE_CHEAT_SET_POINTS,
                                         SIMPLE_CHEAT_SET_SPEED, SIMPLE_CHEAT_SET_KILLS, SIMPLE_CHEAT_SET_HEADSHOTS,
@@ -470,6 +514,17 @@ CustomizerCheat CUSTOMIZER_CHEAT_LOOKUP [] = {  CUSTOMIZER_CHEAT_SCORE_BACKGROUN
                                                 CUSTOMIZER_CHEAT_WARN_MIN,
                                                 CUSTOMIZER_CHEAT_WARN_MAX,
                                             };
+
+ChatColor cheatGetChatColor(int index) {
+    return CHAT_COLOR_LOOKUP[index];
+}
+
+int cheatGetChatColorIndex(ChatColor color) {
+    for (int i = 0; i < CHAT_COLOR_COUNT; i++) {
+        if (color == cheatGetChatColor(i)) return i;
+    }
+    return -1;
+}
 
 SimpleCheat cheatGetSimpleCheat(SimpleCheatName cheatName) {
     return SIMPLE_CHEAT_LOOKUP[cheatName];

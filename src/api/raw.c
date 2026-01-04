@@ -54,6 +54,9 @@ bool _rawApiSetInfiniteAmmo(Process *process, bool enabled);
 bool _rawApiGetInstantKill(Process *process, Map *hooks);
 bool _rawApiSetInstantKill(Process *process, Map *hooks, bool enabled);
 
+bool _rawApiGetChatNameColor(Process *process, Map *hooks);
+bool _rawApiSetChatNameColor(Process *process, Map *hooks, bool enabled);
+
 bool _rawApiGetMakeBorderless(Process *process);
 bool _rawApiSetMakeBorderless(Process *process, bool enabled);
 
@@ -96,6 +99,7 @@ bool _rawApiSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheat
 
 // Hooks IDs (Hash for Hook Map)
 static const char* HOOK_INSTANT_KILL_ID = "HOOK_INSTANT_KILL";
+static const char* HOOK_CHAT_NAME_COLOR_ID = "HOOK_CHAT_NAME_COLOR";
 
 RawApi *rawApiCreate(Controller *controller) {
     RawApi *rawApi = (RawApi*)malloc(sizeof(RawApi));
@@ -154,6 +158,8 @@ bool rawApiIsCheatEnabled(RawApi *rawApi, CheatName cheatName) {
             return _rawApiGetInfiniteAmmo(process);
         case CHEAT_NAME_INSTANT_KILL:
             return _rawApiGetInstantKill(process, rawApi->hooks);
+        case CHEAT_NAME_CHAT_NAME_COLOR:
+            return _rawApiGetChatNameColor(process, rawApi->hooks);
         case CHEAT_NAME_MAKE_BORDERLESS:
             return _rawApiGetMakeBorderless(process);
         case CHEAT_NAME_UNLIMIT_FPS:
@@ -216,6 +222,8 @@ bool rawApiSetCheatEnabled(RawApi *rawApi, CheatName cheatName, bool enabled) {
             return _rawApiSetInfiniteAmmo(process, enabled);
         case CHEAT_NAME_INSTANT_KILL:
             return _rawApiSetInstantKill(process, rawApi->hooks, enabled);
+        case CHEAT_NAME_CHAT_NAME_COLOR:
+            return _rawApiSetChatNameColor(process, rawApi->hooks, enabled);
         case CHEAT_NAME_MAKE_BORDERLESS:
             return _rawApiSetMakeBorderless(process, enabled);
         case CHEAT_NAME_UNLIMIT_FPS:
@@ -892,6 +900,47 @@ bool _rawApiSetInstantKill(Process *process, Map *hooks, bool enabled) {
     return enabled ? hookActivate(hook) : hookDeactivate(hook);
 }
 
+bool _rawApiGetChatNameColor(Process *process, Map *hooks) {
+    CheatAsm *instructionSet = &CHEAT_ASM_CHAT_NAME_COLOR;
+    Hook *hook;
+    if (!mapContains(hooks, HOOK_CHAT_NAME_COLOR_ID)) {
+        hook = hookCreate(process, instructionSet->offset, instructionSet->off.size, instructionSet->on.instructions, instructionSet->on.size, instructionSet->off.instructions);
+        mapPut(hooks, HOOK_CHAT_NAME_COLOR_ID, hook);
+    } else {
+        hook = (Hook*)mapGet(hooks, HOOK_CHAT_NAME_COLOR_ID);
+    }
+    
+    return hookIsActivated(hook);
+}
+
+bool _rawApiSetChatNameColor(Process *process, Map *hooks, bool enabled) {
+    CheatAsm *instructionSet = &CHEAT_ASM_CHAT_NAME_COLOR;
+    Hook *hook;
+    if (!mapContains(hooks, HOOK_CHAT_NAME_COLOR_ID)) {
+        hook = hookCreate(process, instructionSet->offset, instructionSet->off.size, instructionSet->on.instructions, instructionSet->on.size, instructionSet->off.instructions);
+        mapPut(hooks, HOOK_CHAT_NAME_COLOR_ID, hook);
+    } else {
+        hook = (Hook*)mapGet(hooks, HOOK_CHAT_NAME_COLOR_ID);
+    }
+    return enabled ? hookActivate(hook) : hookDeactivate(hook);
+}
+
+bool _rawApiSetChatNameColorValue(Process *process, Map *hooks, ChatColor color) {
+    // Ensure hook exists
+    if (!mapContains(hooks, HOOK_CHAT_NAME_COLOR_ID)) {
+        CheatAsm *instructionSet = &CHEAT_ASM_CHAT_NAME_COLOR;
+        Hook *hook = hookCreate(process, instructionSet->offset, instructionSet->off.size, instructionSet->on.instructions, instructionSet->on.size, instructionSet->off.instructions);
+        mapPut(hooks, HOOK_CHAT_NAME_COLOR_ID, hook);
+    }
+    
+    Hook *hook = (Hook*)mapGet(hooks, HOOK_CHAT_NAME_COLOR_ID);
+    uintptr_t pageAddress = hookGetAllocatedPageAddress(hook);
+    
+    // Write the color byte at offset 19 in the shellcode (where 0x32 is in: C6 02 XX)
+    uint8_t colorByte = (uint8_t)color;
+    return processWrite(process, pageAddress + CHAT_COLOR_SHELLCODE_OFFSET, &colorByte, sizeof(colorByte));
+}
+
 bool _rawApiGetMakeBorderless(Process *process) {
     return processIsBorderless(process);
 }
@@ -1325,4 +1374,19 @@ bool rawApiWriteToChatInput(RawApi *rawApi, const char *text) {
         strncpy(buffer, text, sizeof(buffer) - 1);
     }
     return processWrite(process, GAME_CHEAT.chatInputBufferOffset, buffer, sizeof(buffer));
+}
+
+bool rawApiSetChatNameColorValue(RawApi *rawApi, ChatColor color) {
+    if (!rawApi || !rawApi->controller) {
+        LOG_ERROR("RawApi or Controller is null\n");
+        return false;
+    }
+    
+    Process *process = controllerGetProcess(rawApi->controller);
+    if (!process) {
+        LOG_ERROR("Process is null\n");
+        return false;
+    }
+
+    return _rawApiSetChatNameColorValue(process, rawApi->hooks, color);
 }

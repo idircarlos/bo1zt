@@ -8,6 +8,7 @@
 #define MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE 1024 // 1KB max size for flexibility
 #define ROUND_CHANGE_PATTERN_SIZE 8
 #define MAX_COMMANDS_LENGTH 256
+#define CHAT_COLOR_SHELLCODE_OFFSET 19  // Offset of specific color byte int shellcode
 
 typedef enum {
     CHEAT_NAME_GOD_MODE,
@@ -22,6 +23,7 @@ typedef enum {
     CHEAT_NAME_THIRD_PERSON,
     CHEAT_NAME_INFINITE_AMMO,
     CHEAT_NAME_INSTANT_KILL,
+    CHEAT_NAME_CHAT_NAME_COLOR,
     CHEAT_NAME_MAKE_BORDERLESS,
     CHEAT_NAME_UNLIMIT_FPS,
     CHEAT_NAME_DISABLE_HUD,
@@ -149,6 +151,24 @@ typedef struct {
     uintptr_t offset;
 } ServerCheat;
 
+typedef enum {
+    CHAT_COLOR_GRAY = 0x38,
+    CHAT_COLOR_LIGHT_GRAY = 0x3E,
+    CHAT_COLOR_WHITE = 0x37,
+    CHAT_COLOR_BLACK = 0x30,
+    CHAT_COLOR_RED = 0x31,
+    CHAT_COLOR_GREEN = 0x32,
+    CHAT_COLOR_YELLOW = 0x33,
+    CHAT_COLOR_ORANGE = 0x3C,
+    CHAT_COLOR_DARK_ORANGE = 0x40,
+    CHAT_COLOR_BROWN = 0x39,
+    CHAT_COLOR_CYAN = 0x35,
+    CHAT_COLOR_BLUE = 0x3D,
+    CHAT_COLOR_DARK_BLUE = 0x34,
+    CHAT_COLOR_PINK = 0x36,
+    CHAT_COLOR_PURPLE = 0x3F,
+} ChatColor;
+
 // Cheats box
 extern Cheat CHEAT_GOD_MODE;
 extern Cheat CHEAT_INVISIBLE;
@@ -165,6 +185,7 @@ extern Cheat CHEAT_INSTANT_KILL;
 extern CheatAsm CHEAT_ASM_INFINITE_AMMO;
 extern CheatAsm CHEAT_ASM_SMALL_CROSSHAIR;
 extern CheatAsm CHEAT_ASM_INSTANT_KILL;
+extern CheatAsm CHEAT_ASM_CHAT_NAME_COLOR;
 
 // Player box
 extern SimpleCheat SIMPLE_CHEAT_CHANGE_NAME;
@@ -222,6 +243,8 @@ extern ServerCheat SERVER_CHEAT_SEND_COMMAND;
 extern ServerCheat SERVER_CHEAT_CBUF_ADDTEXT;
 extern ServerCheat SERVER_CHEAT_GET_DVAR_PTR;
 
+int cheatGetChatColorIndex(ChatColor color);
+ChatColor cheatGetChatColor(int index);
 SimpleCheat cheatGetSimpleCheat(SimpleCheatName cheatName);
 CustomizerCheat cheatGetCustomizerCheat(SimpleCheatName cheatName);
 

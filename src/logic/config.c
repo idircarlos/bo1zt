@@ -1,6 +1,7 @@
 #include "logic/config.h"
 #include "logger.h"
 #include "gui/widgets.h"
+#include "logic/cheat.h"
 #include <iniparser.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -127,6 +128,7 @@ static bool configLoad(Config *config) {
     config->customizer.lowAmmoWarnSecondary = colorFromString(iniparser_getstring(dictionary, "Customizer:LowAmmoWarnSecondary", COLOR_INI_DEFAULT));
     config->customizer.noAmmoWarnPrimary = colorFromString(iniparser_getstring(dictionary, "Customizer:NoAmmoWarnPrimary", COLOR_INI_DEFAULT));
     config->customizer.noAmmoWarnSecondary = colorFromString(iniparser_getstring(dictionary, "Customizer:NoAmmoWarnSecondary", COLOR_INI_DEFAULT));
+    config->customizer.chatName = (ChatColor)iniparser_getint(dictionary, "Customizer:ChatName", config->customizer.chatName);
     config->customizer.scoreboardTransparency = iniparser_getint(dictionary, "Customizer:ScoreboardTransparency", config->customizer.scoreboardTransparency);
     config->customizer.pointsTransparency = iniparser_getint(dictionary, "Customizer:PointsTransparency", config->customizer.pointsTransparency);
     config->customizer.warningTransitionsFrequency = iniparser_getint(dictionary, "Customizer:WarningTransitionsFrequency", config->customizer.warningTransitionsFrequency);
@@ -236,6 +238,7 @@ bool configSave(Config *config) {
     ret += iniparser_set(dictionary, "Customizer:LowAmmoWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.lowAmmoWarnSecondary.r, config->customizer.lowAmmoWarnSecondary.g, config->customizer.lowAmmoWarnSecondary.b, config->customizer.lowAmmoWarnSecondary.a));
     ret += iniparser_set(dictionary, "Customizer:NoAmmoWarnPrimary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.noAmmoWarnPrimary.r, config->customizer.noAmmoWarnPrimary.g, config->customizer.noAmmoWarnPrimary.b, config->customizer.noAmmoWarnPrimary.a));
     ret += iniparser_set(dictionary, "Customizer:NoAmmoWarnSecondary", strfmt(valueBuffer, COLOR_INI_FMT, config->customizer.noAmmoWarnSecondary.r, config->customizer.noAmmoWarnSecondary.g, config->customizer.noAmmoWarnSecondary.b, config->customizer.noAmmoWarnSecondary.a));
+    ret += iniparser_set(dictionary, "Customizer:ChatName", strfmt(valueBuffer, "%d", config->customizer.chatName));
     ret += iniparser_set(dictionary, "Customizer:ScoreboardTransparency", strfmt(valueBuffer, "%d", config->customizer.scoreboardTransparency));
     ret += iniparser_set(dictionary, "Customizer:PointsTransparency", strfmt(valueBuffer, "%d", config->customizer.pointsTransparency));
     ret += iniparser_set(dictionary, "Customizer:WarningTransitionsFrequency", strfmt(valueBuffer, "%d", config->customizer.warningTransitionsFrequency));
@@ -348,6 +351,7 @@ void configResetCustomizer(Config *config) {
         .lowAmmoWarnSecondary = colorCreate(55, 165, 0, 255),
         .noAmmoWarnPrimary = colorCreate(255, 0, 0, 255),
         .noAmmoWarnSecondary = colorCreate(255, 0, 0, 255),
+        .chatName = CHAT_COLOR_GRAY,
         .scoreboardTransparency = 100,
         .pointsTransparency = 100,
         .warningTransitionsFrequency = 5,

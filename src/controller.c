@@ -186,6 +186,11 @@ bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, voi
     return apiSetSimpleCheat(controller->api, cheat, value);
 }
 
+bool controllerSetChatNameColor(Controller *controller, ChatColor color) {
+    if (!controller || !controller->api) return false;
+    return apiSetChatNameColor(controller->api, color);
+}
+
 void controllerDestroy(Controller *controller) {
     if (controller) {
         if (controller->cheatManager) {
@@ -312,6 +317,7 @@ void controllerInitTrainerConfig(Controller *controller) {
     controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY, &customizer->warningTransitionsFrequency);
     controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN, &customizer->warningTransitionsMin);
     controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX, &customizer->warningTransitionsMax);
+    controllerSetChatNameColor(controller, customizer->chatName);
 
     if (controllerIsGameWindowAttached(controller) && !processIsBorderless(controller->process) && config->graphics.borderless) {
         controllerSetCheat(controller, CHEAT_NAME_MAKE_BORDERLESS, config->graphics.borderless);

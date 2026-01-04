@@ -108,6 +108,7 @@ bool commandGiveHandle(Command command) {
     }
     if (strcmp("ammo", command.argv[1]) == 0) {
         serverExecuteCommand(server, "give ammo");
+        return true;
     }
 
     List *weapons = buildWeaponList(command);

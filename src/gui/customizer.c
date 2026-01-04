@@ -1,5 +1,6 @@
 #include "gui/customizer.h"
 #include "logger.h"
+#include "logic/cheat.h"
 #include "logic/config.h"
 #include "gui/gui_internal.h"
 #include <ui.h>
@@ -22,6 +23,8 @@ static uiColorButton *lowAmmoSecondaryBtn;
 static uiColorButton *noAmmoPrimaryBtn;
 static uiColorButton *noAmmoSecondaryBtn;
 
+static uiCombobox *chatNameCombo;
+
 static uiSlider *scoreboardTransparencySlider;
 static uiSlider *pointsTransparencySlider;
 
@@ -31,6 +34,26 @@ static uiSpinbox *maxSpin;
 
 static uiButton *btnReset;
 static uiButton *btnSave;
+
+static char* chatColors[] = {
+    "Gray",
+    "White",
+    "Light Gray",
+    "Black",
+    "Red",
+    "Green",
+    "Yellow",
+    "Orange",
+    "Dark Orange",
+    "Brown",
+    "Cyan",
+    "Blue",
+    "Dark Blue",
+    "Pink",
+    "Purple",
+};
+
+static const size_t chatColorsCount = sizeof(chatColors) / sizeof(chatColors[0]);
 
 static void init();
 
@@ -143,6 +166,22 @@ static void onSpinboxChange(uiSpinbox *spinbox, void *data) {
     uiControlEnable(uiControl(btnSave));
 }
 
+static void onChatNameComboChange(uiCombobox *combo, void *data) {
+    (void)data;
+    int selected = uiComboboxSelected(combo);
+    ChatColor color = cheatGetChatColor(selected);
+    Config *config = controllerGetConfig(controller);
+    config->customizer.chatName = color;
+    
+    // Apply immediately to game if attached
+    if (controllerIsGameAttached(controller)) {
+        controllerSetChatNameColor(controller, color);
+    }
+    
+    uiControlEnable(uiControl(btnReset));
+    uiControlEnable(uiControl(btnSave));
+}
+
 static void onResetButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
@@ -174,6 +213,7 @@ static void init() {
     setColorButton(lowAmmoSecondaryBtn, config.lowAmmoWarnSecondary);
     setColorButton(noAmmoPrimaryBtn, config.noAmmoWarnPrimary);
     setColorButton(noAmmoSecondaryBtn, config.noAmmoWarnSecondary);
+    uiComboboxSetSelected(chatNameCombo, cheatGetChatColorIndex(config.chatName));
     uiSliderSetValue(scoreboardTransparencySlider, config.scoreboardTransparency);
     uiSliderSetValue(pointsTransparencySlider, config.pointsTransparency);
     uiSpinboxSetValue(freqSpin, config.warningTransitionsFrequency);
@@ -244,11 +284,23 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiGridAppend(grid, uiControl(noAmmoPrimaryBtn),                         1, 9, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(uiNewLabel("No Ammo Warn Secondary")),     0, 10, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(noAmmoSecondaryBtn),                       1, 10, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(uiNewLabel("Scoreboard Transparency %")),  0, 11, 1, 1, 1, uiAlignFill, 0, uiAlignFill);    
-    uiGridAppend(grid, uiControl(scoreboardTransparencySlider),             1, 11, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(uiNewLabel("Points Transparency %")),      0, 12, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(pointsTransparencySlider),                 1, 12, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(uiNewLabel("Warning Transitions")),        0, 13, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    
+    // --- Chat Name Color ---
+    chatNameCombo = uiNewCombobox();
+    for (int i = 0; i < chatColorsCount; i++) {
+        uiComboboxAppend(chatNameCombo, chatColors[i]);
+    }
+
+    uiComboboxOnSelected(chatNameCombo, onChatNameComboChange, NULL);
+    
+    uiGridAppend(grid, uiControl(uiNewLabel("Chat Name")),            0, 11, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(chatNameCombo),                       1, 11, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    
+    uiGridAppend(grid, uiControl(uiNewLabel("Scoreboard Transparency %")),  0, 12, 1, 1, 1, uiAlignFill, 0, uiAlignFill);    
+    uiGridAppend(grid, uiControl(scoreboardTransparencySlider),             1, 12, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Points Transparency %")),      0, 13, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(pointsTransparencySlider),                 1, 13, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(uiNewLabel("Warning Transitions")),        0, 14, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
     uiBox *warnBox = uiNewHorizontalBox();
     uiBoxSetPadded(warnBox, 1);
 
@@ -272,7 +324,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiBoxAppend(warnBox, uiControl(warnGrid), 1);
     
-    uiGridAppend(grid, uiControl(warnBox),                                  1, 13, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(warnBox),                                  1, 14, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
 
     // --- Botones inferiores ---
     uiBox *buttonBox = uiNewHorizontalBox();

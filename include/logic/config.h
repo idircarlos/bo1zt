@@ -1,6 +1,7 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+#include "logic/cheat.h"
 #include "utils/common.h"
 #include <stdbool.h>
 
@@ -41,6 +42,7 @@ typedef struct {
     Color lowAmmoWarnSecondary;
     Color noAmmoWarnPrimary;
     Color noAmmoWarnSecondary;
+    ChatColor chatName;
     int scoreboardTransparency;
     int pointsTransparency;
     int warningTransitionsFrequency;
