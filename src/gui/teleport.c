@@ -64,7 +64,7 @@ static void onTeleportLoadButtonClick(uiButton *button, void *data) {
 static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
-    // --- Teleport Group ---
+
     uiGroup *teleportGroup = uiNewGroup("Teleport");
     uiBox *teleportBox = uiNewVerticalBox();
     uiBoxSetPadded(teleportBox, 1);
@@ -77,7 +77,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     zSpin = uiNewSpinbox(-500000, 500000);
 
 
-    // --- Botón Go (a la derecha del grid)
     goBtn = uiNewButton("Go");
     uiButton *loadBtn = uiNewButton("Load Position");
     uiButton *saveBtn = uiNewButton("Save Position");
@@ -99,7 +98,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiBoxAppend(teleportBox, uiControl(teleportGrid), 1);
 
-    // --- Añadir al grupo ---
     uiGroupSetChild(teleportGroup, uiControl(teleportBox));
     uiGroupSetMargined(teleportGroup, 1);
     return uiControl(teleportGroup);

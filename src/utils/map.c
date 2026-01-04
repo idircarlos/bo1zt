@@ -1,23 +1,23 @@
 #include "utils/map.h"
+#include "logger.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #define ZCOUNT_OF(arr) (sizeof(arr) / sizeof(*arr))
 
 typedef struct MapEntry MapEntry;
 
 struct MapEntry {
-  char *key;
-  void *val;
-  struct MapEntry *next;
+    char *key;
+    void *val;
+    struct MapEntry *next;
 };
 
 struct Map {
-  size_t size_index;
-  size_t entry_count;
-  struct MapEntry **entries;
+    size_t size_index;
+    size_t entry_count;
+    struct MapEntry **entries;
 };
 
 static struct MapEntry *_mapEntryCreate(const char *key, void *val);
@@ -267,7 +267,7 @@ static void *_mapAuxMalloc(size_t size) {
     void *ptr;
     ptr = malloc(size);
     if (!ptr) {
-        printf("Coudln't allocate space for map\n");
+        LOG_ERROR("Couldn't allocate space for map");
         exit(EXIT_FAILURE);
     }
     return ptr;
@@ -277,7 +277,7 @@ static void *_mapAuxCalloc(size_t num, size_t size) {
     void *ptr;
     ptr = calloc(num, size);
     if (!ptr) {
-        printf("Coudln't allocate space for map\n");
+        LOG_ERROR("Couldn't allocate space for map");
         exit(EXIT_FAILURE);
     }
     return ptr;

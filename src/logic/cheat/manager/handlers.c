@@ -44,7 +44,7 @@ static bool applyCharacter(CheatManager *manager, int character) {
     return serverSetDVarInt(server, "bo1zt_character", character);
 }
 
-void cheatManagerHandleGameStart(CheatManager *manager) {
+void cheatManagerHandleGamePreStart(CheatManager *manager) {
     if (!manager || !manager->config) return;
     
     Api *api = _controllerGetApi(manager->controller);
@@ -65,6 +65,13 @@ void cheatManagerHandleGameStart(CheatManager *manager) {
             notifyCheatFailed(manager);
         }
     }
+}
+
+void cheatManagerHandleGameStart(CheatManager *manager) {
+    if (!manager || !manager->config) return;
+    
+    Api *api = _controllerGetApi(manager->controller);
+    if (!api) return;
     
     // Apply ChatNameColor if not GRAY
     ChatColor chatColor = manager->config->customizer.chatName;

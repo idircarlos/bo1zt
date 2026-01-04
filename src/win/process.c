@@ -64,7 +64,7 @@ bool processIsRunning(const char *executableName) {
 }
 
 bool processExec(const char *executableName) {
-    LOG_INFO("Trying opening %s\n", executableName);
+    LOG_INFO("Trying to open %s", executableName);
     HINSTANCE result = ShellExecuteA(NULL, "open", executableName,  NULL, NULL, SW_SHOWNORMAL);
     bool success = (INT_PTR)result > 32; // https://learn.microsoft.com/es-es/windows/win32/api/shellapi/nf-shellapi-shellexecutea
     return success;
@@ -89,23 +89,23 @@ bool processTryAttachWindow(Process *process, const char *windowTitle) {
 
 bool processTerminate(Process *process) {
     if (!processIsRunning(process->executableName)) {
-        LOG_ERROR("Cannot terminate %s (PID %d) since is not running anymore\n", process->executableName, process->pid);
+        LOG_ERROR("Cannot terminate %s (PID %d) since it is not running anymore", process->executableName, process->pid);
         return false;
     }
     if (processIsWindowAttached(process)) {
-        LOG_INFO("Trying terminating process %s (PID %d) gracefully...\n", process->executableName, process->pid);
+        LOG_INFO("Trying to terminate process %s (PID %d) gracefully...", process->executableName, process->pid);
         // Saving these variables since they can be freed/modified by another thread.
         char *executableName = strdup(process->executableName);
         DWORD pid = process->pid;
         PostMessageA(process->windowInfo.hwnd, WM_CLOSE, 0, 0);
         if (WaitForSingleObject(process->handle, 5000) == WAIT_OBJECT_0) {
-            LOG_INFO("%s (PID %d) gracefully terminated\n", executableName, pid);
+            LOG_INFO("%s (PID %d) gracefully terminated", executableName, pid);
             free(executableName);
             return true;
         }
         free(executableName);
     }
-    LOG_WARN("Couldn't terminate process %s (PID %d) gracefully. Get /kill -9'ed\n", process->executableName, process->pid);
+    LOG_WARN("Couldn't terminate process %s (PID %d) gracefully. Get /kill -9'ed", process->executableName, process->pid);
     return TerminateProcess(process->handle, 0);
 }
 
@@ -126,7 +126,7 @@ bool processMakeBorderless(Process *process, bool enabled) {
     if (enabled == processIsBorderless(process)) return true;   // Only toggle borderless if we receive a different value
     HWND hwnd = process->windowInfo.hwnd;
     if (hwnd == NULL) {
-        LOG_ERROR("Couldn't find window for pid %u\n", process->pid);
+        LOG_ERROR("Couldn't find window for pid %u", process->pid);
         return false;
     }
 
@@ -168,7 +168,7 @@ bool processReadString(Process *process, uint32_t address, char *buffer) {
             return true;
         }
     }
-    LOG_ERROR("Couldn't find null terminator in string at 0x%08X\n", address);
+    LOG_ERROR("Couldn't find null terminator in string at 0x%08X", address);
     return false;
 }
 
@@ -201,12 +201,12 @@ bool processFindPattern(Process *process, uintptr_t startAddress, size_t regionS
 
     uint8_t *buffer = (uint8_t*)malloc(regionSize);
     if (!buffer) {
-        LOG_ERROR("processFindPattern: sin memoria (regionSize=%zu)", regionSize);
+        LOG_ERROR("Out of memory while finding pattern (regionSize=%zu)", regionSize);
         return false;
     }
 
     if (!processRead(process, (uint32_t)startAddress, buffer, regionSize)) {
-        LOG_ERROR("processFindPattern: no se pudo leer la memoria en 0x%08X", (unsigned)startAddress);
+        LOG_ERROR("Couldn't read memory at 0x%08X", (unsigned)startAddress);
         free(buffer);
         return false;
     }
@@ -262,7 +262,7 @@ static BOOL CALLBACK _EnumWindowsProc(HWND hWnd, LPARAM lParam) {
 static bool _tryMakeBorderless(Process *process) {
     HWND hwnd = process->windowInfo.hwnd;
     if (!IsWindow(hwnd)) {
-        LOG_ERROR("MakeWindowBorderless: hwnd no válido\n");
+        LOG_ERROR("Invalid hwnd for borderless window");
         return false;
     }
 
@@ -302,7 +302,7 @@ static bool _tryMakeNonBorderless(Process *process) {
     if (!IsWindow(hwnd)) return false;
 
     if (!process->windowInfo.hasSavedStyle) {
-        LOG_WARN("There are no saved window styles\n");
+        LOG_WARN("There are no saved window styles");
         return false;
     }
 
@@ -316,12 +316,12 @@ static bool _tryMakeNonBorderless(Process *process) {
 
 bool processInjectDll(Process *process, const char *dllName, const char *executablePath) {
     if (!process || !process->handle) {
-        LOG_ERROR("processInjectDll: Invalid process\n");
+        LOG_ERROR("Invalid process for DLL injection");
         return false;
     }
 
     if (processHasDll(process, dllName)) {
-        LOG_INFO("DLL already injected in process %lu\n", (unsigned long)process->pid);
+        LOG_INFO("DLL already injected in process %lu", (unsigned long)process->pid);
         return true;
     }
 
@@ -341,31 +341,31 @@ bool processInjectDll(Process *process, const char *dllName, const char *executa
     } else {
         // Fallback to current directory
         if (GetFullPathNameA(dllName, MAX_PATH, fullDllPath, NULL) == 0) {
-            LOG_ERROR("processInjectDll: Failed to get full path for DLL\n");
+            LOG_ERROR("Failed to get full path for DLL");
             return false;
         }
     }
 
     // Extract DLL from resources to bo1zt folder
     if (!resourcesExtractToFile(IDR_CHAT_HOOK_DLL, fullDllPath)) {
-        LOG_ERROR("processInjectDll: Failed to extract DLL from resources\n");
+        LOG_ERROR("Failed to extract DLL from resources");
         return false;
     }
     
-    LOG_INFO("DLL extracted to: %s\n", fullDllPath);
+    LOG_INFO("DLL extracted to: %s", fullDllPath);
     
     // Allocate memory in the target process for the DLL path
     size_t pathLen = strlen(fullDllPath) + 1;
     uintptr_t remoteString;
     
     if (!processAllocatePage(process, pathLen, &remoteString)) {
-        LOG_ERROR("processInjectDll: Failed to allocate memory in target process\n");
+        LOG_ERROR("Failed to allocate memory in target process");
         return false;
     }
 
     // Write the DLL path into the target process
     if (!processWrite(process, (uint32_t)remoteString, fullDllPath, pathLen)) {
-        LOG_ERROR("processInjectDll: Failed to write DLL path to target process\n");
+        LOG_ERROR("Failed to write DLL path to target process");
         processFreePage(process, remoteString);
         return false;
     }
@@ -373,24 +373,24 @@ bool processInjectDll(Process *process, const char *dllName, const char *executa
     // Get the address of LoadLibraryA
     HMODULE kernel32 = GetModuleHandleA("kernel32.dll");
     if (!kernel32) {
-        LOG_ERROR("processInjectDll: Failed to get kernel32.dll handle\n");
+        LOG_ERROR("Failed to get kernel32.dll handle");
         processFreePage(process, remoteString);
         return false;
     }
     
     uintptr_t loadLibraryAddr = (uintptr_t)GetProcAddress(kernel32, "LoadLibraryA");
     if (!loadLibraryAddr) {
-        LOG_ERROR("processInjectDll: Failed to get LoadLibraryA address\n");
+        LOG_ERROR("Failed to get LoadLibraryA address");
         processFreePage(process, remoteString);
         return false;
     }
     
     // Create a remote thread to load the DLL
-    LOG_INFO("Creating remote thread to inject DLL into process %lu\n", (unsigned long)process->pid);
+    LOG_INFO("Creating remote thread to inject DLL into process %lu", (unsigned long)process->pid);
     Thread *remoteThread = threadCreateRemote(process, loadLibraryAddr, remoteString);
     
     if (!remoteThread) {
-        LOG_ERROR("processInjectDll: Failed to create remote thread (Error: %lu)\n", GetLastError());
+        LOG_ERROR("Failed to create remote thread (Error: %lu)", GetLastError());
         processFreePage(process, remoteString);
         return false;
     }
@@ -404,11 +404,11 @@ bool processInjectDll(Process *process, const char *dllName, const char *executa
     processFreePage(process, remoteString);
     
     if (exitCode == 0) {
-        LOG_ERROR("processInjectDll: LoadLibraryA failed in target process\n");
+        LOG_ERROR("LoadLibraryA failed in target process");
         return false;
     }
     
-    LOG_INFO("DLL successfully injected!\n");
+    LOG_INFO("DLL successfully injected");
     return true;
 }
 
@@ -435,7 +435,7 @@ bool processHasDll(Process *process, const char *dllName) {
 
 void processConnectPipe(Process *process) {
     if (process->pipe.handle != INVALID_HANDLE_VALUE) {
-        LOG_WARN("processConnectPipe: Pipe already created\n");
+        LOG_WARN("Pipe already created");
         return;
     }
 
@@ -450,7 +450,7 @@ void processConnectPipe(Process *process) {
     );
 
     if (hPipe == INVALID_HANDLE_VALUE) {
-        LOG_ERROR("processConnectPipe: Failed to connect to named pipe. Error: %d\n", GetLastError());
+        LOG_ERROR("Failed to connect to named pipe. Error: %d", GetLastError());
         process->pipe.handle = INVALID_HANDLE_VALUE;
         process->pipe.connected = false;
         return;
@@ -458,7 +458,7 @@ void processConnectPipe(Process *process) {
 
     process->pipe.readEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (process->pipe.readEvent == NULL) {
-        LOG_ERROR("processConnectPipe: Failed to create read event. Error: %d\n", GetLastError());
+        LOG_ERROR("Failed to create read event. Error: %d", GetLastError());
         CloseHandle(hPipe);
         process->pipe.handle = INVALID_HANDLE_VALUE;
         process->pipe.connected = false;
@@ -468,7 +468,7 @@ void processConnectPipe(Process *process) {
     process->pipe.handle = hPipe;
     process->pipe.connected = true;
 
-    LOG_INFO("Pipe connected successfully!\n");
+    LOG_INFO("Pipe connected successfully");
 }
 
 bool processIsPipeConnected(Process *process) {
@@ -480,7 +480,7 @@ Event processPollFromPipe(Process *process) {
     event.type = EVENT_INVALID;
     
     if (process->pipe.handle == INVALID_HANDLE_VALUE) {
-        LOG_ERROR("processPollFromPipe: Pipe not created\n");
+        LOG_ERROR("Pipe not created");
         return event;
     }
 
@@ -505,14 +505,14 @@ Event processPollFromPipe(Process *process) {
             // Get result after completion
             if (!GetOverlappedResult(process->pipe.handle, &ov, &bytesRead, FALSE)) {
                 error = GetLastError();
-                LOG_ERROR("processPollFromPipe: Overlapped read failed (%d)\n", error);
+                LOG_ERROR("Overlapped read failed (%d)", error);
                 if (error == ERROR_BROKEN_PIPE || error == ERROR_PIPE_NOT_CONNECTED) {
                     process->pipe.connected = false;
                 }
                 return event;
             }
         } else {
-            LOG_ERROR("processPollFromPipe: Reading from pipe failed (%d)\n", error);
+            LOG_ERROR("Reading from pipe failed (%d)", error);
             if (error == ERROR_BROKEN_PIPE || error == ERROR_PIPE_NOT_CONNECTED) {
                 process->pipe.connected = false;
             }
@@ -521,7 +521,7 @@ Event processPollFromPipe(Process *process) {
     }
     
     if (bytesRead != sizeof(Event)) {
-        LOG_ERROR("processPollFromPipe: Incomplete read (expected %zu, got %lu bytes)\n", sizeof(Event), bytesRead);
+        LOG_ERROR("Incomplete read (expected %zu, got %lu bytes)", sizeof(Event), bytesRead);
         event.type = EVENT_INVALID;
         return event;
     }

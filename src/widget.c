@@ -453,8 +453,8 @@ void widgetSetFont(Widget* widget, const char* face) {
 
 void widgetSetTextColor(Widget* widget, Color color) {
     if (!widget) return;
-    // This is a workaround for a known bug that whenever the color is Pure Black (0,0,0) it became trasnparent
-    // Since it cannot be differentiated betwenn textColor and bgColor when displaying it.
+    // This is a workaround for a known bug that whenever the color is Pure Black (0,0,0) it became transparent
+    // Since it cannot be differentiated between textColor and bgColor when displaying it.
     // For now, I am setting (1,0,0) which is still ~Pure Black 
     if (color.r == 0 && color.g == 0 && color.b == 0) color.r = 1;
     widget->render.textColor = color;

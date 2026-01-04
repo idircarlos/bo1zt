@@ -1,7 +1,7 @@
 #include "logic/gsc/pool.h"
+#include "logger.h"
 #include "utils/queue.h"
 #include <stdlib.h>
-#include <stdio.h>
 
 #define MAX_WORKERS 10
 
@@ -74,7 +74,7 @@ int poolAcquire(GSCPool *pool) {
 
 void poolRelease(GSCPool *pool, int index) {
     if (index < 0 || index >= MAX_WORKERS) {
-        fprintf(stderr, "[poolRelease] índice fuera de rango\n");
+        LOG_ERROR("Index out of range");
         return;
     }
 

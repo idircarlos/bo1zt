@@ -57,7 +57,7 @@ GSCResponse gscCall(GSC *gsc, GSCMethod method, GSCArgs args) {
 
     const char *methodString = gscMethodToString(method);
     const char *argsString = gscArgsToString(args);
-    LOG_INFO("Calling %s(%s)\n", methodString, argsString);
+    LOG_INFO("Calling %s(%s)", methodString, argsString);
 
     int index = poolAcquire(gsc->pool);
 
@@ -71,7 +71,7 @@ GSCResponse gscCall(GSC *gsc, GSCMethod method, GSCArgs args) {
     }
 
     gsc->pool->responses[index] = NULL;
-    LOG_DEBUG("Sending %s = %s\n", dvarKey, dvarValue);
+    LOG_DEBUG("Sending %s = %s", dvarKey, dvarValue);
     serverSetDVarString(gsc->server, dvarKey, dvarValue);
     free(dvarValue);
 
@@ -82,7 +82,7 @@ GSCResponse gscCall(GSC *gsc, GSCMethod method, GSCArgs args) {
     }
 
     if (requestElapsedTime >= GSC_TIMEOUT) {
-        LOG_WARN("GSC call %s timed out after %dms\n", methodString, GSC_TIMEOUT);
+        LOG_WARN("GSC call %s timed out after %dms", methodString, GSC_TIMEOUT);
         poolRelease(gsc->pool, index);
         result.status = GSC_STATUS_TIMEOUT;
         return result;
@@ -97,7 +97,7 @@ GSCResponse gscCall(GSC *gsc, GSCMethod method, GSCArgs args) {
         result.response[sizeof(result.response) - 1] = '\0';
     }
 
-    LOG_INFO("Received %s -> [%s]\n", methodString, result.response);
+    LOG_INFO("Received %s -> [%s]", methodString, result.response);
     return result;
 }
 

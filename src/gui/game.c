@@ -74,7 +74,7 @@ static UIControlGroup *bindsControlGroup = NULL;
 // Threads
 static int threadLaunchGame(void *data) {
     (void)data;
-    LOG_INFO("Launching game from UI\n");
+    LOG_INFO("Launching game from UI");
     uiControlDisable(uiControl(launchButton));
     mapPutBool(cache, CACHE_OPENING_GAME, true);
     bool success = controllerLaunchGame(controller);
@@ -88,7 +88,7 @@ static int threadLaunchGame(void *data) {
 
 static int threadCloseGame(void *data) {
     (void)data;
-    LOG_INFO("Closing game from UI\n");
+    LOG_INFO("Closing game from UI");
     uiControlDisable(uiControl(closeButton));
     mapPutBool(cache, CACHE_CLOSING_GAME, true);
     bool success = controllerCloseGame(controller);
@@ -140,7 +140,7 @@ static int onBindsWindowClose(uiWindow *window, void *data) {
     return 0;
 }
 
-// Aux
+// Helpers
 static bool isValidExecutableName(char *gamePath) {
     size_t gamePathLen = strlen(gamePath);
     size_t gameExecLen = strlen(GAME_EXECUTABLE_NAME);
@@ -376,7 +376,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     statusClosingText = buildInfoAttributedString(CLOSING_TEXT, attrOrange, &statusHandler, handlerStatusDraw);
     statusCurrentText = statusNotRunningText;
 
-    // --- Game Group ---
     uiGroup *gameGroup = uiNewGroup("Game");
     uiBox *gameBox = uiNewVerticalBox();
     uiBoxSetPadded(gameBox, 1);
@@ -498,7 +497,7 @@ bool uiGameIsChecked(CheatName cheat) {
         case CHEAT_NAME_SHOW_FPS:
             return uiCheckboxChecked(showFpsCheckbox);
         default:
-            fprintf(stderr, "Unknown cheat %d\n", cheat);
+            LOG_ERROR("Unknown cheat %d", cheat);
             return false;
     }
 }

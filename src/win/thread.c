@@ -21,7 +21,7 @@ static int threadWatchdogRoutine(void *data) {
     DWORD res = WaitForSingleObject(props->targetThread->handle, props->timeoutMillis);
 
     if (res == WAIT_TIMEOUT) {
-        LOG_WARN("Timeout expired for Thread %d. Terminating thread and executing error callback function...\n", props->targetThread->handle);
+        LOG_WARN("Timeout expired for Thread %d. Terminating thread and executing error callback function...", props->targetThread->handle);
         TerminateThread(props->targetThread->handle, 1);
         props->errorCallback(props->errorCallbackData);
     }
@@ -38,7 +38,7 @@ Thread *threadCreate(int (*entryPoint)(void *), void *data) {
 }
 
 Thread *threadCreateWatchdog(Thread *targetThread, uint32_t timeoutMillis, int (*errorCallback)(void *), void *errorCallbackData) {
-    LOG_INFO("Launching Watchdog Thread against Thread %d\n", targetThread->handle);
+    LOG_INFO("Launching Watchdog Thread against Thread %d", targetThread->handle);
     WatchdogProps *props = (WatchdogProps*)malloc(sizeof(WatchdogProps));
     props->targetThread = targetThread;
     props->timeoutMillis = timeoutMillis;

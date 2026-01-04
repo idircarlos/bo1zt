@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <ui.h>
 #include "gui.h"
@@ -52,7 +51,7 @@ static void setupUi() {
     const char *err;
     err = uiInit(&o);
     if (err != NULL) {
-        fprintf(stderr, "Error initializing libui-ng: %s\n", err);
+        LOG_ERROR("Error initializing libui: %s", err);
         uiFreeInitError(err);
         exit(1);
     }
@@ -100,28 +99,23 @@ static uiControl* buildWindowContent() {
     uiControl *gameGroup = gameControlGroup->build(controller, window);
     uiControl *aboutGroup = aboutControlGroup->build(controller, window);
 
-    // --- VBox Character + Teleport ---
     uiBox *ctVBox = uiNewVerticalBox();
     uiBoxSetPadded(ctVBox, 1);
     uiBoxAppend(ctVBox, characterGroup, 1);
     uiBoxAppend(ctVBox, teleportGroup, 1);
 
-    // --- VBox Weapons + About ---
     uiBox *waVBox = uiNewVerticalBox();
     uiBoxSetPadded(waVBox, 1);
     uiBoxAppend(waVBox, weaponsGroup, 1);
     uiBoxAppend(waVBox, aboutGroup, 1);
 
-    // --- Main Grid ---
     uiGrid *mainGrid = uiNewGrid();
     uiGridSetPadded(mainGrid, 1);
 
-    // Fila 0
     uiGridAppend(mainGrid, playerGroup, 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(mainGrid, cheatGroup,  1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(mainGrid, gameGroup,   2, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
-    // Fila 1
     uiGridAppend(mainGrid, graphicsGroup,       0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(mainGrid, uiControl(ctVBox),   1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(mainGrid, uiControl(waVBox),   2, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
@@ -132,7 +126,7 @@ static uiControl* buildWindowContent() {
 UIControlGroup *guiControlGroupCreate(uiControl *(*build)(Controller *, uiWindow *), void (*update)()) {
     UIControlGroup *cg = (UIControlGroup*)malloc(sizeof(UIControlGroup));
     if (!cg) {
-        LOG_ERROR("Couldn't allocate memory for UIControlGroup\n");
+        LOG_ERROR("Couldn't allocate memory for UIControlGroup");
         return NULL;
     }
     cg->build = build;

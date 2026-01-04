@@ -35,7 +35,6 @@ static void onPlayerButtonClick(uiButton *button, void *data) {
     void *value = NULL;
     int spinBoxValue;
 
-    // Maybe refactor this into an array of componentes and access by index using SimpleCheatName to avoid switch-case 
     switch(simpleCheatName) {
         case SIMPLE_CHEAT_NAME_SET_HEALTH:
             spinBoxValue = uiSpinboxValue(healthSpin);
@@ -58,7 +57,7 @@ static void onPlayerButtonClick(uiButton *button, void *data) {
             value = &spinBoxValue;
             break;
         default:
-            LOG_WARN("Cheat %d shouldn't be handled here or it doesn't exist\n", simpleCheatName);
+            LOG_WARN("Cheat %d shouldn't be handled here or it doesn't exist", simpleCheatName);
     }
     controllerSetSimpleCheat(controller, simpleCheatName, value);
 }
@@ -92,24 +91,19 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiButtonOnClicked(speedBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_SET_SPEED);
     uiButtonOnClicked(killsBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_SET_KILLS);
     uiButtonOnClicked(headshotsBtn, onPlayerButtonClick, (void*)SIMPLE_CHEAT_NAME_SET_HEADSHOTS);
-
-    // --- Grid Layout 5x2 ---
     
-    // Fila 1
     uiGridAppend(playerGrid, uiControl(nameBtn),      0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(nameEntry),    1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(healthBtn),    0, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(healthSpin),   1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
 
-    // Fila 2
     uiGridAppend(playerGrid, uiControl(pointsBtn),    0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(pointsSpin),   1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(speedBtn),     0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(speedSpin),    1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     
 
-    // Fila 3
     uiGridAppend(playerGrid, uiControl(killsBtn),     0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(killsSpin),    1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(playerGrid, uiControl(headshotsBtn), 0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);

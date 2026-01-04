@@ -53,7 +53,7 @@ static List *buildPerkList(Command command) {
     for (int i = 2; i < command.argc; i++) {
         Perk perk = getPerkFromAbbreviation(command.argv[i]);
         if (perk == PERK_INVALID) {
-            LOG_WARN("Invalid perk abbreviation: %s\n", command.argv[i]);
+            LOG_WARN("Invalid perk abbreviation: %s", command.argv[i]);
             continue;
         }
         listAddInt(perks, perk);
@@ -66,7 +66,7 @@ static List *buildWeaponList(Command command) {
     for (int i = 1; i < command.argc; i++) {
         Weapon weapon = getWeaponFromAbbreviation(command.argv[i]);
         if (weapon == WEAPON_INVALID) {
-            LOG_WARN("Invalid weapon abbreviation: %s\n", command.argv[i]);
+            LOG_WARN("Invalid weapon abbreviation: %s", command.argv[i]);
             continue;
         }
         listAddInt(weapons, weapon);

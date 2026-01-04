@@ -4,7 +4,6 @@
 #include <stdarg.h>
 #include <time.h>
 #include <stdlib.h>
-#include <string.h>
 
 #define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
 
@@ -51,6 +50,7 @@ void loggerLog(LogLevel level, const char *cfile, int cline, const char *fmt, ..
 
     fprintf(stderr, "[%s] [%s] %s:%d: ", timeBuf, levelStr, cfile, cline);
     vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
 
     va_end(args);
 

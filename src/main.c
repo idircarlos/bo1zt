@@ -18,19 +18,19 @@ int processRunningThread(void *data) {
     (void)data;
     bool processExited = false;
     while (true) {
-        LOG_INFO("Waiting for game starts...\n");
+        LOG_INFO("Waiting for game to start...");
         while(!controllerIsGameRunning(controller)) {
             threadSleep(500);
         }
         if (!controllerIsGameAttached(controller)) {
             controllerAttachGame(controller);
         }
-        LOG_INFO("Game attached! Looking for Game Window\n");
+        LOG_INFO("Game attached! Looking for game window");
         while (!controllerIsGameWindowAttached(controller)) {
             // This can happen if the game exits before attaching the window
             processExited = !controllerIsGameRunning(controller);
             if (processExited) {
-                LOG_INFO("Game exited before attaching the window\n");
+                LOG_INFO("Game exited before attaching the window");
                 controllerDetachGame(controller);
                 break;
             }
@@ -38,12 +38,12 @@ int processRunningThread(void *data) {
             threadSleep(200);
         }
         if (processExited) continue;
-        LOG_INFO("Window attached!\n");
+        LOG_INFO("Window attached!");
         while (!controllerIsGameReady(controller)) {
             // This can happen if the game exits before being ready
             processExited = !controllerIsGameRunning(controller);
             if (processExited) {
-                LOG_INFO("Game exited before being ready\n");
+                LOG_INFO("Game exited before being ready");
                 controllerDetachGame(controller);
                 break;
             }
@@ -51,11 +51,11 @@ int processRunningThread(void *data) {
             threadSleep(200);
         }
         if (processExited) continue;
-        LOG_INFO("Game ready!\n");
+        LOG_INFO("Game ready!");
         Process *process = controllerGetProcess(controller);
         GameConfig gameConfig = controllerGetGameConfig(controller);
         if (strlen(gameConfig.location) == 0) {
-            LOG_WARN("Game location not configured. DLL injection skipped. Use 'Launch Game' button to configure.\n");
+            LOG_WARN("Game location not configured. DLL injection skipped. Use 'Launch Game' button to configure.");
         } else {
             // Extract GSC scripts to game directory
             char gscPath[MAX_PATH + 16];
@@ -64,7 +64,7 @@ int processRunningThread(void *data) {
             
             // Inject DLL
             if (!processInjectDll(process, DLL_NAME, gameConfig.location)) {
-                LOG_ERROR("Failed to inject DLL into game process. Events won't be received.\n");
+                LOG_ERROR("Failed to inject DLL into game process. Events won't be received.");
             } else {
                 Sleep(500); // Wait a bit to let the DLL initialize the pipe
                 processConnectPipe(process);
@@ -72,7 +72,7 @@ int processRunningThread(void *data) {
         }
         controllerInitTrainerConfig(controller);
         controllerWaitUntilGameCloses(controller);
-        LOG_INFO("Game has been closed\n");
+        LOG_INFO("Game has been closed");
         controllerDetachGame(controller);
     }
     return 0;

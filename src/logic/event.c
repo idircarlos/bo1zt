@@ -48,7 +48,7 @@ bool eventHandle(Event event) {
         case EVENT_ID_UPDATE: return eventHandleIDUpdate(event);
         case EVENT_INVALID:
         default:
-            LOG_ERROR("Unknown event %d\n", event.type);
+            LOG_ERROR("Unknown event %d", event.type);
             return false;
     }
 }
@@ -80,10 +80,11 @@ static bool eventHandleVMNotify(Event event) {
     State *state = controllerGetState(controller);
     Game *game = &state->activeGame;
     if (strcmp(event.data.vmNotify.eventName, "fade_introblack") == 0) {
-        cheatManagerHandleGameStart(_controllerGetCheatManager(controller));
+        cheatManagerHandleGamePreStart(_controllerGetCheatManager(controller));
         return true;
     }
     if (strcmp(event.data.vmNotify.eventName, "fade_in_complete") == 0) {
+        cheatManagerHandleGameStart(_controllerGetCheatManager(controller));
         return gameStart(game, controllerGetLevelName(controller), event.timestamp);
     }
     if (strcmp(event.data.vmNotify.eventName, "start_of_round") == 0) {
@@ -167,7 +168,7 @@ static bool eventHandleIDUpdate(Event event) {
                 if (processRead(process, (uint32_t)pEventValue + 0x4, &eventValue, sizeof(int))) {
                     return gameSetQuickRevivesDrunk(game, eventValue);
                 }
-                LOG_WARN("Coudln't read IDUpdate Solo Lives Given event value\n");
+                LOG_WARN("Couldn't read IDUpdate Solo Lives Given event value");
                 return false;
             }
             LOG_WARN("Event IDUpdate %d pointer value is null. Weird.", eventId);

@@ -3,6 +3,7 @@
 #include "utils/common.h"
 #include "controller/controller_internal.h"
 #include "api.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -58,7 +59,7 @@ bool serverCenterMessage(Server *server, const char *message) {
     if (!server) return false;
     char *command = serverBuildMessage(SV_CMD_MSG_CENTER_KEY, message);
     bool result = serverSendServerCommand(server, command);
-    LOG_INFO("Center Message Sent: %s\n", message);
+    LOG_INFO("Center Message Sent: %s", message);
     free(command);
     return result;
 }
@@ -95,7 +96,7 @@ char *serverBuildDVar(const char *dVar, void *value, CType type) {
             snprintf(serverCommand, SV_CMD_FORMAT_LENGTH, "v %s \"%d\"", dVar, (*(bool*)value) ? 1 : 0);
             break;
         default:
-            LOG_ERROR("Unknown CType %d\n", type);
+            LOG_ERROR("Unknown CType %d", type);
             free(serverCommand);
             return NULL;
     }
@@ -138,7 +139,7 @@ uintptr_t getDVarPointer(Server *server, const char *dVar) {
     if (!server) return 0;
     uintptr_t dVarPointer = apiGetDVarPointer(server->api, dVar);
     if (!dVarPointer) {
-        LOG_ERROR("DVar %s not found\n", dVar);
+        LOG_ERROR("DVar %s not found", dVar);
         return 0;
     }
     return dVarPointer;
@@ -151,7 +152,7 @@ bool serverGetDVarBool(Server *server, const char *dVar) {
     uint32_t value;
     bool success = processRead(process, dVarPointer + 0x18, &value, sizeof(uint32_t));
     if (!success) {
-        printf("Failed to read DVar %s value\n", dVar);
+        LOG_ERROR("Failed to read DVar %s value", dVar);
         return false;
     }
     return value != 0;    
@@ -165,7 +166,7 @@ int serverGetDVarInt(Server *server, const char *dVar) {
     int32_t value;
     bool success = processRead(process, dVarPointer + 0x18, &value, sizeof(int32_t));
     if (!success) {
-        printf("Failed to read DVar %s value\n", dVar);
+        LOG_ERROR("Failed to read DVar %s value", dVar);
         return 0;
     }
     return value;    
@@ -177,7 +178,7 @@ float serverGetDVarFloat(Server *server, const char *dVar) {
     float value;
     bool success = processRead(process, dVarPointer + 0x18, &value, sizeof(float));
     if (!success) {
-        printf("Failed to read DVar %s value\n", dVar);
+        LOG_ERROR("Failed to read DVar %s value", dVar);
         return 0.0f;
     }
     return value;    
@@ -189,7 +190,7 @@ char* serverGetDVarString(Server *server, const char *dVar) {
     char *result = (char*)malloc(128);
     bool success = processRead(process, dVarPointer + 0x18, result, 128);
     if (!success) {
-        printf("Failed to read DVar %s value\n", dVar);
+        LOG_ERROR("Failed to read DVar %s value", dVar);
         free(result);
         return NULL;
     }

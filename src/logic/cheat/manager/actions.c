@@ -1,4 +1,5 @@
 #include "logic/cheat/manager/actions.h"
+#include "logger.h"
 #include "logic/cheat/manager/manager_internal.h"
 #include "logic/cheat/manager/state.h"
 #include "logic/cheat/manager/registry.h"

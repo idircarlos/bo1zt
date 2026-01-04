@@ -15,7 +15,7 @@
 #define RECT_INI_FMT "Rect(%u,%u,%u,%u)"
 #define RECT_INI_DEFAULT "Rect(111,111,111,111)"
 
-// Aux
+// Helpers
 static inline char *strfmt(char *buff, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -27,7 +27,7 @@ static inline char *strfmt(char *buff, const char *fmt, ...) {
 static Color colorFromString(const char *colorString) {
     uint8_t r = 255, g = 255, b = 255, a = 255;
     if (sscanf(colorString, "Color(%hhu,%hhu,%hhu,%hhu)", &r, &g, &b, &a) != 4) {
-        LOG_ERROR("Invalid color string: %s\n", colorString);
+        LOG_ERROR("Invalid color string: %s", colorString);
     }
     return colorCreate(r, g, b, a);
 }
@@ -35,7 +35,7 @@ static Color colorFromString(const char *colorString) {
 static Rect rectFromString(const char *rectString) {
     uint32_t x = 0, y = 0, w = 0, h = 0;
     if (sscanf(rectString, "Rect(%u,%u,%u,%u)", &x, &y, &w, &h) != 4) {
-        LOG_ERROR("Invalid rect string: %s\n", rectString);
+        LOG_ERROR("Invalid rect string: %s", rectString);
     }
     return rectCreate(x, y, w, h);
 }
@@ -98,7 +98,7 @@ static void configLoadBinds(Config *config, dictionary *dict) {
 static bool configLoad(Config *config) {
     dictionary *dictionary = iniparser_load(INI_FILE_NAME);
     if (!dictionary) {
-        fprintf(stderr, "cannot parse file: %s\n", INI_FILE_NAME);
+        LOG_ERROR("Cannot parse file: %s", INI_FILE_NAME);
         return false;
     }
 
@@ -197,7 +197,7 @@ Config* configCreate() {
 bool configSave(Config *config) {
     FILE *ini = fopen(INI_FILE_NAME, "w+");
     if (!ini) {
-        fprintf(stderr, "Cannot create trainer.ini\n");
+        LOG_ERROR("Cannot create trainer.ini");
         return false;
     }
 
@@ -205,7 +205,7 @@ bool configSave(Config *config) {
     dictionary *dictionary = iniparser_load(INI_FILE_NAME);
 
     if (!dictionary) {
-        fprintf(stderr, "cannot parse file: %s\n", INI_FILE_NAME);
+        LOG_ERROR("Cannot parse file: %s", INI_FILE_NAME);
         return -1;
     }
 

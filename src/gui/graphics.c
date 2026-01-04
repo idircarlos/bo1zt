@@ -1,10 +1,10 @@
 #include "gui/graphics.h"
 #include "gui/customizer.h"
+#include "logger.h"
 #include "logic/cheat/manager.h"
 #include "logic/cheat/manager/actions.h"
 #include "utils/map.h"
 #include "resource_ids.h"
-#include <stdio.h>
 
 #define UI_CUSTOMIZER_CONTROL_GROUP_SIZE 1
 
@@ -117,7 +117,7 @@ static void init() {
 static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
-    // --- Graphics Group ---
+
     uiGroup *graphicsGroup = uiNewGroup("Graphics");
     uiBox *graphicsBox = uiNewVerticalBox();
     uiBoxSetPadded(graphicsBox, 1);
@@ -184,7 +184,6 @@ static void update() {
     Config *config = controllerGetConfig(controller);
     GraphicsConfig *graphics = &config->graphics;
     
-    // Sync UI with config values (in case commands changed them)
     if (uiSpinboxValue(fovSpin) != graphics->fov) {
         uiSpinboxSetValue(fovSpin, graphics->fov);
     }
@@ -235,7 +234,7 @@ bool uiGraphicsIsChecked(CheatName cheat) {
         case CHEAT_NAME_COLORIZED:
             return uiCheckboxChecked(colorizedCheckbox);
         default:
-            fprintf(stderr, "Unknown cheat %d\n", cheat);
+            LOG_ERROR("Unknown cheat %d", cheat);
             return false;
     }
 }

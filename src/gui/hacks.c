@@ -1,8 +1,8 @@
 #include "gui/hacks.h"
+#include "logger.h"
 #include "logic/config.h"
 #include "logic/cheat/manager.h"
 #include "logic/cheat/manager/actions.h"
-#include <stdio.h>
 
 // Controller instance
 static Controller *controller;
@@ -41,7 +41,7 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
 static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
     controller = controllerInstance;
     parent = parentInstance;
-    // --- Hacks Group ---
+    
     uiGroup *hacksGroup = uiNewGroup("Hacks");
     uiBox *hacksBox = uiNewVerticalBox();
     uiBoxSetPadded(hacksBox, 1);
@@ -72,7 +72,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiCheckboxOnToggled(boxNeverMovesCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_BOX_NEVER_MOVES);
     uiCheckboxOnToggled(thirdPersonCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_THIRD_PERSON);
 
-    // Organizar los cheats en un grid 6x2
     uiGrid *hacksGrid = uiNewGrid();
     uiGridSetPadded(hacksGrid, 1);
     uiGridAppend(hacksGrid, uiControl(infiniteAmoCheckbox), 0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
@@ -99,7 +98,6 @@ static void update() {
     Config *config = controllerGetConfig(controller);
     HacksConfig *hacks = &config->hacks;
     
-    // Sync UI with config values
     if (uiCheckboxChecked(godModeCheckbox) != hacks->godMode) {
         uiCheckboxSetChecked(godModeCheckbox, hacks->godMode);
     }
@@ -171,7 +169,7 @@ bool uiHacksIsChecked(CheatName cheat) {
         case CHEAT_NAME_INSTANT_KILL:
             return uiCheckboxChecked(instantKillCheckbox);
         default:
-            fprintf(stderr, "Unknown cheat %d\n", cheat);
+            LOG_ERROR("Unknown cheat %d", cheat);
             return false;
     }
 }

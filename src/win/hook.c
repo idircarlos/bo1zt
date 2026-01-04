@@ -28,43 +28,43 @@ Hook* hookCreate(Process *process, uintptr_t startAddress, size_t size, uint8_t 
     uintptr_t pageAddress;
     bool success = processAllocatePage(process, shellCodeSize > MIN_PAGE_SIZE ? shellCodeSize : MIN_PAGE_SIZE, &pageAddress);
     if (!success) {
-        LOG_ERROR("Failed to allocate memory page in target process.\n");
+        LOG_ERROR("Failed to allocate memory page in target process");
         return NULL;
     }
 
     // Write the shellCode to the allocated page
     success = processWrite(process, pageAddress, shellCode, shellCodeSize);
     if (!success) {
-        LOG_ERROR("Failed to write shellCode to allocated memory page.\n");
+        LOG_ERROR("Failed to write shellCode to allocated memory page");
         return NULL;
     }
 
     // Calculate the jump address back after the hook
-	uint32_t jmpBackAddress = (startAddress + size) - (pageAddress + shellCodeSize + 5);
+    uint32_t jmpBackAddress = (startAddress + size) - (pageAddress + shellCodeSize + 5);
 
     // Place the jmp instruction + address into the allocated page, which will jmp back to the hooked function
     success = processWrite(process, pageAddress + shellCodeSize, &JMP_INSTRUCTION, sizeof(JMP_INSTRUCTION)); // JMP opcode
     if (!success) {
-        LOG_ERROR("Failed to write JMP opcode to allocated memory page.\n");
+        LOG_ERROR("Failed to write JMP opcode to allocated memory page");
         return NULL;
     }
 
     success = processWrite(process, pageAddress + shellCodeSize + 1, &jmpBackAddress, sizeof(jmpBackAddress)); // JMP address
     if (!success) {
-        LOG_ERROR("Failed to write JMP address to allocated memory page.\n");
+        LOG_ERROR("Failed to write JMP address to allocated memory page");
         return NULL;
     }
 
     // Read current bytes from memory
     uint8_t *currentBytes = (uint8_t*)malloc(sizeof(uint8_t)*size);
     if (!currentBytes) {
-        LOG_ERROR("Failed to allocate memory for current bytes.\n");
+        LOG_ERROR("Failed to allocate memory for current bytes");
         return NULL;
     }
 
     success = processRead(process, startAddress, currentBytes, size);
     if (!success) {
-        LOG_ERROR("Failed to read current bytes from target process.\n");
+        LOG_ERROR("Failed to read current bytes from target process");
         free(currentBytes);
         return NULL;
     }
@@ -72,7 +72,7 @@ Hook* hookCreate(Process *process, uintptr_t startAddress, size_t size, uint8_t 
     // Determine original bytes to use
     uint8_t *originalBytes = (uint8_t*)malloc(sizeof(uint8_t)*size);
     if (!originalBytes) {
-        LOG_ERROR("Failed to allocate memory for original bytes.\n");
+        LOG_ERROR("Failed to allocate memory for original bytes");
         free(currentBytes);
         return NULL;
     }
@@ -83,7 +83,7 @@ Hook* hookCreate(Process *process, uintptr_t startAddress, size_t size, uint8_t 
     if (alreadyHooked && expectedOriginalBytes != NULL) {
         // Use the expected original bytes since memory is already hooked
         memcpy(originalBytes, expectedOriginalBytes, size);
-        LOG_INFO("Hook at 0x%08X: detected existing hook, using expected original bytes.\n", (unsigned int)startAddress);
+        LOG_INFO("Hook at 0x%08X: detected existing hook, using expected original bytes", (unsigned int)startAddress);
     } else {
         // Use the current bytes as original
         memcpy(originalBytes, currentBytes, size);
@@ -96,7 +96,7 @@ Hook* hookCreate(Process *process, uintptr_t startAddress, size_t size, uint8_t 
 
     Hook *hook = (Hook*)malloc(sizeof(Hook));
     if (!hook) {
-        LOG_ERROR("Failed to allocate memory for Hook\n");
+        LOG_ERROR("Failed to allocate memory for Hook");
         free(originalBytes);
         return NULL;
     }
@@ -129,12 +129,12 @@ bool hookIsActivated(Hook *hook) {
     // Read the current bytes from the target process memory
     uint8_t *current = (uint8_t*)malloc(hook->originalBytesSize);
     if (!current) {
-        LOG_ERROR("Failed to allocate memory for buffer.\n");
+        LOG_ERROR("Failed to allocate memory for buffer");
         return false;
     }
 
     if (!processRead(hook->process, hook->startAddress, current, hook->originalBytesSize)) {
-        LOG_ERROR("Failed to read memory.\n");
+        LOG_ERROR("Failed to read memory");
         free(current);
         return false;
     }
@@ -148,7 +148,7 @@ bool hookIsActivated(Hook *hook) {
     // Allocate a buffer to build the expected pattern of the active hook (JMP + rel32 + NOP padding)
     uint8_t *expected = (uint8_t*)malloc(hook->originalBytesSize);
     if (!expected) {
-        LOG_ERROR("Failed to allocate expected buffer.\n");
+        LOG_ERROR("Failed to allocate expected buffer");
         free(current);
         return false;
     }
@@ -177,36 +177,36 @@ bool hookActivate(Hook *hook) {
     uint32_t oldProtect = 0;
     bool success = processVirtualProtect(hook->process, hook->startAddress, hook->originalBytesSize, PAGE_EXECUTE_READWRITE, &oldProtect);
     if (!success) {
-        LOG_ERROR("Failed to change memory protection in target process.\n");
+        LOG_ERROR("Failed to change memory protection in target process");
         return NULL;
     }
 
     // Before writing the hook, we need make sure all bytes which will be overwritten are NOPed
     // because if the hook size is not equal with the size of the jmp + address we will have left over bytes.
     if (hook->originalBytesSize > 5) {
-		for(uint32_t idx = 0; idx < hook->originalBytesSize; idx++) {
-			processWrite(hook->process, hook->startAddress + idx, &NOP_INSTRUCTION, 1); // NOP opcode
+        for(uint32_t idx = 0; idx < hook->originalBytesSize; idx++) {
+            processWrite(hook->process, hook->startAddress + idx, &NOP_INSTRUCTION, 1); // NOP opcode
         }
-	}
+    }
 
     // Write the JMP instruction to the start address
     success = processWrite(hook->process, hook->startAddress, &JMP_INSTRUCTION, sizeof(JMP_INSTRUCTION)); // JMP opcode
     if (!success) {
-        LOG_ERROR("Failed to write JMP opcode to target process.\n");
+        LOG_ERROR("Failed to write JMP opcode to target process");
         return NULL;
     }
 
     // Write the jump address after the jmp instruction in the hooked function
     success = processWrite(hook->process, hook->startAddress + 1, &hook->jmpToHook, sizeof(hook->jmpToHook)); // JMP address
     if (!success) {
-        LOG_ERROR("Failed to write JMP address to target process.\n");
+        LOG_ERROR("Failed to write JMP address to target process");
         return NULL;
     }
 
     // Restore the original memory protection
     success = processVirtualProtect(hook->process, hook->startAddress, hook->originalBytesSize, oldProtect, &oldProtect);
     if (!success) {
-        LOG_ERROR("Failed to restore memory protection in target process.\n");
+        LOG_ERROR("Failed to restore memory protection in target process");
         return NULL;
     }
     return true;
@@ -218,21 +218,21 @@ bool hookDeactivate(Hook *hook) {
     uint32_t oldProtect = 0;
     bool success = processVirtualProtect(hook->process, hook->startAddress, hook->originalBytesSize, PAGE_EXECUTE_READWRITE, &oldProtect);
     if (!success) {
-        LOG_ERROR("Failed to change memory protection in target process.\n");
+        LOG_ERROR("Failed to change memory protection in target process");
         return NULL;
     }
 
     // Write the original bytes
     success = processWrite(hook->process, hook->startAddress, hook->originalBytes, hook->originalBytesSize);
     if (!success) {
-        LOG_ERROR("Failed to write original bytes to target process.\n");
+        LOG_ERROR("Failed to write original bytes to target process");
         return NULL;
     }
 
     // Restore the original memory protection
     success = processVirtualProtect(hook->process, hook->startAddress, hook->originalBytesSize, oldProtect, &oldProtect);
     if (!success) {
-        LOG_ERROR("Failed to restore memory protection in target process.\n");
+        LOG_ERROR("Failed to restore memory protection in target process");
         return NULL;
     }
 

@@ -22,7 +22,7 @@ void gameInit(Game *game, int players) {
 
 bool gameStart(Game *game, Level level, int startTimestamp) {
     if (!game) {
-        LOG_ERROR("Couldn't start game because Game is an invalid object\n");
+        LOG_ERROR("Couldn't start game because Game is an invalid object");
         return NULL;
     }
     game->levelName = level;
@@ -169,7 +169,7 @@ bool gameTradeHit(Game *game) {
 }
 
 void gamePrint(Game *game) {
-    LOG_INFO("Game { elapsed: %d, start: %d, end: %d, players: %d, qr: %d, zombies: %d, drops: %d, level: %d }\n",
+    LOG_INFO("Game { elapsed: %d, start: %d, end: %d, players: %d, qr: %d, zombies: %d, drops: %d, level: %d }",
         game->elapsed, game->startTimestamp, game->endTimestamp, game->players,
         game->quickRevivesDrunk, game->totalZombies, game->drops, game->levelName);
 }

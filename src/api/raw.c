@@ -107,7 +107,7 @@ RawApi *rawApiCreate(Controller *controller) {
     rawApi->controller = controller;
     rawApi->hooks = mapCreate();
     if (!rawApi->hooks) {
-        LOG_ERROR("Couldn't create Hook Map\n");
+        LOG_ERROR("Couldn't create Hook Map");
     }
     return rawApi;
 }
@@ -123,13 +123,13 @@ void rawApiDestroy(RawApi *rawApi) {
 
 bool rawApiIsCheatEnabled(RawApi *rawApi, CheatName cheatName) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
 
@@ -180,20 +180,20 @@ bool rawApiIsCheatEnabled(RawApi *rawApi, CheatName cheatName) {
             return _rawApiGetPatchChat(process);
         
         default:
-            LOG_WARN("Unkwown cheatName %d\n", cheatName);
+            LOG_WARN("Unknown cheatName %d", cheatName);
             return false;
     }
 }
 
 bool rawApiSetCheatEnabled(RawApi *rawApi, CheatName cheatName, bool enabled) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
 
@@ -243,24 +243,24 @@ bool rawApiSetCheatEnabled(RawApi *rawApi, CheatName cheatName, bool enabled) {
         case CHEAT_NAME_PATCH_CHAT:
             return _rawApiSetPatchChat(process, enabled);
         default:
-            LOG_WARN("Unknown cheatName %d\n", cheatName);
+            LOG_WARN("Unknown cheatName %d", cheatName);
             return false;
     }
 }
 
 bool rawApiSetSimpleCheat(RawApi *rawApi, SimpleCheatName simpleCheatName, void *value) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
 
-    LOG_DEBUG("Setting Simple Cheat %d with value %x\n", simpleCheatName, value);
+    LOG_DEBUG("Setting Simple Cheat %d with value %x", simpleCheatName, value);
 
     switch(simpleCheatName) {
         case SIMPLE_CHEAT_NAME_CHANGE_NAME:
@@ -302,20 +302,20 @@ bool rawApiSetSimpleCheat(RawApi *rawApi, SimpleCheatName simpleCheatName, void 
         case SIMPLE_CHEAT_NAME_SET_HEADSHOTS:
             return _rawApiSetSimpleCheatIntValue(process, simpleCheatName, (uint32_t)(*(int*)value));
         default:
-            LOG_WARN("Unknown simpleCheatName %d\n", simpleCheatName);
+            LOG_WARN("Unknown simpleCheatName %d", simpleCheatName);
             return false;
     }
 }
 
 TeleportCoords *rawApiGetPlayerCurrentCoords(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return NULL;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return NULL;
     }
 
@@ -329,13 +329,13 @@ TeleportCoords *rawApiGetPlayerCurrentCoords(RawApi *rawApi) {
 
 bool rawApiSetRound(RawApi *rawApi, int currentRound, int nextRound) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
     nextRound = nextRound - 1; // This is needed since this value overrides the current level round. We substract one to jump to the desired round after completing it.
@@ -345,15 +345,15 @@ bool rawApiSetRound(RawApi *rawApi, int currentRound, int nextRound) {
     uintptr_t addressFound;
     bool found = processFindPattern(process, ROUND_CHEAT.regionOffset, ROUND_CHEAT.regionSize, pattern, sizeof(pattern), &addressFound);
     if (!found) {
-        LOG_ERROR("Couldn't find Round Change memory pattern!\n");
+        LOG_ERROR("Couldn't find Round Change memory pattern!");
         return false;
     }
     bool success = processWrite(process, addressFound, &nextRound, sizeof(nextRound));
     if (!success) {
-        printf("Failed to write Next Round value\n");
+        LOG_ERROR("Failed to write Next Round value");
         return false;
     }
-    LOG_DEBUG("Next round successfully changed. Finish the current round %d and next round will be %d\n", currentRound, nextRound);
+    LOG_DEBUG("Next round successfully changed. Finish the current round %d and next round will be %d", currentRound, nextRound);
     return true;
 }
 
@@ -363,34 +363,34 @@ bool rawApiIsGameReady(RawApi *rawApi) {
 
 Level rawApiGetLevelName(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return LEVEL_INVALID;
     }
 
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return LEVEL_INVALID;
     }
 
     uint32_t address1;
     bool success = processRead(process, GAME_CHEAT.levelName, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Level Name address1\n");
+        LOG_ERROR("Failed to read Level Name address1");
         return LEVEL_INVALID;
     }
 
     uint32_t address2;
     success = processRead(process, address1 + 0x18, &address2, sizeof(address2));
     if (!success) {
-        printf("Failed to read Level Name address2\n");
+        LOG_ERROR("Failed to read Level Name address2");
         return LEVEL_INVALID;
     }
 
     char levelId[64];
     success = processReadString(process, address2, levelId);
     if (!success) {
-        printf("Failed to read Level Id value\n");
+        LOG_ERROR("Failed to read Level Id value");
         return LEVEL_INVALID;
     }
     return levelGetFromId(levelId);
@@ -398,19 +398,19 @@ Level rawApiGetLevelName(RawApi *rawApi) {
 
 double rawApiGetLevelElapsedTime(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
     uint32_t elapsed;
     bool success = processRead(process, GAME_CHEAT.levelElapsed, &elapsed, sizeof(elapsed));
     if (!success) {
-        printf("Failed to read Game Level Elapsed Time Ready value\n");
+        LOG_ERROR("Failed to read Game Level Elapsed Time Ready value");
         return false;
     }
     return elapsed;
@@ -430,7 +430,7 @@ float rawApiGetMovementSpeed(RawApi *rawApi) {
     float speed;
     bool success = processRead(process, GAME_CHEAT.movementSpeed, &speed, sizeof(speed));
     if (!success) {
-        printf("Failed to read Movement Speed value\n");
+        LOG_ERROR("Failed to read Movement Speed value");
         return false;
     }
     return speed;
@@ -438,19 +438,19 @@ float rawApiGetMovementSpeed(RawApi *rawApi) {
 
 bool rawApiIsZombiesGameOngoing(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
     uint32_t active;
     bool success = processRead(process, GAME_CHEAT.isZombiesGameOngoingOffset, &active, sizeof(uint32_t));
     if (!success) {
-        printf("Failed to read Is Zombies Game Active value\n");
+        LOG_ERROR("Failed to read Is Zombies Game Active value");
         return false;
     }
     return active == 1;
@@ -458,19 +458,19 @@ bool rawApiIsZombiesGameOngoing(RawApi *rawApi) {
 
 bool rawApiIsZombiesGamePaused(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
     uint32_t active;
     bool success = processRead(process, GAME_CHEAT.isZombiesGamePausedOffset, &active, sizeof(uint32_t));
     if (!success) {
-        printf("Failed to read Is Game Paused value\n");
+        LOG_ERROR("Failed to read Is Game Paused value");
         return false;
     }
     return active == 1;
@@ -478,19 +478,19 @@ bool rawApiIsZombiesGamePaused(RawApi *rawApi) {
 
 int rawApiGetGameResets(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return 0;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return 0;
     }
     uint32_t resets;
     bool success = processRead(process, GAME_CHEAT.nResetsOffset, &resets, sizeof(uint32_t));
     if (!success) {
-        printf("Failed to read Game Resets value\n");
+        LOG_ERROR("Failed to read Game Resets value");
         return 0;
     }
     resets = resets == 0 ? resets : resets - 1;
@@ -499,13 +499,13 @@ int rawApiGetGameResets(RawApi *rawApi) {
 
 bool rawApiSVSendServerCommand(RawApi *rawApi, int commandType, int clientNumber, const char *commands) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
 
@@ -534,7 +534,7 @@ bool rawApiSVSendServerCommand(RawApi *rawApi, int commandType, int clientNumber
     Thread *thread = threadCreateRemote(process, addr + 12, addr);
     bool success = true;
     if (!threadWait(thread, 100)) {
-        LOG_ERROR("Thread wait timed out! Could not execute remote SV_SendServerCommand.\n");
+        LOG_ERROR("Thread wait timed out! Could not execute remote SV_SendServerCommand.");
         success = false;
     }
     threadClose(thread);
@@ -545,13 +545,13 @@ bool rawApiSVSendServerCommand(RawApi *rawApi, int commandType, int clientNumber
 
 bool rawApiCBuffAddText(RawApi *rawApi, const char *commands) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
 
@@ -573,7 +573,7 @@ bool rawApiCBuffAddText(RawApi *rawApi, const char *commands) {
     Thread *thread = threadCreateRemote(process, addr, addr + asmSet.size + 1);
     bool success = true;
     if (!threadWait(thread, 100)) {
-        LOG_ERROR("Thread wait timed out! Could not execute remote Cbuf_AddText.\n");
+        LOG_ERROR("Thread wait timed out! Could not execute remote Cbuf_AddText.");
         success = false;
     }
     threadClose(thread);
@@ -584,13 +584,13 @@ bool rawApiCBuffAddText(RawApi *rawApi, const char *commands) {
 
 uintptr_t rawApiGetDVarPointer(RawApi *rawApi, const char *dVar) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return 0;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return 0;
     }
 
@@ -604,7 +604,7 @@ uintptr_t rawApiGetDVarPointer(RawApi *rawApi, const char *dVar) {
     Thread *thread = threadCreateRemote(process, offset, addr);
     bool success = true;
     if (!threadWait(thread, 100)) {
-        LOG_ERROR("Thread wait timed out! Could not execute remote GetDVarPointer.\n");
+        LOG_ERROR("Thread wait timed out! Could not execute remote GetDVarPointer.");
         success = false;
     }
     int exitCode = success ? threadGetExitCode(thread) : 0;
@@ -619,7 +619,7 @@ bool _rawApiGetGodMode(Process *process) {
     uint32_t value = 0;
     bool success = processRead(process, CHEAT_GOD_MODE.offset, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read God Mode value\n");
+        LOG_ERROR("Failed to read God Mode value");
         return false;
     }
     return value == CHEAT_GOD_MODE.on.u32;
@@ -635,7 +635,7 @@ bool _rawApiGetInvisible(Process *process) {
     uint32_t value = 0;
     bool success = processRead(process, CHEAT_INVISIBLE.offset, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Invisible value\n");
+        LOG_ERROR("Failed to read Invisible value");
         return false;
     }
     return value == CHEAT_INVISIBLE.on.u32;
@@ -651,7 +651,7 @@ bool _rawApiGetNoClip(Process *process) {
     uint8_t value = 0;
     bool success = processRead(process, CHEAT_NO_CLIP.offset, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read No Clip value\n");
+        LOG_ERROR("Failed to read No Clip value");
         return false;
     }
     return value == CHEAT_NO_CLIP.on.byte;
@@ -666,7 +666,7 @@ bool _rawApiGetNoRecoil(Process *process) {
     uint8_t value = 0;
     bool success = processRead(process, CHEAT_NO_RECOIL.offset, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read No Recoil value\n");
+        LOG_ERROR("Failed to read No Recoil value");
         return false;
     }
     return value == CHEAT_NO_RECOIL.on.byte;
@@ -681,13 +681,13 @@ bool _rawApiGetFastGameplay(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_FAST_GAMEPLAY.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Fast Gameplay address\n");
+        LOG_ERROR("Failed to read Fast Gameplay address");
         return false;
     }
     float value = 0;
     success = processRead(process, address1 + 0x18, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Fast Gameplay value\n");
+        LOG_ERROR("Failed to read Fast Gameplay value");
         return false;
     }
     return value == CHEAT_FAST_GAMEPLAY.on.f32;
@@ -697,7 +697,7 @@ bool _rawApiSetFastGameplay(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_FAST_GAMEPLAY.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Fast Gameplay address\n");
+        LOG_ERROR("Failed to read Fast Gameplay address");
         return false;
     }
     float value = enabled ? CHEAT_FAST_GAMEPLAY.on.f32 : CHEAT_FAST_GAMEPLAY.off.f32;
@@ -708,13 +708,13 @@ bool _rawApiGetNoShellshock(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_NO_SHELLSHOCK.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read No Shellshock address\n");
+        LOG_ERROR("Failed to read No Shellshock address");
         return false;
     }
     uint8_t value = 0;
     success = processRead(process, address1 + 0x18, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read No Shellshock value\n");
+        LOG_ERROR("Failed to read No Shellshock value");
         return false;
     }
     return value == CHEAT_NO_SHELLSHOCK.on.u32;
@@ -724,7 +724,7 @@ bool _rawApiSetNoShellshock(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_NO_SHELLSHOCK.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read No Shellshock address\n");
+        LOG_ERROR("Failed to read No Shellshock address");
         return false;
     }
     uint8_t value = enabled ? CHEAT_NO_SHELLSHOCK.on.u32 : CHEAT_NO_SHELLSHOCK.off.u32;
@@ -735,13 +735,13 @@ bool _rawApiGetIncreaseKnifeRange(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_INCREASE_KNIFE_RANGE.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Increase Knife Range address\n");
+        LOG_ERROR("Failed to read Increase Knife Range address");
         return false;
     }
     float value = 0;
     success = processRead(process, address1 + 0x18, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Increase Knife Range value\n");
+        LOG_ERROR("Failed to read Increase Knife Range value");
         return false;
     }
     return value == CHEAT_INCREASE_KNIFE_RANGE.on.f32;
@@ -751,7 +751,7 @@ bool _rawApiSetIncreaseKnifeRange(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_INCREASE_KNIFE_RANGE.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Increase Knife Range address\n");
+        LOG_ERROR("Failed to read Increase Knife Range address");
         return false;
     }
     float value = enabled ? CHEAT_INCREASE_KNIFE_RANGE.on.f32 : CHEAT_INCREASE_KNIFE_RANGE.off.f32;
@@ -762,13 +762,13 @@ bool _rawApiGetBoxNeverMoves(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_BOX_NEVER_MOVES.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Box Never Moves address\n");
+        LOG_ERROR("Failed to read Box Never Moves address");
         return false;
     }
     uint8_t value = 0;
     success = processRead(process, address1 + 0x18, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Box Never Moves value\n");
+        LOG_ERROR("Failed to read Box Never Moves value");
         return false;
     }
     return value == CHEAT_BOX_NEVER_MOVES.on.u32;
@@ -778,7 +778,7 @@ bool _rawApiSetBoxNeverMoves(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_BOX_NEVER_MOVES.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Box Never Moves address\n");
+        LOG_ERROR("Failed to read Box Never Moves address");
         return false;
     }
     uint8_t value = enabled ? CHEAT_BOX_NEVER_MOVES.on.u32 : CHEAT_BOX_NEVER_MOVES.off.u32;
@@ -789,13 +789,13 @@ bool _rawApiGetThirdPerson(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_THIRD_PERSON.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Third Person address\n");
+        LOG_ERROR("Failed to read Third Person address");
         return false;
     }
     uint8_t value = 0;
     success = processRead(process, address1 + 0x18, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Third Person value\n");
+        LOG_ERROR("Failed to read Third Person value");
         return false;
     }
     return value == CHEAT_THIRD_PERSON.on.byte;
@@ -805,7 +805,7 @@ bool _rawApiSetThirdPerson(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_THIRD_PERSON.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Third Person address\n");
+        LOG_ERROR("Failed to read Third Person address");
         return false;
     }
     uint8_t value = enabled ? CHEAT_THIRD_PERSON.on.byte : CHEAT_THIRD_PERSON.off.byte;
@@ -816,7 +816,7 @@ bool _rawApiGetInfiniteAmmo(Process *process) {
     uint8_t buffer[MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE];
     bool success = processRead(process, CHEAT_ASM_INFINITE_AMMO.offset, &buffer, sizeof(buffer));
     if (!success) {
-        printf("Failed to read Infinite Ammo value\n");
+        LOG_ERROR("Failed to read Infinite Ammo value");
         return false;
     }
     bool infiniteAmmoEnabled = memcmp(CHEAT_ASM_INFINITE_AMMO.on.instructions, buffer, CHEAT_ASM_INFINITE_AMMO.on.size) == 0;
@@ -824,7 +824,7 @@ bool _rawApiGetInfiniteAmmo(Process *process) {
 
     bool infiniteAmmoDisabled = memcmp(CHEAT_ASM_INFINITE_AMMO.off.instructions, buffer, CHEAT_ASM_INFINITE_AMMO.off.size) == 0;
     if (!infiniteAmmoDisabled) {
-        LOG_WARN("Infinite Ammo bytes do not match known patterns. Possible memory corruption or external modification.\n");
+        LOG_WARN("Infinite Ammo bytes do not match known patterns. Possible memory corruption or external modification.");
         return false;
     }
     return false;
@@ -841,7 +841,7 @@ bool _rawApiGetSmallCrosshair(Process *process) {
     uint8_t buffer[MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE];
     bool success = processRead(process, CHEAT_ASM_SMALL_CROSSHAIR.offset, &buffer, sizeof(buffer));
     if (!success) {
-        printf("Failed to read Small Crosshair value\n");
+        LOG_ERROR("Failed to read Small Crosshair value");
         return false;
     }
     bool smallCrosshairEnabled = memcmp(CHEAT_ASM_SMALL_CROSSHAIR.on.instructions, buffer, CHEAT_ASM_SMALL_CROSSHAIR.on.size) == 0;
@@ -849,7 +849,7 @@ bool _rawApiGetSmallCrosshair(Process *process) {
 
     bool smallCrosshairDisabled = memcmp(CHEAT_ASM_SMALL_CROSSHAIR.off.instructions, buffer, CHEAT_ASM_SMALL_CROSSHAIR.off.size) == 0;
     if (!smallCrosshairDisabled) {
-        LOG_WARN("Small Crosshair bytes do not match known patterns. Possible memory corruption or external modification.\n");
+        LOG_WARN("Small Crosshair bytes do not match known patterns. Possible memory corruption or external modification.");
         return false;
     }
     return false;
@@ -861,14 +861,14 @@ bool _rawApiSetSmallCrosshair(Process *process, bool enabled) {
     size_t size = enabled ? instructionSet->on.size : instructionSet->off.size;
     bool success = processWrite(process, instructionSet->offset, instructions, size);
     if (!success) {
-        printf("Failed to write Asm code for Small Crosshair.\n");
+        LOG_ERROR("Failed to write Asm code for Small Crosshair.");
         return false;
     }
     uint32_t address1 = 0;
     success = processRead(process, CHEAT_SMALL_CROSSHAIR.offset, &address1, sizeof(address1));
-    LOG_DEBUG("address1 %x\n", address1);
+    LOG_DEBUG("address1 %x", address1);
     if (!success) {
-        printf("Failed to read Small Crosshair address\n");
+        LOG_ERROR("Failed to read Small Crosshair address");
         return false;
     }
     float value = enabled ? CHEAT_SMALL_CROSSHAIR.on.f32 : CHEAT_SMALL_CROSSHAIR.off.f32;
@@ -953,13 +953,13 @@ bool _rawApiGetUnlimitFps(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_UNLIMIT_FPS.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Unlimit Fps address\n");
+        LOG_ERROR("Failed to read Unlimit Fps address");
         return false;
     }
     uint32_t value = 0;
     success = processRead(process, address1 + 0x18, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Unlimit Fps value\n");
+        LOG_ERROR("Failed to read Unlimit Fps value");
         return false;
     }
     return value == CHEAT_UNLIMIT_FPS.on.u32;
@@ -969,7 +969,7 @@ bool _rawApiSetUnlimitFps(Process *process, Controller *controller, bool enabled
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_UNLIMIT_FPS.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Unlimit Fps address\n");
+        LOG_ERROR("Failed to read Unlimit Fps address");
         return false;
     }
     uint32_t value = enabled ? CHEAT_UNLIMIT_FPS.on.u32 : (uint32_t)controllerUiGraphicsGetFpsCap(controller);
@@ -980,13 +980,13 @@ bool _rawApiGetDisableHud(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_DISABLE_HUD.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Disable Hud address\n");
+        LOG_ERROR("Failed to read Disable Hud address");
         return false;
     }
     uint8_t value = 0;
     success = processRead(process, address1 + 0x18, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Disable Hud value\n");
+        LOG_ERROR("Failed to read Disable Hud value");
         return false;
     }
     return value == CHEAT_DISABLE_HUD.on.byte;
@@ -996,10 +996,10 @@ bool _rawApiSetDisableHud(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_DISABLE_HUD.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Disable Hud address\n");
+        LOG_ERROR("Failed to read Disable Hud address");
         return false;
     }
-    LOG_DEBUG("Reading Disable HUD pointer %x and inside is %x\n", CHEAT_DISABLE_HUD.offset, address1);
+    LOG_DEBUG("Reading Disable HUD pointer %x and inside is %x", CHEAT_DISABLE_HUD.offset, address1);
     uint8_t value = enabled ? CHEAT_DISABLE_HUD.on.byte : CHEAT_DISABLE_HUD.off.byte;
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
@@ -1008,13 +1008,13 @@ bool _rawApiGetDisableFog(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_DISABLE_FOG.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Disable Fog address\n");
+        LOG_ERROR("Failed to read Disable Fog address");
         return false;
     }
     uint8_t value = 0;
     success = processRead(process, address1 + 0x18, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Disable Fog value\n");
+        LOG_ERROR("Failed to read Disable Fog value");
         return false;
     }
     return value == CHEAT_DISABLE_FOG.on.byte;
@@ -1024,7 +1024,7 @@ bool _rawApiSetDisableFog(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_DISABLE_FOG.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Disable Fog address\n");
+        LOG_ERROR("Failed to read Disable Fog address");
         return false;
     }
     uint8_t value = enabled ? CHEAT_DISABLE_FOG.on.byte : CHEAT_DISABLE_FOG.off.byte;
@@ -1035,7 +1035,7 @@ bool _rawApiGetFullbright(Process *process) {
     uint32_t value = 0;
     bool success = processRead(process, CHEAT_FULLBRIGHT.offset, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Fullbright value\n");
+        LOG_ERROR("Failed to read Fullbright value");
         return false;
     }
     return value == CHEAT_FULLBRIGHT.on.u32;
@@ -1050,7 +1050,7 @@ bool _rawApiGetColorized(Process *process) {
     uint32_t value = 0;
     bool success = processRead(process, CHEAT_COLORIZED.offset, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Colorized value\n");
+        LOG_ERROR("Failed to read Colorized value");
         return false;
     }
     return value == CHEAT_COLORIZED.on.u32;
@@ -1065,25 +1065,25 @@ bool _rawApiGetFixMovementSpeed(Process *process) {
     uint32_t backwardsAddress1 = 0;
     bool success = processRead(process, CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.offset, &backwardsAddress1, sizeof(backwardsAddress1));
     if (!success) {
-        printf("Failed to read Fix Movement Speed Backward address\n");
+        LOG_ERROR("Failed to read Fix Movement Speed Backward address");
         return false;
     }
     float backwardsValue = 0;
     success = processRead(process, backwardsAddress1 + 0x18, &backwardsValue, sizeof(backwardsValue));
     if (!success) {
-        printf("Failed to read Fix Movement Speed Backward value\n");
+        LOG_ERROR("Failed to read Fix Movement Speed Backward value");
         return false;
     }
     uint32_t straifAddress1 = 0;
     success = processRead(process, CHEAT_FIX_MOVEMENT_SPEED_STRAIF.offset, &straifAddress1, sizeof(straifAddress1));
     if (!success) {
-        printf("Failed to read Fix Movement Speed Straif address\n");
+        LOG_ERROR("Failed to read Fix Movement Speed Straif address");
         return false;
     }
     float straifValue = 0;
     success = processRead(process, straifAddress1 + 0x18, &straifValue, sizeof(straifValue));
     if (!success) {
-        printf("Failed to read Fix Movement Speed Straif value\n");
+        LOG_ERROR("Failed to read Fix Movement Speed Straif value");
         return false;
     }
     return backwardsValue == CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.on.f32 && straifValue == CHEAT_FIX_MOVEMENT_SPEED_STRAIF.on.f32;
@@ -1093,13 +1093,13 @@ bool _rawApiSetFixMovementSpeed(Process *process, bool enabled) {
     uint32_t backwardsAddress1 = 0;
     bool success = processRead(process, CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.offset, &backwardsAddress1, sizeof(backwardsAddress1));
     if (!success) {
-        printf("Failed to read Fix Movement Speed Backwards address\n");
+        LOG_ERROR("Failed to read Fix Movement Speed Backwards address");
         return false;
     }
     uint32_t straifAddress1 = 0;
     success = processRead(process, CHEAT_FIX_MOVEMENT_SPEED_STRAIF.offset, &straifAddress1, sizeof(straifAddress1));
     if (!success) {
-        printf("Failed to read Fix Movement Speed Straif address\n");
+        LOG_ERROR("Failed to read Fix Movement Speed Straif address");
         return false;
     }
     float backwardsValue = enabled ? CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.on.f32 : CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.off.f32;
@@ -1111,7 +1111,7 @@ bool _rawApiGetPatchChat(Process *process) {
     uint8_t value = 0;
     bool success = processRead(process, CHEAT_PATCH_CHAT.offset, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Patch Chat value\n");
+        LOG_ERROR("Failed to read Patch Chat value");
         return false;
     }
     return value == CHEAT_PATCH_CHAT.on.byte;
@@ -1130,13 +1130,13 @@ bool _rawApiGetShowFps(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_SHOW_FPS.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Show FPS address\n");
+        LOG_ERROR("Failed to read Show FPS address");
         return false;
     }
     uint8_t value = 0;
     success = processRead(process, address1 + 0x18, &value, sizeof(value));
     if (!success) {
-        printf("Failed to read Show FPS value\n");
+        LOG_ERROR("Failed to read Show FPS value");
         return false;
     }
     return value == CHEAT_SHOW_FPS.on.byte;
@@ -1146,7 +1146,7 @@ bool _rawApiSetShowFps(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_SHOW_FPS.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Show FPS address\n");
+        LOG_ERROR("Failed to read Show FPS address");
         return false;
     }
     uint8_t value = enabled ? CHEAT_SHOW_FPS.on.byte : CHEAT_SHOW_FPS.off.byte;
@@ -1165,10 +1165,10 @@ bool _rawApiSetSpeed(Process *process, uint32_t value) {
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Speed address\n");
+        LOG_ERROR("Failed to read Speed address");
         return false;
     }
-    LOG_DEBUG("Writting %d in %x\n", value, cheat.offset);
+    LOG_DEBUG("Writing %d in %x", value, cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(uint32_t));
 }
 
@@ -1188,10 +1188,10 @@ bool _rawApiFov(Process *process, float value) {
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Fov address\n");
+        LOG_ERROR("Failed to read Fov address");
         return false;
     }
-    LOG_DEBUG("Writting %f in %x\n", value, cheat.offset);
+    LOG_DEBUG("Writing %f in %x", value, cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(float));
 }
 
@@ -1200,11 +1200,11 @@ bool _rawApiFovScale(Process *process, float value) {
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Fov Scale address\n");
+        LOG_ERROR("Failed to read Fov Scale address");
         return false;
     }
     value = value/100;
-    LOG_DEBUG("Writting %f in %x\n", value, cheat.offset);
+    LOG_DEBUG("Writing %f in %x", value, cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(float));
 }
 
@@ -1213,10 +1213,10 @@ bool _rawApiFpsCap(Process *process, uint32_t value) {
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.offset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Fps Cap address\n");
+        LOG_ERROR("Failed to read Fps Cap address");
         return false;
     }
-    LOG_DEBUG("Writting %d in %x\n", value, cheat.offset);
+    LOG_DEBUG("Writing %d in %x", value, cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(uint32_t));
 }
 
@@ -1234,7 +1234,7 @@ bool _rawApiCustomizerColor(Process *process, SimpleCheatName cheatName, Color c
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.baseOffset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Customizer %d address\n", cheatName);
+        LOG_ERROR("Failed to read Customizer %d address", cheatName);
         return false;
     }
     uint32_t mergedColor = _mergeColorComponents(color);
@@ -1246,7 +1246,7 @@ bool _rawApiCustomizerFloat(Process *process, SimpleCheatName cheatName, float v
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.baseOffset, &address1, sizeof(address1));
     if (!success) {
-        printf("Failed to read Customizer %d address\n", cheatName);
+        LOG_ERROR("Failed to read Customizer %d address", cheatName);
         return false;
     }
     return processWrite(process, address1 + cheat.offset, &value, sizeof(value));
@@ -1254,26 +1254,26 @@ bool _rawApiCustomizerFloat(Process *process, SimpleCheatName cheatName, float v
 
 bool _rawApiSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheatName, uint32_t value) {
     SimpleCheat cheat = cheatGetSimpleCheat(simpleCheatName);
-    LOG_DEBUG("Writting %d in %x\n", value, cheat.offset);
+    LOG_DEBUG("Writing %d in %x", value, cheat.offset);
     return processWrite(process, cheat.offset, &value, sizeof(uint32_t));
 }
 
 int rawApiGetClaymoreCount(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return 0;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return 0;
     }
 
     uint32_t entityCount = 0;
     bool success = processRead(process, GAME_CHEAT.entityCountOffset, &entityCount, sizeof(entityCount));
     if (!success) {
-        LOG_ERROR("Failed to read entity count\n");
+        LOG_ERROR("Failed to read entity count");
         return 0;
     }
 
@@ -1301,13 +1301,13 @@ int rawApiGetClaymoreCount(RawApi *rawApi) {
 
 int rawApiGetCurrentSnapshotEntities(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return 0;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return 0;
     }
 
@@ -1318,13 +1318,13 @@ int rawApiGetCurrentSnapshotEntities(RawApi *rawApi) {
 
 int rawApiGetMaxSnapshotEntities(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return 0;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return 0;
     }
 
@@ -1336,13 +1336,13 @@ int rawApiGetMaxSnapshotEntities(RawApi *rawApi) {
 
 bool rawApiIsChatOpen(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
 
@@ -1365,7 +1365,7 @@ bool rawApiWriteToChatInput(RawApi *rawApi, const char *text) {
     }
 
     if (!rawApiIsChatOpen(rawApi)) {
-        LOG_WARN("Writting to Chat Input when chat is not open shouldn't happen!\n");
+        LOG_WARN("Writing to Chat Input when chat is not open shouldn't happen!");
         return false;
     }
 
@@ -1378,13 +1378,13 @@ bool rawApiWriteToChatInput(RawApi *rawApi, const char *text) {
 
 bool rawApiSetChatNameColorValue(RawApi *rawApi, ChatColor color) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
     return _rawApiSetChatNameColorValue(process, rawApi->hooks, color);

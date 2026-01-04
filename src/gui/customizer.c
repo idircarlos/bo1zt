@@ -172,10 +172,13 @@ static void onChatNameComboChange(uiCombobox *combo, void *data) {
     (void)data;
     int selected = uiComboboxSelected(combo);
     ChatColor color = cheatGetChatColor(selected);
+
+    Config *config = controllerGetConfig(controller);
+    CustomizerConfig *customizer = &config->customizer;
+    customizer->chatName = color;
     
     CheatManager *cheatManager = controllerGetCheatManager(controller);
     cheatManagerSetValue(cheatManager, SIMPLE_CHEAT_NAME_CUSTOMIZER_CHAT_NAME, &color);
-    
     
     uiControlEnable(uiControl(btnReset));
     uiControlEnable(uiControl(btnSave));
@@ -260,7 +263,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiSliderOnChanged(scoreboardTransparencySlider, onSliderChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD);
     uiSliderOnChanged(pointsTransparencySlider, onSliderChange, (void*)SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS);
 
-    // --- Colores de puntuación ---
     uiGridAppend(grid, uiControl(uiNewLabel("Score Background")),           0, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);   
     uiGridAppend(grid, uiControl(scoreBgBtn),                               1, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(uiNewLabel("Score Player 1")),             0, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
@@ -284,7 +286,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiGridAppend(grid, uiControl(uiNewLabel("No Ammo Warn Secondary")),     0, 10, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(noAmmoSecondaryBtn),                       1, 10, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
     
-    // --- Chat Name Color ---
     chatNameCombo = uiNewCombobox();
     for (int i = 0; i < chatColorsCount; i++) {
         uiComboboxAppend(chatNameCombo, chatColors[i]);
@@ -325,7 +326,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     
     uiGridAppend(grid, uiControl(warnBox),                                  1, 14, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
 
-    // --- Botones inferiores ---
     uiBox *buttonBox = uiNewHorizontalBox();
     uiBoxSetPadded(buttonBox, 1);
 
@@ -394,7 +394,7 @@ Color uiCustomizerGetCheatColor(SimpleCheatName cheat) {
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY:
             return buildColor(noAmmoSecondaryBtn);
         default:
-            LOG_ERROR("Unknown cheat %d\n", cheat);
+            LOG_ERROR("Unknown cheat %d", cheat);
             return buildColor(scoreBgBtn); // Just return random color
     }
 }
@@ -412,7 +412,7 @@ int uiCustomizerGetCheatInt(SimpleCheatName cheat) {
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX:
             return uiSpinboxValue(maxSpin);
         default:
-            LOG_ERROR("Unknown cheat %d\n", cheat);
+            LOG_ERROR("Unknown cheat %d", cheat);
             return 0;
     }
 }
