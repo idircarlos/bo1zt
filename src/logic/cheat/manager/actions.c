@@ -1,5 +1,4 @@
 #include "logic/cheat/manager/actions.h"
-#include "logger.h"
 #include "logic/cheat/manager/manager_internal.h"
 #include "logic/cheat/manager/state.h"
 #include "logic/cheat/manager/registry.h"
@@ -13,9 +12,7 @@
 static void notifyCheatFailed(CheatManager *manager) {
     if (!manager || !manager->controller) return;
     Server *server = _controllerGetServer(manager->controller);
-    if (server) {
-        serverChatMessage(server, "Cheat failed to apply");
-    }
+    serverChatMessage(server, "Cheat failed to apply");    
 }
 
 static bool checkConditions(CheatManager *manager, CheatCondition conditions) {

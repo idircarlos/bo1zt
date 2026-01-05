@@ -91,11 +91,18 @@ bool controllerAttachGame(Controller *controller) {
         serverChatMessage(controller->server, "Zombies game is already in progress...");
         serverChatMessage(controller->server, "Some functionalities may not work.");
         serverChatMessage(controller->server, "You might want to /restart the run!");
-    }
-    Game *activeGame = &controller->state->activeGame;
-    if (controllerIsGameRunning(controller) && controllerIsZombiesGameOngoing(controller) && levelIsMonitored(activeGame->levelName)) {
-        activeGame->elapsed = controllerGetLevelElapsedTime(controller);
-        activeGame->levelName = controllerGetLevelName(controller);
+        
+        // Initialize activeGame with current game state when attaching mid-game
+        Game *activeGame = &controller->state->activeGame;
+        Level currentLevel = controllerGetLevelName(controller);
+        if (levelIsMonitored(currentLevel)) {
+            int elapsed = controllerGetLevelElapsedTime(controller);
+            activeGame->levelName = currentLevel;
+            activeGame->elapsed = elapsed;
+            // Set startTimestamp so gameRunning() returns true
+            // We use a symbolic non-real timestamp based on elapsed time
+            activeGame->startTimestamp = elapsed > 0 ? 1 : 0;
+        }
     }
     return true;
 }
