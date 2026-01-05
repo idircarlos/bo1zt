@@ -102,8 +102,8 @@ static bool configLoad(Config *config) {
         return false;
     }
 
-    config->graphics.fov = iniparser_getint(dictionary, "Game:FixMovementSpeed", config->game.fixMovementSpeed);
-    config->graphics.fov = iniparser_getint(dictionary, "Game:ShowFPS", config->game.showFps);
+    config->game.fixMovementSpeed = iniparser_getint(dictionary, "Game:FixMovementSpeed", (int)config->game.fixMovementSpeed);
+    config->game.showFps = iniparser_getint(dictionary, "Game:ShowFPS", (int)config->game.showFps);
     strcpy(config->game.hostname, iniparser_getstring(dictionary, "Game:Hostname", config->game.hostname));
     strcpy(config->game.location, iniparser_getstring(dictionary, "Game:Location", config->game.location));
     normalizePath(config->game.location);
