@@ -23,13 +23,13 @@ Api *apiCreate(Controller *controller) {
     api->gsc = gscApiCreate(controller);
     
     if (!api->raw) {
-        LOG_ERROR("Couldn't create Raw API backend\n");
+        LOG_ERROR("Couldn't create Raw API backend");
         free(api);
         return NULL;
     }
     
     if (!api->gsc) {
-        LOG_ERROR("Couldn't create GSC API backend\n");
+        LOG_ERROR("Couldn't create GSC API backend");
         rawApiDestroy(api->raw);
         free(api);
         return NULL;

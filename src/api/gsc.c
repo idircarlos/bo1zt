@@ -75,9 +75,9 @@ static int _gscApiAsyncHandler(void *data) {
     GscApiCallData *callData = (GscApiCallData *)data;
     GSCResponse response = gscCall(callData->gsc, callData->method, callData->args);
     if (response.status == GSC_STATUS_FAIL) {
-        LOG_ERROR("Async GSC call to %s(%s) failed.\n", gscMethodToString(callData->method), gscArgsToString(callData->args));
+        LOG_ERROR("Async GSC call to %s(%s) failed.", gscMethodToString(callData->method), gscArgsToString(callData->args));
     } else if (response.status == GSC_STATUS_TIMEOUT) {
-        LOG_ERROR("Async GSC call to %s(%s) timed out.\n", gscMethodToString(callData->method), gscArgsToString(callData->args));
+        LOG_ERROR("Async GSC call to %s(%s) timed out.", gscMethodToString(callData->method), gscArgsToString(callData->args));
     }
     gscArgsFree(&callData->args);
     free(callData);
@@ -217,12 +217,12 @@ int gscApiGetRound(GscApi *gscApi) {
     
     bool success = (response.status == GSC_STATUS_SUCCESS && strcmp(response.response, "error") != 0);
     if (!success) {
-        LOG_WARN("Received an error on GSC GetRound. Returning 1 as fallback\n");
+        LOG_WARN("Received an error on GSC GetRound. Returning 1 as fallback");
         return 1;
     }
     int round = atoi(response.response);
     if (round == 0) {
-        LOG_WARN("Invalid response from GSC GetRound. Returning 1 as fallback\n");
+        LOG_WARN("Invalid response from GSC GetRound. Returning 1 as fallback");
         return 1;
     }
     return round;

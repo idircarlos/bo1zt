@@ -617,7 +617,7 @@ Rect uiWidgetsGetDefaultRect(int index) {
         case WIDGET_NAME_ENTITIES:
             return WIDGET_ENTITIES_RECT;
         default:
-            LOG_ERROR("Unknown widget index %d\n", index);
+            LOG_ERROR("Unknown widget index %d", index);
             return rectCreate(0, 0, 0, 0);
     }
 }
@@ -636,7 +636,7 @@ int uiWidgetsGetDefaultFontSize(int index) {
         case WIDGET_NAME_ENTITIES:
             return WIDGET_ENTITIES_FONT_SIZE;
         default:
-            LOG_ERROR("Unknown widget index %d\n", index);
+            LOG_ERROR("Unknown widget index %d", index);
             return 0;
     }
 }

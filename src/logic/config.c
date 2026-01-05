@@ -290,7 +290,7 @@ bool configSave(Config *config) {
     ret += iniparser_set(dictionary, "Hacks:ThirdPerson", strfmt(valueBuffer, "%d", config->hacks.thirdPerson));
 
     if (ret < 0) {
-        LOG_ERROR("Error setting ini values\n");
+        LOG_ERROR("Error setting ini values");
         return false;
     }
     iniparser_dump_ini(dictionary, ini);

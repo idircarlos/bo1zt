@@ -70,7 +70,7 @@ bool controllerCloseGame(Controller *controller) {
 bool controllerAttachGame(Controller *controller) {
     if (!controller) return false;
     if (controller->process) {
-        LOG_WARN("Game is already attached. This souldn't happen. Omitting the operation\n");
+        LOG_WARN("Game is already attached. This souldn't happen. Omitting the operation");
         return true;
     }
     if (!controller->state) controller->state = stateCreate();
@@ -86,6 +86,12 @@ bool controllerAttachGame(Controller *controller) {
     controller->state->isZombiesGameOngoing = controllerIsZombiesGameOngoing(controller);
     controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
     controller->state->gameResets = apiGetGameResets(controller->api);
+
+    if (controllerIsGameRunning(controller) && controllerIsZombiesGameOngoing(controller)) {
+        serverChatMessage(controller->server, "Zombies game is already in progress...");
+        serverChatMessage(controller->server, "Some functionalities may not work.");
+        serverChatMessage(controller->server, "You might want to /restart the run!");
+    }
     Game *activeGame = &controller->state->activeGame;
     if (controllerIsGameRunning(controller) && controllerIsZombiesGameOngoing(controller) && levelIsMonitored(activeGame->levelName)) {
         activeGame->elapsed = controllerGetLevelElapsedTime(controller);
@@ -96,10 +102,10 @@ bool controllerAttachGame(Controller *controller) {
 
 bool controllerDetachGame(Controller *controller) {
     if (!controllerIsGameAttached(controller)) {
-        LOG_WARN("Cannot detach game since is not attached\n");
+        LOG_WARN("Cannot detach game since is not attached");
         return false;
     }
-    LOG_INFO("Detaching game\n");
+    LOG_INFO("Detaching game");
     
     // Clear AppliedState when game detaches
     if (controller->cheatManager) {
@@ -360,7 +366,7 @@ void controllerResetConfig(Controller *controller, ConfigType type) {
         case CONFIG_CUSTOMIZER:
             configResetCustomizer(controller->config); return;
         default:
-            LOG_ERROR("Unknown Config Type %d\n", type);
+            LOG_ERROR("Unknown Config Type %d", type);
     }
 }
 

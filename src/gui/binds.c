@@ -281,7 +281,6 @@ static void onKeyClick(uiCustomButton *button, void *data) {
     } else {
         uiControlDisable(uiControl(btnReset));
     }
-    LOG_INFO("Key selected: %s\n", kb->keyName);
 }
 
 static KeyBind *findKeyBindByButton(uiCustomButton *button) {
@@ -410,7 +409,7 @@ static void onSaveClick(uiButton *button, void *data) {
     } else {
         uiControlDisable(uiControl(btnReset));
     }
-    LOG_INFO("All keybindings saved\n");
+    LOG_INFO("All keybindings saved!");
 }
 
 static void onResetClick(uiButton *button, void *data) {
@@ -435,7 +434,7 @@ static void onResetClick(uiButton *button, void *data) {
     hasUnsavedChanges = true;
     uiControlDisable(uiControl(btnReset));
     uiControlEnable(uiControl(btnSave));
-    LOG_INFO("Command cleared for key: %s\n", kb->keyName);
+    LOG_INFO("Command cleared for key: %s", kb->keyName);
 }
 
 static int onHelpWindowClose(uiWindow *w, void *data) {
@@ -527,7 +526,7 @@ static void update(void) {
         
         if (isPressed && !prevKeyStates[vkCode]) {
             executeCommands(keyBinds[i].command);
-            LOG_INFO("Keybind executed: %s -> %s\n", keyBinds[i].keyName, keyBinds[i].command);
+            LOG_DEBUG("Keybind executed: %s -> %s", keyBinds[i].keyName, keyBinds[i].command);
             
             if (keymapIsModifier(keyBinds[i].keyName)) {
                 int pairIndex = getModifierPairIndex(&keyBinds[i]);

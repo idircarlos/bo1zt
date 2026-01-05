@@ -84,7 +84,7 @@ bool roundPowerupDropped(Round *round) {
 }
 
 void roundPrint(Round *round) {
-    LOG_INFO("Round { number: %d, elapsed: %d, start: %d, end: %d, drops: %d, zombiesLeft: %d, special: %s }\n",
+    LOG_INFO("Round { number: %d, elapsed: %d, start: %d, end: %d, drops: %d, zombiesLeft: %d, special: %s }",
         round->number, round->elapsed, round->startTimestamp, round->endTimestamp,
         round->drops, round->zombiesLeft, round->isSpecial ? "true" : "false");
 }

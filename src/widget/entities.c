@@ -11,14 +11,14 @@ typedef struct {
 
 static void entitiesRender(Widget* widget) {
     if (!widget || !widget->displayData || !widget->win.hwnd) {
-        if (!widget->win.hwnd) LOG_INFO("xdd\n");
+        if (!widget->win.hwnd)
         return;   
     }
     EntitiesData* data = (EntitiesData*)widget->displayData;
 
     HDC hdc_win = GetDC(widget->win.hwnd);
     if (!hdc_win) {
-        if (!hdc_win) LOG_INFO("xdd 2\n");
+        if (!hdc_win)
         return;
     }
 

@@ -417,13 +417,13 @@ double rawApiGetLevelElapsedTime(RawApi *rawApi) {
 
 float rawApiGetMovementSpeed(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null\n");
+        LOG_ERROR("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null\n");
+        LOG_ERROR("Process is null");
         return false;
     }
     float speed;
