@@ -20,6 +20,7 @@ typedef enum {
 } LogLevel;
 
 void loggerInit(Controller *controller);
+void loggerClose(void);
 void loggerSetLevel(LogLevel level);
 void loggerLog(LogLevel level, const char *cfile, int cline, const char *fmt, ...);
 

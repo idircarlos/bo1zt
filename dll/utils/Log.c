@@ -63,12 +63,12 @@ bool LogInit(const char* filename) {
     _snprintf(logger.logFilePath, MAX_PATH - 1, "%s\\%s", modulePath, filename);
     logger.logFilePath[MAX_PATH - 1] = '\0';
     
-    // Create/truncate the log file
-    FILE* file = fopen(logger.logFilePath, "w");
+    // Open log file in append mode to preserve previous sessions
+    FILE* file = fopen(logger.logFilePath, "a");
     if (!file)
         return false;
     
-    // Write header
+    // Write header for this session
     char timestamp[64];
     GetTimestamp(timestamp, sizeof(timestamp));
     fprintf(file, "=====================================\n");
