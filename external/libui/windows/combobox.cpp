@@ -6,9 +6,58 @@
 struct uiCombobox {
 	uiWindowsControl c;
 	HWND hwnd;
+	HWND dropdownHwnd;
 	void (*onSelected)(uiCombobox *, void *);
 	void *onSelectedData;
 };
+
+// Subclass proc for the dropdown listbox to handle mouse wheel
+static LRESULT CALLBACK dropdownSubclassProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	if (uMsg == WM_MOUSEWHEEL) {
+		// Get scroll amount
+		int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+		int lines = delta / WHEEL_DELTA;
+		
+		// Get current top index
+		int topIndex = (int)SendMessageW(hwnd, LB_GETTOPINDEX, 0, 0);
+		int newTop = topIndex - lines;
+		
+		// Clamp to valid range
+		int count = (int)SendMessageW(hwnd, LB_GETCOUNT, 0, 0);
+		if (newTop < 0) newTop = 0;
+		if (newTop >= count) newTop = count - 1;
+		
+		SendMessageW(hwnd, LB_SETTOPINDEX, newTop, 0);
+		return 0;
+	}
+	
+	if (uMsg == WM_NCDESTROY) {
+		RemoveWindowSubclass(hwnd, dropdownSubclassProc, uIdSubclass);
+	}
+	
+	return DefSubclassProc(hwnd, uMsg, wParam, lParam);
+}
+
+// Subclass proc for the combobox to catch dropdown creation
+static LRESULT CALLBACK comboboxSubclassProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	uiCombobox *c = (uiCombobox *)dwRefData;
+	
+	if (uMsg == WM_CTLCOLORLISTBOX) {
+		HWND listbox = (HWND)lParam;
+		if (c->dropdownHwnd != listbox) {
+			c->dropdownHwnd = listbox;
+			SetWindowSubclass(listbox, dropdownSubclassProc, 0, 0);
+		}
+	}
+	
+	if (uMsg == WM_NCDESTROY) {
+		RemoveWindowSubclass(hwnd, comboboxSubclassProc, uIdSubclass);
+	}
+	
+	return DefSubclassProc(hwnd, uMsg, wParam, lParam);
+}
 
 static BOOL onWM_COMMAND(uiControl *cc, HWND hwnd, WORD code, LRESULT *lResult)
 {
@@ -144,6 +193,9 @@ uiCombobox *uiNewCombobox(void)
 		CBS_DROPDOWNLIST | WS_TABSTOP,
 		hInstance, NULL,
 		TRUE);
+
+	c->dropdownHwnd = NULL;
+	SetWindowSubclass(c->hwnd, comboboxSubclassProc, 0, (DWORD_PTR)c);
 
 	uiWindowsRegisterWM_COMMANDHandler(c->hwnd, onWM_COMMAND, uiControl(c));
 	uiComboboxOnSelected(c, defaultOnSelected, NULL);
