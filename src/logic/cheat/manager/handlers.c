@@ -73,15 +73,7 @@ void cheatManagerHandleGameStart(CheatManager *manager) {
     Api *api = _controllerGetApi(manager->controller);
     if (!api) return;
     
-    // Apply ChatNameColor if not GRAY
-    ChatColor chatColor = manager->config->customizer.chatName;
-    if (chatColor != CHAT_COLOR_GRAY) {
-        if (apiSetChatNameColor(api, chatColor)) {
-            manager->applied.chatNameColor = chatColor;
-        } else {
-            notifyCheatFailed(manager);
-        }
-    }
+    // Nothing as of now
 }
 
 void cheatManagerHandleStateChange(CheatManager *manager) {
@@ -219,13 +211,6 @@ void cheatManagerHandleGameEnd(CheatManager *manager) {
         bool apiResult = apiSetCheatEnabled(api, cheat, false);
         if (apiResult) {
             setAppliedToggleValue(&manager->applied, cheat, false);
-        }
-    }
-    
-    // Disable ChatName Color if it was applied
-    if (manager->applied.chatNameColor != CHAT_COLOR_GRAY) {
-        if (apiSetChatNameColor(api, CHAT_COLOR_GRAY)) {
-            manager->applied.chatNameColor = CHAT_COLOR_GRAY;
         }
     }
 }

@@ -63,6 +63,13 @@ bool processIsRunning(const char *executableName) {
     return found;
 }
 
+bool processIsValid(Process *process) {
+    if (!process || !process->handle) return false;
+    DWORD exitCode;
+    if (!GetExitCodeProcess(process->handle, &exitCode)) return false;
+    return exitCode == STILL_ACTIVE;
+}
+
 bool processExec(const char *executableName) {
     LOG_INFO("Trying to open %s", executableName);
     HINSTANCE result = ShellExecuteA(NULL, "open", executableName,  NULL, NULL, SW_SHOWNORMAL);

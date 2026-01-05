@@ -66,7 +66,7 @@ int processRunningThread(void *data) {
             if (!processInjectDll(process, DLL_NAME, gameConfig.location)) {
                 LOG_ERROR("Failed to inject DLL into game process. Events won't be received.");
             } else {
-                Sleep(500); // Wait a bit to let the DLL initialize the pipe
+                threadSleep(500); // Wait a bit to let the DLL initialize the pipe
                 processConnectPipe(process);
             }
         }
@@ -80,7 +80,7 @@ int processRunningThread(void *data) {
 
 int updateGameThread(void *data) {
     (void)data;
-    // For some reason, there is a bug that UI components are return random values from others threads immediately after the building the UI.
+    // For some reason, there is a bug that UI components are return random values from others threads immediately after building the UI.
     // Waiting a bit as a workaround.
     threadSleep(1000);
     while (true) {

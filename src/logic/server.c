@@ -51,6 +51,7 @@ bool serverExecuteCommand(Server *server, const char *command) {
 
 bool serverSendServerCommand(Server *server, const char *command) {
     if (!server) return false;
+    LOG_DEBUG("Sending Server Command: %s", command);
     bool result = apiSVSendServerCommand(server->api, SV_CMD_RELIABLE, SV_CMD_BROADCAST, command);
     return result;
 }
@@ -59,7 +60,6 @@ bool serverCenterMessage(Server *server, const char *message) {
     if (!server) return false;
     char *command = serverBuildMessage(SV_CMD_MSG_CENTER_KEY, message);
     bool result = serverSendServerCommand(server, command);
-    LOG_INFO("Center Message Sent: %s", message);
     free(command);
     return result;
 }

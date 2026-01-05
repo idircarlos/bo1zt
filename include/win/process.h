@@ -9,6 +9,7 @@ typedef struct Process Process;
 
 Process *processOpen(const char *executableName);
 bool processIsRunning(const char *executableName);
+bool processIsValid(Process *process);
 bool processExec(const char *executableName);
 bool processIsWindowForeground(Process *process);
 bool processIsWindowAttached(Process *process);

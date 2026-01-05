@@ -35,7 +35,6 @@ int apiGetCurrentSnapshotEntities(Api *api);
 int apiGetMaxSnapshotEntities(Api *api);
 bool apiIsChatOpen(Api *api);
 bool apiWriteToChatInput(Api *api, const char *text);
-bool apiSetChatNameColor(Api *api, ChatColor color);
 
 // GSC backend operations
 bool apiAddPerks(Api *api, List *perks);

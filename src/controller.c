@@ -81,12 +81,13 @@ bool controllerAttachGame(Controller *controller) {
     if (!controller->gsc) controller->gsc = gscCreate(controller->server);
     controller->cheatManager = cheatManagerCreate(controller);
     controller->commandManager = commandManagerCreate(controller);
+    if (!controllerIsGameRunning(controller)) return true;
     controller->state->isGameAttached = controllerIsGameAttached(controller);
     controller->state->isZombiesGameOngoing = controllerIsZombiesGameOngoing(controller);
     controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
     controller->state->gameResets = apiGetGameResets(controller->api);
     Game *activeGame = &controller->state->activeGame;
-    if (levelIsMonitored(activeGame->levelName)) {
+    if (controllerIsGameRunning(controller) && controllerIsZombiesGameOngoing(controller) && levelIsMonitored(activeGame->levelName)) {
         activeGame->elapsed = controllerGetLevelElapsedTime(controller);
         activeGame->levelName = controllerGetLevelName(controller);
     }
@@ -269,10 +270,11 @@ State *controllerGetState(Controller *controller) {
 
 void controllerUpdateState(Controller *controller) {
     if (!controller || !controller->state) return;
-    if (!controllerIsGameAttached(controller)) {
+    if (!controllerIsGameAttached(controller) || !controllerIsGameRunning(controller) || !controllerIsGameReady(controller)) {
         stateGameClear(controller->state);
         return;
     };
+
     // General state
     controller->state->isGameAttached = controllerIsGameWindowAttached(controller);
     controller->state->isZombiesGameOngoing = controllerIsZombiesGameOngoing(controller);
@@ -316,23 +318,14 @@ void controllerInitTrainerConfig(Controller *controller) {
         controllerSetCheat(controller, CHEAT_NAME_MAKE_BORDERLESS, config->graphics.borderless);
     }
 
-    // --- Other non-gui Config ---
-    controllerSetCheat(controller, CHEAT_NAME_PATCH_CHAT, true);
-    
-    // --- HacksConfig ---
-    // Use CheatManager to apply all enabled cheats from Config that meet conditions
-    if (controller->cheatManager) {
-        cheatManagerHandleGameAttach(controller->cheatManager);
-    }
+    controllerSetCheat(controller, CHEAT_NAME_PATCH_CHAT, true);    
+    cheatManagerHandleGameAttach(controller->cheatManager);
 }
 
 void controllerUpdateTrainerConfig(Controller *controller) {
     if (!controllerIsGameAttached(controller) || !controllerIsGameReady(controller)) return;
     
-    // Use CheatManager for all cheats - handles conditions and applied state tracking
-    if (controller->cheatManager) {
-        cheatManagerHandleStateChange(controller->cheatManager);
-    }
+    cheatManagerHandleStateChange(controller->cheatManager);
 }
 
 GameConfig controllerGetGameConfig(Controller *controller) {

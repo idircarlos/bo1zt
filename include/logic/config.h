@@ -42,7 +42,6 @@ typedef struct {
     Color lowAmmoWarnSecondary;
     Color noAmmoWarnPrimary;
     Color noAmmoWarnSecondary;
-    ChatColor chatName;
     int scoreboardTransparency;
     int pointsTransparency;
     int warningTransitionsFrequency;

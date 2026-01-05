@@ -31,6 +31,5 @@ int rawApiGetCurrentSnapshotEntities(RawApi *rawApi);
 int rawApiGetMaxSnapshotEntities(RawApi *rawApi);
 bool rawApiIsChatOpen(RawApi *rawApi);
 bool rawApiWriteToChatInput(RawApi *rawApi, const char *text);
-bool rawApiSetChatNameColorValue(RawApi *rawApi, ChatColor color);
 
 #endif // API_RAW_H_
