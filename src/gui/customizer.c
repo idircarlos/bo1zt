@@ -2,9 +2,9 @@
 #include "logger.h"
 #include "logic/cheat.h"
 #include "logic/cheat/manager.h"
-#include "logic/cheat/manager/actions.h"
 #include "logic/config.h"
 #include "gui/gui_internal.h"
+#include "utils/common.h"
 #include <ui.h>
 
 // Controller instance

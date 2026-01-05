@@ -338,22 +338,22 @@ void configResetGraphics(Config *config) {
 
 void configResetCustomizer(Config *config) {
     CustomizerConfig customizer = {
-        .scoreBackground = colorCreate(255, 255, 255, 255),
+        .scoreBackground = colorCreate(108, 1, 0, 255),
         .scorePlayer1 = colorCreate(255, 255, 255, 255),
-        .scorePlayer2 = colorCreate(255, 255, 255, 255),
-        .scorePlayer3 = colorCreate(255, 255, 255, 255),
-        .scorePlayer4 = colorCreate(255, 255, 255, 255),
-        .reloadWarnPrimary = colorCreate(255, 0, 0, 255),
-        .reloadWarnSecondary = colorCreate(255, 0, 0, 255),
-        .lowAmmoWarnPrimary = colorCreate(255, 165, 0, 255),
-        .lowAmmoWarnSecondary = colorCreate(55, 165, 0, 255),
-        .noAmmoWarnPrimary = colorCreate(255, 0, 0, 255),
+        .scorePlayer2 = colorCreate(124, 207, 238, 255),
+        .scorePlayer3 = colorCreate(246, 202, 80, 255),
+        .scorePlayer4 = colorCreate(131, 236, 136, 255),
+        .reloadWarnPrimary = colorCreate(230, 230, 230, 255),
+        .reloadWarnSecondary = colorCreate(255, 255, 255, 255),
+        .lowAmmoWarnPrimary = colorCreate(179, 179, 0, 255),
+        .lowAmmoWarnSecondary = colorCreate(255, 255, 0, 255),
+        .noAmmoWarnPrimary = colorCreate(204, 0, 0, 255),
         .noAmmoWarnSecondary = colorCreate(255, 0, 0, 255),
-        .scoreboardTransparency = 100,
-        .pointsTransparency = 100,
-        .warningTransitionsFrequency = 5,
-        .warningTransitionsMin = 50,
-        .warningTransitionsMax = 100,
+        .scoreboardTransparency = 80,
+        .pointsTransparency = 35,
+        .warningTransitionsFrequency = 2,
+        .warningTransitionsMin = 0,
+        .warningTransitionsMax = 15,
     };
 
     config->customizer = customizer;

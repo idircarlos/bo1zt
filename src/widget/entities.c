@@ -1,5 +1,4 @@
 #include "widget/entities.h"
-#include "logger.h"
 #include "widget.h"
 #include "widget/widget_internal.h"
 #include <GL/gl.h>
