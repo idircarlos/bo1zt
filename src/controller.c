@@ -74,12 +74,12 @@ bool controllerAttachGame(Controller *controller) {
         return true;
     }
     if (!controller->state) controller->state = stateCreate();
+    if (!controller->cheatManager) controller->cheatManager = cheatManagerCreate(controller);
     if (!controller->process) controller->process = processOpen(GAME_EXECUTABLE_NAME);
     if (!controller->process) return false;
     if (!controller->api) controller->api = apiCreate(controller);
     if (!controller->server) controller->server = serverCreate(controller);
     if (!controller->gsc) controller->gsc = gscCreate(controller->server);
-    controller->cheatManager = cheatManagerCreate(controller);
     controller->commandManager = commandManagerCreate(controller);
     if (!controllerIsGameRunning(controller)) return true;
     controller->state->isGameAttached = controllerIsGameAttached(controller);

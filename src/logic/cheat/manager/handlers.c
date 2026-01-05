@@ -65,6 +65,15 @@ void cheatManagerHandleGamePreStart(CheatManager *manager) {
             notifyCheatFailed(manager);
         }
     }
+    
+    // Apply hostname if set (force apply on game start)
+    GameConfig *game = &manager->config->game;
+    if (strlen(game->hostname) > 0) {
+        if (apiSetSimpleCheat(api, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, game->hostname)) {
+            strncpy(manager->applied.hostname, game->hostname, sizeof(manager->applied.hostname) - 1);
+            manager->applied.hostname[sizeof(manager->applied.hostname) - 1] = '\0';
+        }
+    }
 }
 
 void cheatManagerHandleGameStart(CheatManager *manager) {

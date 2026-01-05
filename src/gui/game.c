@@ -32,7 +32,7 @@ static Map *cache = NULL;
 static Controller *controller;
 static uiWindow *parent;
 
-// --- UI Elements ---
+// UI Elements
 static uiAttribute *attrRed = NULL;
 static uiAttribute *attrGreen = NULL;
 static uiAttribute *attrBlue = NULL;
@@ -186,7 +186,6 @@ static void handlerUnusedMouseEvent(uiAreaHandler *a, uiArea *area, uiAreaMouseE
     (void)e;
 }
 
-
 static void handlerStatusDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
     (void)a;
     (void)area;
@@ -222,19 +221,25 @@ static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     }
 }
 
-static void onEntryChange(uiEntry *entry, void *data) {
+static void onHostnameEntryChange(uiEntry *entry, void *data) {
     (void)data;
+    (void)entry;
+    char *hostname = uiEntryText(hostnameEntry);
+    
+    CheatManager *cheatManager = controllerGetCheatManager(controller);
+    cheatManagerSetValue(cheatManager, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, hostname);
+    
+    uiFreeText(hostname);
+}
+
+static void onLocationEntryChange(uiEntry *entry, void *data) {
+    (void)data;
+    (void)entry;
     Config *config = controllerGetConfig(controller);
     
-    if (entry == hostnameEntry) {
-        char *hostname = uiEntryText(hostnameEntry);
-        strncpy(config->game.hostname, hostname, sizeof(config->game.hostname) - 1);
-        uiFreeText(hostname);
-    } else if (entry == locationEntry) {
-        char *location = uiEntryText(locationEntry);
-        strncpy(config->game.location, location, sizeof(config->game.location) - 1);
-        uiFreeText(location);
-    }
+    char *location = uiEntryText(locationEntry);
+    strncpy(config->game.location, location, sizeof(config->game.location) - 1);
+    uiFreeText(location);
     configSave(config);
 }
 
@@ -407,7 +412,8 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiCheckboxOnToggled(patchMovementCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_FIX_MOVEMENT_SPEED);
     uiCheckboxOnToggled(showFpsCheckbox, onCheckboxToggled, (void*)CHEAT_NAME_SHOW_FPS);
 
-    uiEntryOnChanged(hostnameEntry, onEntryChange, NULL);
+    uiEntryOnChanged(hostnameEntry, onHostnameEntryChange, NULL);
+    uiEntryOnChanged(locationEntry, onLocationEntryChange, NULL);
 
     uiSpinboxOnChanged(changeRoundSpin, onChangeRoundSpinChanged, NULL);
 
@@ -456,6 +462,13 @@ static void update() {
     if (uiCheckboxChecked(showFpsCheckbox) != game->showFps) {
         uiCheckboxSetChecked(showFpsCheckbox, game->showFps);
     }
+    
+    // Sync hostname entry with config
+    char *currentHostname = uiEntryText(hostnameEntry);
+    if (strcmp(currentHostname, game->hostname) != 0) {
+        uiEntrySetText(hostnameEntry, game->hostname);
+    }
+    uiFreeText(currentHostname);
     
     State *state = controllerGetState(controller);
     bool gameAttached = state->isGameAttached;

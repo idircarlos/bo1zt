@@ -391,13 +391,13 @@ Level rawApiGetLevelName(RawApi *rawApi) {
 
 double rawApiGetLevelElapsedTime(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+        LOG_DEBUG("RawApi or Controller is null");
         return 0;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null");
+        LOG_DEBUG("Process is null");
         return 0;
     }
     
@@ -437,13 +437,13 @@ float rawApiGetMovementSpeed(RawApi *rawApi) {
 
 bool rawApiIsZombiesGameOngoing(RawApi *rawApi) {
     if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+        LOG_DEBUG("RawApi or Controller is null");
         return false;
     }
     
     Process *process = controllerGetProcess(rawApi->controller);
     if (!process) {
-        LOG_ERROR("Process is null");
+        LOG_DEBUG("Process is null");
         return false;
     }
     uint32_t active;
