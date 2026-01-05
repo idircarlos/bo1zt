@@ -62,7 +62,8 @@ int processRunningThread(void *data) {
             snprintf(gscPath, sizeof(gscPath), "%s\\bo1zt\\gsc", gameConfig.location);
             resourcesExtractZip(IDR_GSC_ZIP, gscPath);
             
-            // Inject DLL
+            // Inject DLL. Add some delay to let the game completly load and avoid random crashes
+            threadSleep(1000);
             if (!processInjectDll(process, DLL_NAME, gameConfig.location)) {
                 LOG_ERROR("Failed to inject DLL into game process. Events won't be received.");
             } else {

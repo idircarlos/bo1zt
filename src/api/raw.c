@@ -533,7 +533,7 @@ bool rawApiSVSendServerCommand(RawApi *rawApi, int commandType, int clientNumber
     Thread *thread = threadCreateRemote(process, addr + 12, addr);
     bool success = true;
     if (!threadWait(thread, 100)) {
-        LOG_ERROR("Thread wait timed out! Could not execute remote SV_SendServerCommand.");
+        LOG_ERROR("Thread wait timed out! Could not execute remote SV_SendServerCommand for commands = [%s]", commands);
         success = false;
     }
     threadClose(thread);
