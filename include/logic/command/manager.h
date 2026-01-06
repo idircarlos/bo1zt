@@ -16,6 +16,7 @@ typedef struct {
 typedef void (*CommandIteratorFn)(const CommandEntry *entry, void *userData);
 
 CommandManager *commandManagerCreate(Controller *controller);
+void commandManagerInitSubmodules(CommandManager *manager);
 void commandManagerDestroy(CommandManager *manager);
 void commandManagerAddHistory(CommandManager *manager, const Command *command);
 bool commandManagerIsValid(CommandManager *manager, const char *cmd);

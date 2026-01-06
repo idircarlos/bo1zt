@@ -1,4 +1,5 @@
 #include "gui/binds/help.h"
+#include "logic/command/manager.h"
 #include <ui.h>
 
 #define MAX_COMMANDS 64

@@ -5,7 +5,6 @@
 #include "logic/command/hacks.h"
 #include "logic/command/misc.h"
 #include "controller.h"
-#include "controller/controller_internal.h"
 #include "utils/map.h"
 #include <stdlib.h>
 #include <windows.h>
@@ -96,15 +95,20 @@ CommandManager *commandManagerCreate(Controller *controller) {
     if (!manager) return NULL;
 
     manager->controller = controller;
-    manager->server = _controllerGetServer(controller);
     manager->commandsMap = createCommandsMap();
     manager->history = historyCreate();
     manager->prevState.chatOpen = false;
     manager->prevState.upKey = false;
     manager->prevState.downKey = false;
+    manager->submodulesInitialized = false;
 
-    initSubmodules(manager);
     return manager;
+}
+
+void commandManagerInitSubmodules(CommandManager *manager) {
+    if (!manager || manager->submodulesInitialized) return;
+    initSubmodules(manager);
+    manager->submodulesInitialized = true;
 }
 
 void commandManagerDestroy(CommandManager *manager) {

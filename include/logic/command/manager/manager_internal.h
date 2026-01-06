@@ -16,10 +16,10 @@ typedef struct InputState {
 
 typedef struct CommandManager {
     Controller *controller;
-    Server *server;
     Map *commandsMap;
     History *history;
     InputState prevState;
+    bool submodulesInitialized;
 } CommandManager;
 
 #endif // COMMAND_MANAGER_INTERNAL_H_
