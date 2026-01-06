@@ -101,9 +101,8 @@ static bool _gscApiCallAsync(GSC *gsc, GSCMethod method, GSCArgs args) {
 
 static GSCArgs _buildPerkArgs(List *perks) {
     size_t count = listSize(perks);
-    GSCArgs gscArgs = {0};
+    GSCArgs gscArgs = gscArgsCreate(count);
 
-    gscArgs.args = (const char **)malloc(count * sizeof(const char *));
     if (!gscArgs.args) return gscArgs;
     gscArgs.count = 0;
 
@@ -119,9 +118,8 @@ static GSCArgs _buildPerkArgs(List *perks) {
 
 static GSCArgs _buildWeaponArgs(List *weapons) {
     size_t count = listSize(weapons);
-    GSCArgs gscArgs = {0};
+    GSCArgs gscArgs = gscArgsCreate(count);
 
-    gscArgs.args = (const char **)malloc(count * sizeof(const char *));
     if (!gscArgs.args) return gscArgs;
     gscArgs.count = 0;
 
