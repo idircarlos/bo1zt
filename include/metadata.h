@@ -6,4 +6,6 @@
 #define BO1ZT_GITHUB_URL "https://github.com/idircarlos/bo1zt"
 #define BO1ZT_DISCORD_URL "https://discord.gg/zcFkKheNfG"
 
+#define BO1_BUILD_ID "87954"
+
 #endif // METADATA_H_
