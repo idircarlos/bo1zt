@@ -1,6 +1,5 @@
 #include "gui/teleport.h"
 #include "controller.h"
-#include "logger.h"
 #include <stdio.h>
 #include <stdlib.h>
 
