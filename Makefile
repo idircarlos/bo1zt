@@ -29,9 +29,15 @@ DLL_OBJ := $(patsubst dll/%.c,build/dll/%.o,$(DLL_SRC))
 CDL86_OBJ := build/external/cdl86.o
 MINIZ_OBJ := build/external/miniz.o
 
-.PHONY: all run clean clean-dll dll
+.PHONY: all run clean clean-dll dll release
 
 all: $(TARGET)
+
+# Release build
+release: EXE_CFLAGS  += -O2 -DNDEBUG
+release: EXE_LDFLAGS += -mwindows -s
+release: $(TARGET)
+	@echo "Release build complete: $(TARGET)"
 dll: $(DLL_TARGET)
 run: $(TARGET)
 	./$(TARGET)
