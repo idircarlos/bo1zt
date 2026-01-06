@@ -11,6 +11,12 @@ typedef enum {
     LEVEL_ASCENSION,
     LEVEL_FIVE,
     LEVEL_CALL_OF_THE_DEAD,
+    LEVEL_MOON,
+    LEVEL_SHANGRI_LA,
+    LEVEL_NACH_DER_UNTOTEN,
+    LEVEL_DER_RIESE,
+    LEVEL_VERRUCKT,
+    LEVEL_SHI_NO_NUMA,
 } Level;
 
 RoundType levelGetSpecialRound(Level level);
