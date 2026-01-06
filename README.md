@@ -49,7 +49,7 @@ Hypothetical examples that are not implemented:
 - Give a random perk when your friend sends you a Discord message.
 - Use Dempsey, Nikolai, Takeo, or Richtofen depending on the day of the week you are playing.
 
-I hope this makes sense.
+The action is performed by GSC, but the logic is handled by the tool. I hope this makes sense.
 
 ## Requirements
 
