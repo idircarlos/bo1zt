@@ -86,6 +86,15 @@ After using TIM, it was really nice to have the FOV and some widgets automatical
 
 Note: If someone is willing to hack a game with malicious intentions, such as faking speedruns, they will do it anyway, whether with this tool or any other.
 
+## Contributions
+Contributions are welcome! If you'd like to help improve **bo1zt**, feel free to:
+
+- Open an **Issue** to report bugs, suggest features, or share ideas.
+- Submit a **Pull Request** with improvements.
+
+I’ll be happy to review your contributions and collaborate on making this trainer even better.
+You can join the [Discord Community](https://discord.gg/zcFkKheNfG). Feel free to contact me through Discord personally. 
+
 ## Acknowledgments
 I would like to extend my gratitude to:
 - [magicbennie](https://github.com/magicbennie), creator of TIM, for being an inspiration while creating this tool.
