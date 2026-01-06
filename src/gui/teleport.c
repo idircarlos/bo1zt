@@ -1,4 +1,6 @@
 #include "gui/teleport.h"
+#include "controller.h"
+#include "logger.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -24,6 +26,10 @@ static void onTeleportGoButtonClick(uiButton *button, void *data) {
 static void onTeleportSaveButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
+    if (!controllerIsZombiesGameOngoing(controller)) {
+        uiMsgBoxError(parent, "Error", "You should be on a Zombies Game to save your current coords!");
+        return;
+    }
     TeleportCoords *coords = controllerGetPlayerCurrentCoords(controller);
     char *filePath = uiSaveFile(parent);
     if (filePath == NULL) return;
@@ -44,15 +50,13 @@ static void onTeleportLoadButtonClick(uiButton *button, void *data) {
     (void)data;
     char *filePath = uiOpenFile(parent);
     if (!filePath) return;
-
-    FILE *fp = fopen(filePath, "r");
-    if (fp == NULL) {
-        uiMsgBoxError(parent, "Unexpected error", "Error loading the coords");
-    }
-
+    
     int x, y, z;
-    if (fscanf(fp, "%d %d %d", &x, &y, &z) != 3) {
+    FILE *fp = fopen(filePath, "r");
+    if (fp == NULL || fscanf(fp, "%d %d %d", &x, &y, &z) != 3) {
         uiMsgBoxError(parent, "Unexpected error", "Error loading the coords");
+        uiFreeText(filePath);
+        return;
     }
 
     uiSpinboxSetValue(xSpin, x);
