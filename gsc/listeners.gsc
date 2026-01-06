@@ -13,9 +13,6 @@ onPlayerSpawned() {
     self endon("disconnect");
     while(1) {
         self waittill("spawned_player");
-        self GiveWeapon("ray_gun_zm");
-        self SetWeaponAmmoStock("ray_gun_zm", 1000);
-        self SwitchToWeapon("ray_gun_zm");
     }
 }
 
