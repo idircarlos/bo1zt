@@ -7,7 +7,10 @@ RoundType levelGetSpecialRound(Level level) {
         case LEVEL_FIVE: return RT_THIEF;
         case LEVEL_ASCENSION: return RT_MONKEYS;
         case LEVEL_CALL_OF_THE_DEAD: return RT_GEORGE;
-        case LEVEL_KINO_DER_TOTEN: return RT_DOGS;
+        case LEVEL_KINO_DER_TOTEN:
+        case LEVEL_DER_RIESE:
+        case LEVEL_SHI_NO_NUMA:
+            return RT_DOGS;
         default: return RT_NORMAL;
     }
 }
