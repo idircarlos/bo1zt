@@ -89,12 +89,14 @@ GSCResponse gscCall(GSC *gsc, GSCMethod method, GSCArgs args) {
     }
 
     const char *resp = gsc->pool->responses[index];
+    gsc->pool->responses[index] = NULL;
     poolRelease(gsc->pool, index);
 
     result.status = GSC_STATUS_SUCCESS;
     if (resp) {
         strncpy(result.response, resp, sizeof(result.response) - 1);
         result.response[sizeof(result.response) - 1] = '\0';
+        free((void*)resp);
     }
 
     LOG_INFO("Received %s -> [%s]", methodString, result.response);

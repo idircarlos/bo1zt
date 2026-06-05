@@ -2,6 +2,7 @@
 #include "logger.h"
 #include "utils/queue.h"
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_WORKERS 10
 
@@ -94,6 +95,6 @@ void poolRelease(GSCPool *pool, int index) {
 
 void poolWriteResponseDirect(GSCPool *pool, int index, const char *response) {
     if (index < 0 || index >= MAX_WORKERS) return;
-
-    InterlockedExchangePointer((PVOID*)&pool->responses[index], (void*)response);
+    char *copy = _strdup(response);
+    InterlockedExchangePointer((PVOID*)&pool->responses[index], copy);
 }

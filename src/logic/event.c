@@ -143,6 +143,7 @@ static bool eventHandleVMNotify(Event event) {
         int index;
         char response[256];
         if (sscanf(event.data.vmNotify.eventName, "bo1zt::Worker%d::%255s", &index, response) == 2) {
+            LOG_INFO("VM Notify Response = %s", response);
             gscWriteResponse(gsc, index, response);
         }
         return true;
