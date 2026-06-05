@@ -14,7 +14,7 @@ EXE_LDFLAGS := -Llib $(ARCH) -static -static-libgcc -static-libstdc++ \
 
 # DLL
 DLL_CFLAGS  := -Wall -O2 $(ARCH) -Ishared -Iexternal/cdl86 -Iexternal/miniz -Idll -Idll/gsc
-DLL_LDFLAGS := -shared -s $(ARCH) -luser32 -lkernel32
+DLL_LDFLAGS := -shared -s $(ARCH) -luser32 -lkernel32 -static-libgcc
 
 # Targets
 TARGET     := build/bo1zt.exe
