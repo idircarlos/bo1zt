@@ -7,10 +7,10 @@ ARCH    := -m32
 # EXE
 EXE_CFLAGS  := -std=c++20 -Wall -Wextra -pedantic $(ARCH) \
                -Iinclude -Iexternal/libui -Iexternal/iniparser/src \
-               -Iexternal/miniz -Ires -Ishared
+               -Iexternal/miniz -Iexternal/argparse -Ires -Ishared
 EXE_LDFLAGS := -Llib $(ARCH) -static -static-libgcc -static-libstdc++ \
                -lui -liniparser -lole32 -luuid -lcomctl32 -lgdi32 \
-               -lmsimg32 -loleaut32 -ld2d1 -ldwrite -luxtheme -lopengl32 -lgdiplus -lshlwapi
+               -lmsimg32 -loleaut32 -ld2d1 -ldwrite -luxtheme -lopengl32 -lgdiplus -lshlwapi -lws2_32
 
 # DLL
 DLL_CFLAGS  := -Wall -O2 $(ARCH) -Ishared -Iexternal/cdl86 -Iexternal/miniz -Idll -Idll/gsc
@@ -28,6 +28,7 @@ DLL_OBJ := $(patsubst dll/%.c,build/dll/%.o,$(DLL_SRC))
 
 CDL86_OBJ := build/external/cdl86.o
 MINIZ_OBJ := build/external/miniz.o
+ARGPARSE_OBJ := build/external/argparse.o
 
 .PHONY: all run clean clean-dll dll release
 
@@ -47,13 +48,18 @@ clean-dll:
 	rm -f $(DLL_TARGET)
 
 # EXE
-$(TARGET): $(OBJ) lib/libui.a lib/libiniparser.a lib/libminiz.a build/resources.o
+$(TARGET): $(OBJ) $(ARGPARSE_OBJ) lib/libui.a lib/libiniparser.a lib/libminiz.a build/resources.o
 	@echo "Linking $@"
 	$(CXX) $(EXE_CFLAGS) -o $@ $^ $(EXE_LDFLAGS)
 
 build/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CXX) $(EXE_CFLAGS) -MMD -MP -c $< -o $@
+
+# argparse
+$(ARGPARSE_OBJ): external/argparse/argparse.c
+	@mkdir -p $(dir $@)
+	$(CC) -std=c11 -O2 $(ARCH) -Iexternal/argparse -c $< -o $@
 
 # DLL
 $(DLL_TARGET): $(DLL_OBJ) $(CDL86_OBJ) $(MINIZ_OBJ)
