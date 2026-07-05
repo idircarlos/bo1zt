@@ -1,4 +1,4 @@
-#include "api/gsc.h"
+#include "engine/gsc.h"
 #include "controller.h"
 #include "controller/controller_internal.h"
 #include "logger.h"
@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct GscApi {
+struct GscBackend {
     Controller *controller;
 };
 
@@ -19,45 +19,45 @@ typedef struct {
     GSC *gsc;
     GSCMethod method;
     GSCArgs args;
-} GscApiCallData;
+} GscBackendCallData;
 
-static int _gscApiAsyncHandler(void *data);
-static bool _gscApiCallAsync(GSC *gsc, GSCMethod method, GSCArgs args);
-static bool _gscApiCallPerks(GscApi *gscApi, GSCMethod method, List *perks);
-static bool _gscApiCallWeapons(GscApi *gscApi, List *weapons);
+static int _gscBackendAsyncHandler(void *data);
+static bool _gscBackendCallAsync(GSC *gsc, GSCMethod method, GSCArgs args);
+static bool _gscBackendCallPerks(GscBackend *gscBackend, GSCMethod method, List *perks);
+static bool _gscBackendCallWeapons(GscBackend *gscBackend, List *weapons);
 static GSCArgs _buildPerkArgs(List *perks);
 static GSCArgs _buildWeaponArgs(List *weapons);
 
-GscApi *gscApiCreate(Controller *controller) {
+GscBackend *gscBackendCreate(Controller *controller) {
     if (!controller) return NULL;
 
-    GscApi *gscApi = (GscApi *)malloc(sizeof(GscApi));
-    if (!gscApi) return NULL;
+    GscBackend *gscBackend = (GscBackend *)malloc(sizeof(GscBackend));
+    if (!gscBackend) return NULL;
 
-    gscApi->controller = controller;
-    return gscApi;
+    gscBackend->controller = controller;
+    return gscBackend;
 }
 
-void gscApiDestroy(GscApi *gscApi) {
-    if (gscApi) {
-        free(gscApi);
+void gscBackendDestroy(GscBackend *gscBackend) {
+    if (gscBackend) {
+        free(gscBackend);
     }
 }
 
-bool gscApiAddPerks(GscApi *gscApi, List *perks) {
-    return _gscApiCallPerks(gscApi, GSC_ADD_PERKS, perks);
+bool gscBackendAddPerks(GscBackend *gscBackend, List *perks) {
+    return _gscBackendCallPerks(gscBackend, GSC_ADD_PERKS, perks);
 }
 
-bool gscApiRemovePerks(GscApi *gscApi, List *perks) {
-    return _gscApiCallPerks(gscApi, GSC_REMOVE_PERKS, perks);
+bool gscBackendRemovePerks(GscBackend *gscBackend, List *perks) {
+    return _gscBackendCallPerks(gscBackend, GSC_REMOVE_PERKS, perks);
 }
 
-static bool _gscApiCallPerks(GscApi *gscApi, GSCMethod method, List *perks) {
-    if (!gscApi || !gscApi->controller || listIsEmpty(perks)) {
+static bool _gscBackendCallPerks(GscBackend *gscBackend, GSCMethod method, List *perks) {
+    if (!gscBackend || !gscBackend->controller || listIsEmpty(perks)) {
         return false;
     }
 
-    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    GSC *gsc = _controllerGetGsc(gscBackend->controller);
     if (!gsc) {
         return false;
     }
@@ -68,11 +68,11 @@ static bool _gscApiCallPerks(GscApi *gscApi, GSCMethod method, List *perks) {
         return false;
     }
 
-    return _gscApiCallAsync(gsc, method, gscArgs);
+    return _gscBackendCallAsync(gsc, method, gscArgs);
 }
 
-static int _gscApiAsyncHandler(void *data) {
-    GscApiCallData *callData = (GscApiCallData *)data;
+static int _gscBackendAsyncHandler(void *data) {
+    GscBackendCallData *callData = (GscBackendCallData *)data;
     GSCResponse response = gscCall(callData->gsc, callData->method, callData->args);
     if (response.status == GSC_STATUS_FAIL) {
         LOG_ERROR("Async GSC call to %s(%s) failed.", gscMethodToString(callData->method), gscArgsToString(callData->args));
@@ -84,8 +84,8 @@ static int _gscApiAsyncHandler(void *data) {
     return 1;
 }
 
-static bool _gscApiCallAsync(GSC *gsc, GSCMethod method, GSCArgs args) {
-    GscApiCallData *callData = (GscApiCallData *)malloc(sizeof(GscApiCallData));
+static bool _gscBackendCallAsync(GSC *gsc, GSCMethod method, GSCArgs args) {
+    GscBackendCallData *callData = (GscBackendCallData *)malloc(sizeof(GscBackendCallData));
     if (!callData) {
         gscArgsFree(&args);
         return false;
@@ -94,7 +94,7 @@ static bool _gscApiCallAsync(GSC *gsc, GSCMethod method, GSCArgs args) {
     callData->gsc = gsc;
     callData->method = method;
     callData->args = args;
-    threadCreate(_gscApiAsyncHandler, (void *)callData);
+    threadCreate(_gscBackendAsyncHandler, (void *)callData);
 
     return true;
 }
@@ -133,12 +133,12 @@ static GSCArgs _buildWeaponArgs(List *weapons) {
     return gscArgs;
 }
 
-static bool _gscApiCallWeapons(GscApi *gscApi, List *weapons) {
-    if (!gscApi || !gscApi->controller || listIsEmpty(weapons)) {
+static bool _gscBackendCallWeapons(GscBackend *gscBackend, List *weapons) {
+    if (!gscBackend || !gscBackend->controller || listIsEmpty(weapons)) {
         return false;
     }
 
-    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    GSC *gsc = _controllerGetGsc(gscBackend->controller);
     if (!gsc) {
         return false;
     }
@@ -149,15 +149,15 @@ static bool _gscApiCallWeapons(GscApi *gscApi, List *weapons) {
         return false;
     }
 
-    return _gscApiCallAsync(gsc, GSC_GIVE_WEAPONS, gscArgs);
+    return _gscBackendCallAsync(gsc, GSC_GIVE_WEAPONS, gscArgs);
 }
 
-bool gscApiGetStaticBox(GscApi *gscApi) {
-    if (!gscApi || !gscApi->controller) {
+bool gscBackendGetStaticBox(GscBackend *gscBackend) {
+    if (!gscBackend || !gscBackend->controller) {
         return false;
     }
 
-    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    GSC *gsc = _controllerGetGsc(gscBackend->controller);
     if (!gsc) {
         return false;
     }
@@ -169,12 +169,12 @@ bool gscApiGetStaticBox(GscApi *gscApi) {
     return result;
 }
 
-bool gscApiSetStaticBox(GscApi *gscApi, bool enabled) {
-    if (!gscApi || !gscApi->controller) {
+bool gscBackendSetStaticBox(GscBackend *gscBackend, bool enabled) {
+    if (!gscBackend || !gscBackend->controller) {
         return false;
     }
 
-    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    GSC *gsc = _controllerGetGsc(gscBackend->controller);
     if (!gsc) {
         return false;
     }
@@ -183,29 +183,29 @@ bool gscApiSetStaticBox(GscApi *gscApi, bool enabled) {
     if (!gscArgs.args) return false;
     gscArgs.args[0] = enabled ? "1" : "0";
 
-    return _gscApiCallAsync(gsc, GSC_STATIC_BOX, gscArgs);
+    return _gscBackendCallAsync(gsc, GSC_STATIC_BOX, gscArgs);
 }
 
-bool gscApiPlayEasterEggSong(GscApi *gscApi) {
-    if (!gscApi || !gscApi->controller) {
+bool gscBackendPlayEasterEggSong(GscBackend *gscBackend) {
+    if (!gscBackend || !gscBackend->controller) {
         return false;
     }
 
-    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    GSC *gsc = _controllerGetGsc(gscBackend->controller);
     if (!gsc) {
         return false;
     }
 
     GSCArgs gscArgs = gscArgsCreate(0);
-    return _gscApiCallAsync(gsc, GSC_PLAY_EASTER_EGG_SONG, gscArgs);
+    return _gscBackendCallAsync(gsc, GSC_PLAY_EASTER_EGG_SONG, gscArgs);
 }
 
-int gscApiGetRound(GscApi *gscApi) {
-    if (!gscApi || !gscApi->controller) {
+int gscBackendGetRound(GscBackend *gscBackend) {
+    if (!gscBackend || !gscBackend->controller) {
         return false;
     }
 
-    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    GSC *gsc = _controllerGetGsc(gscBackend->controller);
     if (!gsc) {
         return false;
     }
@@ -226,21 +226,21 @@ int gscApiGetRound(GscApi *gscApi) {
     return round;
 }
 
-bool gscApiGiveWeapons(GscApi *gscApi, List *weapons) {
-    return _gscApiCallWeapons(gscApi, weapons);
+bool gscBackendGiveWeapons(GscBackend *gscBackend, List *weapons) {
+    return _gscBackendCallWeapons(gscBackend, weapons);
 }
 
-bool gscApiTakeWeapons(GscApi *gscApi) {
-    if (!gscApi || !gscApi->controller) {
+bool gscBackendTakeWeapons(GscBackend *gscBackend) {
+    if (!gscBackend || !gscBackend->controller) {
         return false;
     }
 
-    GSC *gsc = _controllerGetGsc(gscApi->controller);
+    GSC *gsc = _controllerGetGsc(gscBackend->controller);
     if (!gsc) {
         return false;
     }
 
     GSCArgs gscArgs = gscArgsCreate(0);
 
-    return _gscApiCallAsync(gsc, GSC_TAKE_WEAPONS, gscArgs);
+    return _gscBackendCallAsync(gsc, GSC_TAKE_WEAPONS, gscArgs);
 }

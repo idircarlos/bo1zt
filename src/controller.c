@@ -10,9 +10,11 @@
 #include "logic/gsc.h"
 #include "logic/server.h"
 #include "win/process.h"
-#include "api.h"
+#include "engine.h"
 #include "logger.h"
 #include "logic/state.h"
+#include "logic/widget/manager.h"
+#include "logic/bind/manager.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -22,13 +24,37 @@ Controller* controllerCreate() {
     controller->config = configCreate();
     controller->process = NULL;
     controller->state = NULL;
-    controller->api = NULL;
+    controller->engine = NULL;
     controller->server = NULL;
     controller->gsc = NULL;
     controller->cheatManager = NULL;
     controller->commandManager = NULL;
+    controller->widgetManager = NULL;
+    controller->bindManager = NULL;
     controllerAttachGame(controller);
     return controller;
+}
+
+void controllerInitManagers(Controller *controller) {
+    if (!controller) return;
+    if (!controller->widgetManager) controller->widgetManager = widgetManagerCreate(controller);
+    if (!controller->bindManager) controller->bindManager = bindManagerCreate(controller);
+}
+
+void controllerUpdateManagers(Controller *controller) {
+    if (!controller) return;
+    widgetManagerUpdate(controller->widgetManager);
+    bindManagerUpdate(controller->bindManager);
+}
+
+WidgetManager *controllerGetWidgetManager(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->widgetManager;
+}
+
+BindManager *controllerGetBindManager(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->bindManager;
 }
 
 Process* controllerGetProcess(Controller *controller) {
@@ -43,12 +69,12 @@ bool controllerIsGameRunning(Controller *controller) {
 
 bool controllerIsZombiesGameOngoing(Controller *controller) {
     (void)controller;
-    return apiIsZombiesGameOngoing(controller->api);
+    return engineIsZombiesGameOngoing(controller->engine);
 }
 
 bool controllerIsZombiesGamePaused(Controller *controller) {
     (void)controller;
-    return apiIsZombiesGamePaused(controller->api);
+    return engineIsZombiesGamePaused(controller->engine);
 }
 
 bool controllerIsGameAttached(Controller *controller) {
@@ -78,15 +104,15 @@ bool controllerAttachGame(Controller *controller) {
     if (!controller->commandManager) controller->commandManager = commandManagerCreate(controller);
     if (!controller->process) controller->process = processOpen(GAME_EXECUTABLE_NAME);
     if (!controller->process) return false;
-    if (!controller->api) controller->api = apiCreate(controller);
+    if (!controller->engine) controller->engine = engineCreate(controller);
     if (!controller->server) controller->server = serverCreate(controller);
     if (!controller->gsc) controller->gsc = gscCreate(controller->server);
     commandManagerInitSubmodules(controller->commandManager);
     if (!controllerIsGameRunning(controller)) return true;
     controller->state->isGameAttached = controllerIsGameAttached(controller);
     controller->state->isZombiesGameOngoing = controllerIsZombiesGameOngoing(controller);
-    controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
-    controller->state->gameResets = apiGetGameResets(controller->api);
+    controller->state->isZombiesGamePaused = engineIsZombiesGamePaused(controller->engine);
+    controller->state->gameResets = engineGetGameResets(controller->engine);
 
     if (controllerIsGameRunning(controller) && controllerIsZombiesGameOngoing(controller)) {
         serverChatMessage(controller->server, "Zombies game is already in progress...");
@@ -146,37 +172,37 @@ bool controllerIsGameWindowAttached(Controller *controller) {
 bool controllerIsGameReady(Controller *controller) {
     if (!controller) return false;
     if (!controller->process) return false;
-    return apiIsGameReady(controller->api);
+    return engineIsGameReady(controller->engine);
 }
 
 bool controllerIsChatOpen(Controller *controller) {
     if (!controller) return false;
     if (!controller->process) return false;
-    return apiIsChatOpen(controller->api);
+    return engineIsChatOpen(controller->engine);
 }
 
 bool controllerWriteToChatInput(Controller *controller, const char *text) {
     if (!controller) return false;
     if (!controller->process) return false;
-    return apiWriteToChatInput(controller->api, text);
+    return engineWriteToChatInput(controller->engine, text);
 }
 
 int controllerGetLevelElapsedTime(Controller *controller) {
     if (!controller) return 0;
     if (!controller->process) return 0;
-    return apiGetLevelElapsedTime(controller->api);
+    return engineGetLevelElapsedTime(controller->engine);
 }
 
 float controllerGetMovementSpeed(Controller *controller) {
     if (!controller) return 0;
     if (!controller->process) return 0;
-    return apiGetMovementSpeed(controller->api);
+    return engineGetMovementSpeed(controller->engine);
 }
 
 Level controllerGetLevelName(Controller *controller) {
     if (!controller) return LEVEL_INVALID;
     if (!controller->process) return LEVEL_INVALID;
-    return apiGetLevelName(controller->api);
+    return engineGetLevelName(controller->engine);
 }
 
 bool controllerTryAttachGameWindow(Controller *controller) {
@@ -186,18 +212,18 @@ bool controllerTryAttachGameWindow(Controller *controller) {
 }
 
 bool controllerGetCheat(Controller *controller, CheatName cheat) {
-    if (!controller || !controller->api) return false;
-    return apiIsCheatEnabled(controller->api, cheat);
+    if (!controller || !controller->engine) return false;
+    return engineIsCheatEnabled(controller->engine, cheat);
 }
 
 bool controllerSetCheat(Controller *controller, CheatName cheat, bool enabled) {
-    if (!controller || !controller->api) return false;
-    return apiSetCheatEnabled(controller->api, cheat, enabled);
+    if (!controller || !controller->engine) return false;
+    return engineSetCheatEnabled(controller->engine, cheat, enabled);
 }
 
 bool controllerSetSimpleCheat(Controller *controller, SimpleCheatName cheat, void *value) {
-    if (!controller || !controller->api) return false;
-    return apiSetSimpleCheat(controller->api, cheat, value);
+    if (!controller || !controller->engine) return false;
+    return engineSetSimpleCheat(controller->engine, cheat, value);
 }
 
 void controllerDestroy(Controller *controller) {
@@ -254,27 +280,97 @@ int controllerUiGraphicsGetFpsCap(Controller *controller) {
 
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller) {
     if (!controller || !controller->process) return NULL;
-    return apiGetPlayerCurrentCoords(controller->api);
+    return engineGetPlayerCurrentCoords(controller->engine);
 }
 
 bool controllerGiveAmmo(Controller *controller) {
     if (!controller) return false;
-    return apiGiveAmmo(controller->api);
+    return engineGiveAmmo(controller->engine);
 }
 
 bool controllerGiveWeapons(Controller *controller, List *weapons) {
     if (!controller) return false;
-    return apiGiveWeapons(controller->api, weapons);
+    return engineGiveWeapons(controller->engine, weapons);
+}
+
+bool controllerAddPerks(Controller *controller, List *perks) {
+    if (!controller || !controller->engine) return false;
+    return engineAddPerks(controller->engine, perks);
+}
+
+bool controllerRemovePerks(Controller *controller, List *perks) {
+    if (!controller || !controller->engine) return false;
+    return engineRemovePerks(controller->engine, perks);
+}
+
+int controllerGetPerkCount(Controller *controller) {
+    if (!controller || !controller->state) return 0;
+    return controller->state->activeGame.numPerks;
+}
+
+int controllerGetPlayerHealth(Controller *controller) {
+    if (!controller || !controller->engine) return 0;
+    return engineGetSimpleCheatIntValue(controller->engine, SIMPLE_CHEAT_NAME_SET_HEALTH);
+}
+
+int controllerGetPlayerPoints(Controller *controller) {
+    if (!controller || !controller->engine) return 0;
+    return engineGetSimpleCheatIntValue(controller->engine, SIMPLE_CHEAT_NAME_SET_POINTS);
+}
+
+int controllerGetPlayerKills(Controller *controller) {
+    if (!controller || !controller->engine) return 0;
+    return engineGetSimpleCheatIntValue(controller->engine, SIMPLE_CHEAT_NAME_SET_KILLS);
+}
+
+int controllerGetPlayerHeadshots(Controller *controller) {
+    if (!controller || !controller->engine) return 0;
+    return engineGetSimpleCheatIntValue(controller->engine, SIMPLE_CHEAT_NAME_SET_HEADSHOTS);
+}
+
+bool controllerGetPlayerName(Controller *controller, char *out, size_t size) {
+    if (!controller || !controller->engine) return false;
+    return engineGetPlayerName(controller->engine, out, size);
 }
 
 bool controllerTakeWeapons(Controller *controller) {
     if (!controller) return false;
-    return apiTakeWeapons(controller->api);
+    return engineTakeWeapons(controller->engine);
 }
 
 bool controllerSetRound(Controller *controller, int round) {
     if (!controller || !controller->process) return false;
-    return apiSetRound(controller->api, round);
+    return engineSetRound(controller->engine, round);
+}
+
+bool controllerRestartMap(Controller *controller) {
+    if (!controller || !controller->server) return false;
+    return serverExecuteCommand(controller->server, "map_restart");
+}
+
+bool controllerPlayEasterEggSong(Controller *controller) {
+    if (!controller || !controller->engine) return false;
+    return enginePlayEasterEggSong(controller->engine);
+}
+
+int controllerGetClaymoreCount(Controller *controller) {
+    if (!controller || !controller->engine) return 0;
+    return engineGetClaymoreCount(controller->engine);
+}
+
+bool controllerServerExecuteCommand(Controller *controller, const char *command) {
+    if (!controller || !controller->server || !command) return false;
+    return serverExecuteCommand(controller->server, command);
+}
+
+char *controllerServerGetDvar(Controller *controller, const char *name) {
+    if (!controller || !controller->server || !name) return NULL;
+    return serverGetDVarString(controller->server, name);
+}
+
+bool controllerServerSetDvar(Controller *controller, const char *name, const char *value) {
+    if (!controller || !controller->server || !name || !value) return false;
+    return serverSetDVarString(controller->server, name, value);
 }
 
 State *controllerGetState(Controller *controller) {
@@ -292,15 +388,15 @@ void controllerUpdateState(Controller *controller) {
     // General state
     controller->state->isGameAttached = controllerIsGameWindowAttached(controller);
     controller->state->isZombiesGameOngoing = controllerIsZombiesGameOngoing(controller);
-    controller->state->isZombiesGamePaused = apiIsZombiesGamePaused(controller->api);
-    controller->state->gameResets = apiGetGameResets(controller->api);
+    controller->state->isZombiesGamePaused = engineIsZombiesGamePaused(controller->engine);
+    controller->state->gameResets = engineGetGameResets(controller->engine);
     
     // Active game
     Game *activeGame = &controller->state->activeGame;
     if (gameRunning(activeGame) && levelIsMonitored(activeGame->levelName)) {
         activeGame->movementSpeed = controllerGetMovementSpeed(controller);
-        activeGame->currentEntities = apiGetCurrentSnapshotEntities(controller->api);
-        activeGame->maxEntities = apiGetMaxSnapshotEntities(controller->api);
+        activeGame->currentEntities = engineGetCurrentSnapshotEntities(controller->engine);
+        activeGame->maxEntities = engineGetMaxSnapshotEntities(controller->engine);
         int levelElapsed = controllerGetLevelElapsedTime(controller);
         if (levelElapsed > 0) gameUpdateElapsed(activeGame, levelElapsed);
     }
@@ -394,9 +490,9 @@ void controllerUpdateBindsConfig(Controller *controller, BindsConfig *bindsConfi
     configSave(controller->config);
 }
 
-Api *_controllerGetApi(Controller *controller) {
+Engine *_controllerGetEngine(Controller *controller) {
     if (!controller) return NULL;
-    return controller->api;
+    return controller->engine;
 }
 
 GSC *_controllerGetGsc(Controller *controller) {
@@ -420,6 +516,11 @@ CheatManager *_controllerGetCheatManager(Controller *controller) {
 }
 
 CommandManager *_controllerGetCommandManager(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->commandManager;
+}
+
+CommandManager *controllerGetCommandManager(Controller *controller) {
     if (!controller) return NULL;
     return controller->commandManager;
 }

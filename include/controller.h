@@ -1,6 +1,7 @@
 #ifndef CONTROLLER_H_
 #define CONTROLLER_H_
 
+#include <stddef.h>
 #include "win/process.h"
 #include "logic/cheat.h"
 #include "logic/state.h"
@@ -41,8 +42,22 @@ int controllerUiGraphicsGetFpsCap(Controller *controller);
 TeleportCoords *controllerGetPlayerCurrentCoords(Controller *controller);
 bool controllerGiveAmmo(Controller *controller);
 bool controllerGiveWeapons(Controller *controller, List *weapons);
+bool controllerAddPerks(Controller *controller, List *perks);
+bool controllerRemovePerks(Controller *controller, List *perks);
+int controllerGetPerkCount(Controller *controller);
+int controllerGetPlayerHealth(Controller *controller);
+int controllerGetPlayerPoints(Controller *controller);
+int controllerGetPlayerKills(Controller *controller);
+int controllerGetPlayerHeadshots(Controller *controller);
+bool controllerGetPlayerName(Controller *controller, char *out, size_t size);
 bool controllerTakeWeapons(Controller *controller);
 bool controllerSetRound(Controller *controller, int round);
+bool controllerRestartMap(Controller *controller);
+bool controllerPlayEasterEggSong(Controller *controller);
+int controllerGetClaymoreCount(Controller *controller);
+bool controllerServerExecuteCommand(Controller *controller, const char *command);
+char *controllerServerGetDvar(Controller *controller, const char *name);
+bool controllerServerSetDvar(Controller *controller, const char *name, const char *value);
 State *controllerGetState(Controller *controller);
 void controllerUpdateState(Controller *controller);
 void controllerInitTrainerConfig(Controller *controller);
@@ -62,5 +77,15 @@ void controllerDestroy(Controller *controller);
 // Forward declaration for CheatManager
 typedef struct CheatManager CheatManager;
 CheatManager *controllerGetCheatManager(Controller *controller);
+
+typedef struct CommandManager CommandManager;
+CommandManager *controllerGetCommandManager(Controller *controller);
+
+typedef struct WidgetManager WidgetManager;
+typedef struct BindManager BindManager;
+void controllerInitManagers(Controller *controller);
+void controllerUpdateManagers(Controller *controller);
+WidgetManager *controllerGetWidgetManager(Controller *controller);
+BindManager *controllerGetBindManager(Controller *controller);
 
 #endif // CONTROLLER_H_

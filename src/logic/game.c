@@ -4,7 +4,7 @@
 #include "logic/game/round.h"
 #include "logic/game/trade.h"
 #include "widget/cycle.h"
-#include "gui/widgets.h"
+#include "logic/widget/manager.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -105,14 +105,14 @@ bool gameZombieKilled(Game *game) {
 bool gamePowerupDropped(Game *game, Powerup powerup) {
     game->drops++;
     roundPowerupDropped(&game->currentRound);
-    Widget *cycle = uiWidgetsGetCycleWidget();
+    Widget *cycle = widgetManagerCurrentCycleWidget();
     cycleWidgetActivate(cycle, powerup);
     return true;
 }
 
 bool gamePowerupNewCycle(Game *game) {
     (void)game;
-    Widget *cycle = uiWidgetsGetCycleWidget();
+    Widget *cycle = widgetManagerCurrentCycleWidget();
     cycleWidgetReset(cycle);
     return true;
 }

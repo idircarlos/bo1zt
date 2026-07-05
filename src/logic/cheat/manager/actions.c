@@ -7,7 +7,7 @@
 #include "controller/controller_internal.h"
 #include "logic/config.h"
 #include "logic/server.h"
-#include "api.h"
+#include "engine.h"
 #include <string.h>
 
 static void notifyCheatFailed(CheatManager *manager) {
@@ -81,11 +81,11 @@ CheatResult cheatManagerSetToggle(CheatManager *manager, CheatName cheat, bool e
     }
     
     // Call API to apply the cheat
-    Api *api = _controllerGetApi(manager->controller);
-    if (!api) return CHEAT_RESULT_API_FAILED;
+    Engine *engine = _controllerGetEngine(manager->controller);
+    if (!engine) return CHEAT_RESULT_API_FAILED;
     
-    bool apiResult = apiSetCheatEnabled(api, cheat, enabled);
-    if (!apiResult) {
+    bool engineResult = engineSetCheatEnabled(engine, cheat, enabled);
+    if (!engineResult) {
         notifyCheatFailed(manager);
         return CHEAT_RESULT_API_FAILED;
     }
@@ -210,18 +210,18 @@ CheatResult cheatManagerSetValue(CheatManager *manager, SimpleCheatName cheat, v
         return CHEAT_RESULT_CONDITION_NOT_MET;
     }
     
-    bool apiResult = false;
+    bool engineResult = false;
     
     // Character uses serverSetDVarInt instead of API
     if (cheat == SIMPLE_CHEAT_NAME_CHARACTER) {
-        apiResult = applyCharacter(manager, *(int *)value);
+        engineResult = applyCharacter(manager, *(int *)value);
     } else {
-        Api *api = _controllerGetApi(manager->controller);
-        if (!api) return CHEAT_RESULT_API_FAILED;
-        apiResult = apiSetSimpleCheat(api, cheat, value);
+        Engine *engine = _controllerGetEngine(manager->controller);
+        if (!engine) return CHEAT_RESULT_API_FAILED;
+        engineResult = engineSetSimpleCheat(engine, cheat, value);
     }
     
-    if (!apiResult) {
+    if (!engineResult) {
         notifyCheatFailed(manager);
         return CHEAT_RESULT_API_FAILED;
     }

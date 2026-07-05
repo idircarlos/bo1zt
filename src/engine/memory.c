@@ -1,4 +1,4 @@
-#include "api/raw.h"
+#include "engine/memory.h"
 #include "logic/cheat.h"
 #include "controller.h"
 #include "logger.h"
@@ -14,117 +14,117 @@
 #include <stdlib.h>
 #include <windows.h>
 
-struct RawApi {
+struct MemoryBackend {
     Controller *controller;
     Map *hooks;
 };
 
-bool _rawApiGetGodMode(Process *process);
-bool _rawApiSetGodMode(Process *process, Controller *controller, bool enabled);
+bool _memoryBackendGetGodMode(Process *process);
+bool _memoryBackendSetGodMode(Process *process, Controller *controller, bool enabled);
 
-bool _rawApiGetInvisible(Process *process);
-bool _rawApiSetInvisible(Process *process, Controller *controller, bool enabled);
+bool _memoryBackendGetInvisible(Process *process);
+bool _memoryBackendSetInvisible(Process *process, Controller *controller, bool enabled);
 
-bool _rawApiGetNoClip(Process *process);
-bool _rawApiSetNoClip(Process *process, bool enabled);
+bool _memoryBackendGetNoClip(Process *process);
+bool _memoryBackendSetNoClip(Process *process, bool enabled);
 
-bool _rawApiGetNoRecoil(Process *process);
-bool _rawApiSetNoRecoil(Process *process, bool enabled);
+bool _memoryBackendGetNoRecoil(Process *process);
+bool _memoryBackendSetNoRecoil(Process *process, bool enabled);
 
-bool _rawApiGetSmallCrosshair(Process *process);
-bool _rawApiSetSmallCrosshair(Process *process, bool enabled);
+bool _memoryBackendGetSmallCrosshair(Process *process);
+bool _memoryBackendSetSmallCrosshair(Process *process, bool enabled);
 
-bool _rawApiGetFastGameplay(Process *process);
-bool _rawApiSetFastGameplay(Process *process, bool enabled);
+bool _memoryBackendGetFastGameplay(Process *process);
+bool _memoryBackendSetFastGameplay(Process *process, bool enabled);
 
-bool _rawApiGetNoShellshock(Process *process);
-bool _rawApiSetNoShellshock(Process *process, bool enabled);
+bool _memoryBackendGetNoShellshock(Process *process);
+bool _memoryBackendSetNoShellshock(Process *process, bool enabled);
 
-bool _rawApiGetIncreaseKnifeRange(Process *process);
-bool _rawApiSetIncreaseKnifeRange(Process *process, bool enabled);
+bool _memoryBackendGetIncreaseKnifeRange(Process *process);
+bool _memoryBackendSetIncreaseKnifeRange(Process *process, bool enabled);
 
-bool _rawApiGetBoxNeverMoves(Process *process);
-bool _rawApiSetBoxNeverMoves(Process *process, bool enabled);
+bool _memoryBackendGetBoxNeverMoves(Process *process);
+bool _memoryBackendSetBoxNeverMoves(Process *process, bool enabled);
 
-bool _rawApiGetThirdPerson(Process *process);
-bool _rawApiSetThirdPerson(Process *process, bool enabled);
+bool _memoryBackendGetThirdPerson(Process *process);
+bool _memoryBackendSetThirdPerson(Process *process, bool enabled);
 
-bool _rawApiGetInfiniteAmmo(Process *process);
-bool _rawApiSetInfiniteAmmo(Process *process, bool enabled);
+bool _memoryBackendGetInfiniteAmmo(Process *process);
+bool _memoryBackendSetInfiniteAmmo(Process *process, bool enabled);
 
-bool _rawApiGetInstantKill(Process *process, Map *hooks);
-bool _rawApiSetInstantKill(Process *process, Map *hooks, bool enabled);
+bool _memoryBackendGetInstantKill(Process *process, Map *hooks);
+bool _memoryBackendSetInstantKill(Process *process, Map *hooks, bool enabled);
 
-bool _rawApiGetMakeBorderless(Process *process);
-bool _rawApiSetMakeBorderless(Process *process, bool enabled);
+bool _memoryBackendGetMakeBorderless(Process *process);
+bool _memoryBackendSetMakeBorderless(Process *process, bool enabled);
 
-bool _rawApiGetUnlimitFps(Process *process);
-bool _rawApiSetUnlimitFps(Process *process, Controller *controller, bool enabled);
+bool _memoryBackendGetUnlimitFps(Process *process);
+bool _memoryBackendSetUnlimitFps(Process *process, Controller *controller, bool enabled);
 
-bool _rawApiGetDisableHud(Process *process);
-bool _rawApiSetDisableHud(Process *process, bool enabled);
+bool _memoryBackendGetDisableHud(Process *process);
+bool _memoryBackendSetDisableHud(Process *process, bool enabled);
 
-bool _rawApiGetDisableFog(Process *process);
-bool _rawApiSetDisableFog(Process *process, bool enabled);
+bool _memoryBackendGetDisableFog(Process *process);
+bool _memoryBackendSetDisableFog(Process *process, bool enabled);
 
-bool _rawApiGetFullbright(Process *process);
-bool _rawApiSetFullbright(Process *process, bool enabled);
+bool _memoryBackendGetFullbright(Process *process);
+bool _memoryBackendSetFullbright(Process *process, bool enabled);
 
-bool _rawApiGetColorized(Process *process);
-bool _rawApiSetColorized(Process *process, bool enabled);
+bool _memoryBackendGetColorized(Process *process);
+bool _memoryBackendSetColorized(Process *process, bool enabled);
 
-bool _rawApiGetFixMovementSpeed(Process *process);
-bool _rawApiSetFixMovementSpeed(Process *process, bool enabled);
+bool _memoryBackendGetFixMovementSpeed(Process *process);
+bool _memoryBackendSetFixMovementSpeed(Process *process, bool enabled);
 
-bool _rawApiGetPatchChat(Process *process);
-bool _rawApiSetPatchChat(Process *process, bool enabled);
+bool _memoryBackendGetPatchChat(Process *process);
+bool _memoryBackendSetPatchChat(Process *process, bool enabled);
 
-bool _rawApiGetShowFps(Process *process);
-bool _rawApiSetShowFps(Process *process, bool enabled);
+bool _memoryBackendGetShowFps(Process *process);
+bool _memoryBackendSetShowFps(Process *process, bool enabled);
 
-bool _rawApiChangeName(Process *process, char *name);
-bool _rawApiSetSpeed(Process *process, uint32_t value);
-bool _rawApiTeleport(Process *process, TeleportCoords value);
-bool _rawApiChangeHostname(Process *process, char *hostname);
-bool _rawApiFov(Process *process, float value);
-bool _rawApiFovScale(Process *process, float value);
-bool _rawApiFpsCap(Process *process, uint32_t value);
+bool _memoryBackendChangeName(Process *process, char *name);
+bool _memoryBackendSetSpeed(Process *process, uint32_t value);
+bool _memoryBackendTeleport(Process *process, TeleportCoords value);
+bool _memoryBackendChangeHostname(Process *process, char *hostname);
+bool _memoryBackendFov(Process *process, float value);
+bool _memoryBackendFovScale(Process *process, float value);
+bool _memoryBackendFpsCap(Process *process, uint32_t value);
 
-bool _rawApiCustomizerColor(Process *process, SimpleCheatName cheatName, Color color);
-bool _rawApiCustomizerFloat(Process *process, SimpleCheatName cheatName, float value);
+bool _memoryBackendCustomizerColor(Process *process, SimpleCheatName cheatName, Color color);
+bool _memoryBackendCustomizerFloat(Process *process, SimpleCheatName cheatName, float value);
 
-bool _rawApiSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheatName, uint32_t value);
+bool _memoryBackendSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheatName, uint32_t value);
 
 // Hooks IDs (Hash for Hook Map)
 static const char* HOOK_INSTANT_KILL_ID = "HOOK_INSTANT_KILL";
 
-RawApi *rawApiCreate(Controller *controller) {
-    RawApi *rawApi = (RawApi*)malloc(sizeof(RawApi));
-    if (!rawApi) return NULL;
-    rawApi->controller = controller;
-    rawApi->hooks = mapCreate();
-    if (!rawApi->hooks) {
+MemoryBackend *memoryBackendCreate(Controller *controller) {
+    MemoryBackend *memoryBackend = (MemoryBackend*)malloc(sizeof(MemoryBackend));
+    if (!memoryBackend) return NULL;
+    memoryBackend->controller = controller;
+    memoryBackend->hooks = mapCreate();
+    if (!memoryBackend->hooks) {
         LOG_ERROR("Couldn't create Hook Map");
     }
-    return rawApi;
+    return memoryBackend;
 }
 
-void rawApiDestroy(RawApi *rawApi) {
-    if (rawApi) {
-        if (rawApi->hooks) {
-            mapDestroy(rawApi->hooks);
+void memoryBackendDestroy(MemoryBackend *memoryBackend) {
+    if (memoryBackend) {
+        if (memoryBackend->hooks) {
+            mapDestroy(memoryBackend->hooks);
         }
-        free(rawApi);
+        free(memoryBackend);
     }
 }
 
-bool rawApiIsCheatEnabled(RawApi *rawApi, CheatName cheatName) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+bool memoryBackendIsCheatEnabled(MemoryBackend *memoryBackend, CheatName cheatName) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return false;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return false;
@@ -132,47 +132,47 @@ bool rawApiIsCheatEnabled(RawApi *rawApi, CheatName cheatName) {
 
     switch (cheatName) {
         case CHEAT_NAME_GOD_MODE:
-            return _rawApiGetGodMode(process);
+            return _memoryBackendGetGodMode(process);
         case CHEAT_NAME_INVISIBLE:
-            return _rawApiGetInvisible(process);
+            return _memoryBackendGetInvisible(process);
         case CHEAT_NAME_NO_CLIP:
-            return _rawApiGetNoClip(process);
+            return _memoryBackendGetNoClip(process);
         case CHEAT_NAME_NO_RECOIL:
-            return _rawApiGetNoRecoil(process);
+            return _memoryBackendGetNoRecoil(process);
         case CHEAT_NAME_SMALL_CROSSHAIR:
-            return _rawApiGetSmallCrosshair(process);
+            return _memoryBackendGetSmallCrosshair(process);
         case CHEAT_NAME_FAST_GAMEPLAY:
-            return _rawApiGetFastGameplay(process);
+            return _memoryBackendGetFastGameplay(process);
         case CHEAT_NAME_NO_SHELLSHOCK:
-            return _rawApiGetNoShellshock(process);
+            return _memoryBackendGetNoShellshock(process);
         case CHEAT_NAME_INCREASE_KNIFE_RANGE:
-            return _rawApiGetIncreaseKnifeRange(process);
+            return _memoryBackendGetIncreaseKnifeRange(process);
         case CHEAT_NAME_BOX_NEVER_MOVES:
-            return _rawApiGetBoxNeverMoves(process);
+            return _memoryBackendGetBoxNeverMoves(process);
         case CHEAT_NAME_THIRD_PERSON:
-            return _rawApiGetThirdPerson(process);
+            return _memoryBackendGetThirdPerson(process);
         case CHEAT_NAME_INFINITE_AMMO:
-            return _rawApiGetInfiniteAmmo(process);
+            return _memoryBackendGetInfiniteAmmo(process);
         case CHEAT_NAME_INSTANT_KILL:
-            return _rawApiGetInstantKill(process, rawApi->hooks);
+            return _memoryBackendGetInstantKill(process, memoryBackend->hooks);
         case CHEAT_NAME_MAKE_BORDERLESS:
-            return _rawApiGetMakeBorderless(process);
+            return _memoryBackendGetMakeBorderless(process);
         case CHEAT_NAME_UNLIMIT_FPS:
-            return _rawApiGetUnlimitFps(process);
+            return _memoryBackendGetUnlimitFps(process);
         case CHEAT_NAME_DISABLE_HUD:
-            return _rawApiGetDisableHud(process);
+            return _memoryBackendGetDisableHud(process);
         case CHEAT_NAME_DISABLE_FOG:
-            return _rawApiGetDisableFog(process);
+            return _memoryBackendGetDisableFog(process);
         case CHEAT_NAME_FULLBRIGHT:
-            return _rawApiGetFullbright(process);
+            return _memoryBackendGetFullbright(process);
         case CHEAT_NAME_COLORIZED:
-            return _rawApiGetColorized(process);
+            return _memoryBackendGetColorized(process);
         case CHEAT_NAME_FIX_MOVEMENT_SPEED:
-            return _rawApiGetFixMovementSpeed(process);
+            return _memoryBackendGetFixMovementSpeed(process);
         case CHEAT_NAME_SHOW_FPS:
-            return _rawApiGetShowFps(process);
+            return _memoryBackendGetShowFps(process);
         case CHEAT_NAME_PATCH_CHAT:
-            return _rawApiGetPatchChat(process);
+            return _memoryBackendGetPatchChat(process);
         
         default:
             LOG_WARN("Unknown cheatName %d", cheatName);
@@ -180,13 +180,13 @@ bool rawApiIsCheatEnabled(RawApi *rawApi, CheatName cheatName) {
     }
 }
 
-bool rawApiSetCheatEnabled(RawApi *rawApi, CheatName cheatName, bool enabled) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+bool memoryBackendSetCheatEnabled(MemoryBackend *memoryBackend, CheatName cheatName, bool enabled) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return false;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return false;
@@ -194,60 +194,60 @@ bool rawApiSetCheatEnabled(RawApi *rawApi, CheatName cheatName, bool enabled) {
 
     switch (cheatName) {
         case CHEAT_NAME_GOD_MODE:
-            return _rawApiSetGodMode(process, rawApi->controller, enabled);
+            return _memoryBackendSetGodMode(process, memoryBackend->controller, enabled);
         case CHEAT_NAME_INVISIBLE:
-            return _rawApiSetInvisible(process, rawApi->controller, enabled);
+            return _memoryBackendSetInvisible(process, memoryBackend->controller, enabled);
         case CHEAT_NAME_NO_CLIP:
-            return _rawApiSetNoClip(process, enabled);
+            return _memoryBackendSetNoClip(process, enabled);
         case CHEAT_NAME_NO_RECOIL:
-            return _rawApiSetNoRecoil(process, enabled);
+            return _memoryBackendSetNoRecoil(process, enabled);
         case CHEAT_NAME_SMALL_CROSSHAIR:
-            return _rawApiSetSmallCrosshair(process, enabled);
+            return _memoryBackendSetSmallCrosshair(process, enabled);
         case CHEAT_NAME_FAST_GAMEPLAY:
-            return _rawApiSetFastGameplay(process, enabled);
+            return _memoryBackendSetFastGameplay(process, enabled);
         case CHEAT_NAME_NO_SHELLSHOCK:
-            return _rawApiSetNoShellshock(process, enabled);
+            return _memoryBackendSetNoShellshock(process, enabled);
         case CHEAT_NAME_INCREASE_KNIFE_RANGE:
-            return _rawApiSetIncreaseKnifeRange(process, enabled);
+            return _memoryBackendSetIncreaseKnifeRange(process, enabled);
         case CHEAT_NAME_BOX_NEVER_MOVES:
-            return _rawApiSetBoxNeverMoves(process, enabled);
+            return _memoryBackendSetBoxNeverMoves(process, enabled);
         case CHEAT_NAME_THIRD_PERSON:
-            return _rawApiSetThirdPerson(process, enabled);
+            return _memoryBackendSetThirdPerson(process, enabled);
         case CHEAT_NAME_INFINITE_AMMO:
-            return _rawApiSetInfiniteAmmo(process, enabled);
+            return _memoryBackendSetInfiniteAmmo(process, enabled);
         case CHEAT_NAME_INSTANT_KILL:
-            return _rawApiSetInstantKill(process, rawApi->hooks, enabled);
+            return _memoryBackendSetInstantKill(process, memoryBackend->hooks, enabled);
         case CHEAT_NAME_MAKE_BORDERLESS:
-            return _rawApiSetMakeBorderless(process, enabled);
+            return _memoryBackendSetMakeBorderless(process, enabled);
         case CHEAT_NAME_UNLIMIT_FPS:
-            return _rawApiSetUnlimitFps(process, rawApi->controller, enabled);
+            return _memoryBackendSetUnlimitFps(process, memoryBackend->controller, enabled);
         case CHEAT_NAME_DISABLE_HUD:
-            return _rawApiSetDisableHud(process, enabled);
+            return _memoryBackendSetDisableHud(process, enabled);
         case CHEAT_NAME_DISABLE_FOG:
-            return _rawApiSetDisableFog(process, enabled);
+            return _memoryBackendSetDisableFog(process, enabled);
         case CHEAT_NAME_FULLBRIGHT:
-            return _rawApiSetFullbright(process, enabled);
+            return _memoryBackendSetFullbright(process, enabled);
         case CHEAT_NAME_COLORIZED:
-            return _rawApiSetColorized(process, enabled);
+            return _memoryBackendSetColorized(process, enabled);
         case CHEAT_NAME_FIX_MOVEMENT_SPEED:
-            return _rawApiSetFixMovementSpeed(process, enabled);
+            return _memoryBackendSetFixMovementSpeed(process, enabled);
         case CHEAT_NAME_SHOW_FPS:
-            return _rawApiSetShowFps(process, enabled);
+            return _memoryBackendSetShowFps(process, enabled);
         case CHEAT_NAME_PATCH_CHAT:
-            return _rawApiSetPatchChat(process, enabled);
+            return _memoryBackendSetPatchChat(process, enabled);
         default:
             LOG_WARN("Unknown cheatName %d", cheatName);
             return false;
     }
 }
 
-bool rawApiSetSimpleCheat(RawApi *rawApi, SimpleCheatName simpleCheatName, void *value) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+bool memoryBackendSetSimpleCheat(MemoryBackend *memoryBackend, SimpleCheatName simpleCheatName, void *value) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return false;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return false;
@@ -257,19 +257,19 @@ bool rawApiSetSimpleCheat(RawApi *rawApi, SimpleCheatName simpleCheatName, void 
 
     switch(simpleCheatName) {
         case SIMPLE_CHEAT_NAME_CHANGE_NAME:
-            return _rawApiChangeName(process, (char*)value);
+            return _memoryBackendChangeName(process, (char*)value);
         case SIMPLE_CHEAT_NAME_SET_SPEED:
-            return _rawApiSetSpeed(process, (uint32_t)(*(int*)value));
+            return _memoryBackendSetSpeed(process, (uint32_t)(*(int*)value));
         case SIMPLE_CHEAT_NAME_TELEPORT:
-            return _rawApiTeleport(process, (TeleportCoords)(*(TeleportCoords*)value));
+            return _memoryBackendTeleport(process, (TeleportCoords)(*(TeleportCoords*)value));
         case SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME:
-            return _rawApiChangeHostname(process, (char*)value);
+            return _memoryBackendChangeHostname(process, (char*)value);
         case SIMPLE_CHEAT_NAME_FOV:
-            return _rawApiFov(process, (float)(*(int*)value));
+            return _memoryBackendFov(process, (float)(*(int*)value));
         case SIMPLE_CHEAT_NAME_FOV_SCALE:
-            return _rawApiFovScale(process, (float)(*(int*)value));
+            return _memoryBackendFovScale(process, (float)(*(int*)value));
         case SIMPLE_CHEAT_NAME_FPS_CAP:
-            return _rawApiFpsCap(process, (uint32_t)(*(int*)value));
+            return _memoryBackendFpsCap(process, (uint32_t)(*(int*)value));
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND:
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1:
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2:
@@ -281,32 +281,32 @@ bool rawApiSetSimpleCheat(RawApi *rawApi, SimpleCheatName simpleCheatName, void 
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY:
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY:
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY:
-            return _rawApiCustomizerColor(process, simpleCheatName, (Color)(*(Color*)value));
+            return _memoryBackendCustomizerColor(process, simpleCheatName, (Color)(*(Color*)value));
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD:
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS:
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN:
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX:
-            return _rawApiCustomizerFloat(process, simpleCheatName, ((float)(*(int*)value)/100.0f));
+            return _memoryBackendCustomizerFloat(process, simpleCheatName, ((float)(*(int*)value)/100.0f));
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY:
-            return _rawApiCustomizerFloat(process, simpleCheatName, (float)(*(int*)value));
+            return _memoryBackendCustomizerFloat(process, simpleCheatName, (float)(*(int*)value));
         case SIMPLE_CHEAT_NAME_SET_HEALTH:
         case SIMPLE_CHEAT_NAME_SET_POINTS:
         case SIMPLE_CHEAT_NAME_SET_KILLS:
         case SIMPLE_CHEAT_NAME_SET_HEADSHOTS:
-            return _rawApiSetSimpleCheatIntValue(process, simpleCheatName, (uint32_t)(*(int*)value));
+            return _memoryBackendSetSimpleCheatIntValue(process, simpleCheatName, (uint32_t)(*(int*)value));
         default:
             LOG_WARN("Unknown simpleCheatName %d", simpleCheatName);
             return false;
     }
 }
 
-TeleportCoords *rawApiGetPlayerCurrentCoords(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+TeleportCoords *memoryBackendGetPlayerCurrentCoords(MemoryBackend *memoryBackend) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return NULL;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return NULL;
@@ -320,13 +320,13 @@ TeleportCoords *rawApiGetPlayerCurrentCoords(RawApi *rawApi) {
     return coords;
 }
 
-bool rawApiSetRound(RawApi *rawApi, int currentRound, int nextRound) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+bool memoryBackendSetRound(MemoryBackend *memoryBackend, int currentRound, int nextRound) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return false;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return false;
@@ -350,17 +350,17 @@ bool rawApiSetRound(RawApi *rawApi, int currentRound, int nextRound) {
     return true;
 }
 
-bool rawApiIsGameReady(RawApi *rawApi) {
-    return rawApiGetLevelElapsedTime(rawApi) > 0;
+bool memoryBackendIsGameReady(MemoryBackend *memoryBackend) {
+    return memoryBackendGetLevelElapsedTime(memoryBackend) > 0;
 }
 
-Level rawApiGetLevelName(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+Level memoryBackendGetLevelName(MemoryBackend *memoryBackend) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return LEVEL_INVALID;
     }
 
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return LEVEL_INVALID;
@@ -389,13 +389,13 @@ Level rawApiGetLevelName(RawApi *rawApi) {
     return levelGetFromId(levelId);
 }
 
-double rawApiGetLevelElapsedTime(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_DEBUG("RawApi or Controller is null");
+double memoryBackendGetLevelElapsedTime(MemoryBackend *memoryBackend) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_DEBUG("MemoryBackend or Controller is null");
         return 0;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_DEBUG("Process is null");
         return 0;
@@ -415,13 +415,13 @@ double rawApiGetLevelElapsedTime(RawApi *rawApi) {
     return elapsed;
 }
 
-float rawApiGetMovementSpeed(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+float memoryBackendGetMovementSpeed(MemoryBackend *memoryBackend) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return false;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return false;
@@ -435,13 +435,51 @@ float rawApiGetMovementSpeed(RawApi *rawApi) {
     return speed;
 }
 
-bool rawApiIsZombiesGameOngoing(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_DEBUG("RawApi or Controller is null");
+int memoryBackendGetSimpleCheatIntValue(MemoryBackend *memoryBackend, SimpleCheatName simpleCheatName) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
+        return 0;
+    }
+    Process *process = controllerGetProcess(memoryBackend->controller);
+    if (!process) {
+        LOG_ERROR("Process is null");
+        return 0;
+    }
+    SimpleCheat cheat = cheatGetSimpleCheat(simpleCheatName);
+    uint32_t value = 0;
+    if (!processRead(process, cheat.offset, &value, sizeof(value))) {
+        LOG_ERROR("Failed to read simple cheat %d value", simpleCheatName);
+        return 0;
+    }
+    return (int)value;
+}
+
+bool memoryBackendGetName(MemoryBackend *memoryBackend, char *out, size_t size) {
+    if (!memoryBackend || !memoryBackend->controller || !out || size == 0) {
+        LOG_ERROR("Invalid arguments to memoryBackendGetName");
+        return false;
+    }
+    Process *process = controllerGetProcess(memoryBackend->controller);
+    if (!process) {
+        LOG_ERROR("Process is null");
+        return false;
+    }
+    SimpleCheat cheat = SIMPLE_CHEAT_CHANGE_NAME;
+    if (!processRead(process, cheat.offset, out, size)) {
+        LOG_ERROR("Failed to read player name");
+        return false;
+    }
+    out[size - 1] = '\0'; // guard against an unterminated read
+    return true;
+}
+
+bool memoryBackendIsZombiesGameOngoing(MemoryBackend *memoryBackend) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_DEBUG("MemoryBackend or Controller is null");
         return false;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_DEBUG("Process is null");
         return false;
@@ -455,13 +493,13 @@ bool rawApiIsZombiesGameOngoing(RawApi *rawApi) {
     return active == 1;
 }
 
-bool rawApiIsZombiesGamePaused(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+bool memoryBackendIsZombiesGamePaused(MemoryBackend *memoryBackend) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return false;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return false;
@@ -475,13 +513,13 @@ bool rawApiIsZombiesGamePaused(RawApi *rawApi) {
     return active == 1;
 }
 
-int rawApiGetGameResets(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+int memoryBackendGetGameResets(MemoryBackend *memoryBackend) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return 0;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return 0;
@@ -496,13 +534,13 @@ int rawApiGetGameResets(RawApi *rawApi) {
     return (int)resets; 
 }
 
-bool rawApiSVSendServerCommand(RawApi *rawApi, int commandType, int clientNumber, const char *commands) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+bool memoryBackendSVSendServerCommand(MemoryBackend *memoryBackend, int commandType, int clientNumber, const char *commands) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return false;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return false;
@@ -542,13 +580,13 @@ bool rawApiSVSendServerCommand(RawApi *rawApi, int commandType, int clientNumber
     return success;
 }
 
-bool rawApiCBuffAddText(RawApi *rawApi, const char *commands) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+bool memoryBackendCBuffAddText(MemoryBackend *memoryBackend, const char *commands) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return false;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return false;
@@ -581,13 +619,13 @@ bool rawApiCBuffAddText(RawApi *rawApi, const char *commands) {
     return success;
 }
 
-uintptr_t rawApiGetDVarPointer(RawApi *rawApi, const char *dVar) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+uintptr_t memoryBackendGetDVarPointer(MemoryBackend *memoryBackend, const char *dVar) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return 0;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return 0;
@@ -614,7 +652,7 @@ uintptr_t rawApiGetDVarPointer(RawApi *rawApi, const char *dVar) {
 
 // Private implementations
 
-bool _rawApiGetGodMode(Process *process) {
+bool _memoryBackendGetGodMode(Process *process) {
     uint32_t value = 0;
     bool success = processRead(process, CHEAT_GOD_MODE.offset, &value, sizeof(value));
     if (!success) {
@@ -624,13 +662,13 @@ bool _rawApiGetGodMode(Process *process) {
     return value == CHEAT_GOD_MODE.on.u32;
 }
 
-bool _rawApiSetGodMode(Process *process, Controller *controller, bool enabled) {
+bool _memoryBackendSetGodMode(Process *process, Controller *controller, bool enabled) {
     bool isInvisibleModeChecked = controllerIsCheatCheckboxChecked(controller, CHEAT_NAME_INVISIBLE);
     uint32_t value = enabled ? CHEAT_GOD_MODE.on.u32 : (isInvisibleModeChecked ? CHEAT_INVISIBLE.on.u32 : CHEAT_INVISIBLE.off.u32);
     return processWrite(process, CHEAT_GOD_MODE.offset, &value, sizeof(value));
 }
 
-bool _rawApiGetInvisible(Process *process) {
+bool _memoryBackendGetInvisible(Process *process) {
     uint32_t value = 0;
     bool success = processRead(process, CHEAT_INVISIBLE.offset, &value, sizeof(value));
     if (!success) {
@@ -640,13 +678,13 @@ bool _rawApiGetInvisible(Process *process) {
     return value == CHEAT_INVISIBLE.on.u32;
 }
 
-bool _rawApiSetInvisible(Process *process, Controller *controller, bool enabled) {
+bool _memoryBackendSetInvisible(Process *process, Controller *controller, bool enabled) {
     bool isGodModeChecked = controllerIsCheatCheckboxChecked(controller, CHEAT_NAME_GOD_MODE);
     uint32_t value = enabled ? CHEAT_INVISIBLE.on.u32 : (isGodModeChecked ? CHEAT_GOD_MODE.on.u32 : CHEAT_GOD_MODE.off.u32);
     return processWrite(process, CHEAT_INVISIBLE.offset, &value, sizeof(value));
 }
 
-bool _rawApiGetNoClip(Process *process) {
+bool _memoryBackendGetNoClip(Process *process) {
     uint8_t value = 0;
     bool success = processRead(process, CHEAT_NO_CLIP.offset, &value, sizeof(value));
     if (!success) {
@@ -656,12 +694,12 @@ bool _rawApiGetNoClip(Process *process) {
     return value == CHEAT_NO_CLIP.on.byte;
 }
 
-bool _rawApiSetNoClip(Process *process, bool enabled) {
+bool _memoryBackendSetNoClip(Process *process, bool enabled) {
     uint8_t value = enabled ? CHEAT_NO_CLIP.on.byte : CHEAT_NO_CLIP.off.byte;
     return processWrite(process, CHEAT_NO_CLIP.offset, &value, sizeof(value));
 }
 
-bool _rawApiGetNoRecoil(Process *process) {
+bool _memoryBackendGetNoRecoil(Process *process) {
     uint8_t value = 0;
     bool success = processRead(process, CHEAT_NO_RECOIL.offset, &value, sizeof(value));
     if (!success) {
@@ -671,12 +709,12 @@ bool _rawApiGetNoRecoil(Process *process) {
     return value == CHEAT_NO_RECOIL.on.byte;
 }
 
-bool _rawApiSetNoRecoil(Process *process, bool enabled) {
+bool _memoryBackendSetNoRecoil(Process *process, bool enabled) {
     uint8_t value = enabled ? CHEAT_NO_RECOIL.on.byte : CHEAT_NO_RECOIL.off.byte;
     return processWrite(process, CHEAT_NO_RECOIL.offset, &value, sizeof(value));
 }
 
-bool _rawApiGetFastGameplay(Process *process) {
+bool _memoryBackendGetFastGameplay(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_FAST_GAMEPLAY.offset, &address1, sizeof(address1));
     if (!success) {
@@ -692,7 +730,7 @@ bool _rawApiGetFastGameplay(Process *process) {
     return value == CHEAT_FAST_GAMEPLAY.on.f32;
 }
 
-bool _rawApiSetFastGameplay(Process *process, bool enabled) {
+bool _memoryBackendSetFastGameplay(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_FAST_GAMEPLAY.offset, &address1, sizeof(address1));
     if (!success) {
@@ -703,7 +741,7 @@ bool _rawApiSetFastGameplay(Process *process, bool enabled) {
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
 
-bool _rawApiGetNoShellshock(Process *process) {
+bool _memoryBackendGetNoShellshock(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_NO_SHELLSHOCK.offset, &address1, sizeof(address1));
     if (!success) {
@@ -719,7 +757,7 @@ bool _rawApiGetNoShellshock(Process *process) {
     return value == CHEAT_NO_SHELLSHOCK.on.u32;
 }
 
-bool _rawApiSetNoShellshock(Process *process, bool enabled) {
+bool _memoryBackendSetNoShellshock(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_NO_SHELLSHOCK.offset, &address1, sizeof(address1));
     if (!success) {
@@ -730,7 +768,7 @@ bool _rawApiSetNoShellshock(Process *process, bool enabled) {
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
 
-bool _rawApiGetIncreaseKnifeRange(Process *process) {
+bool _memoryBackendGetIncreaseKnifeRange(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_INCREASE_KNIFE_RANGE.offset, &address1, sizeof(address1));
     if (!success) {
@@ -746,7 +784,7 @@ bool _rawApiGetIncreaseKnifeRange(Process *process) {
     return value == CHEAT_INCREASE_KNIFE_RANGE.on.f32;
 }
 
-bool _rawApiSetIncreaseKnifeRange(Process *process, bool enabled) {
+bool _memoryBackendSetIncreaseKnifeRange(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_INCREASE_KNIFE_RANGE.offset, &address1, sizeof(address1));
     if (!success) {
@@ -757,7 +795,7 @@ bool _rawApiSetIncreaseKnifeRange(Process *process, bool enabled) {
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
 
-bool _rawApiGetBoxNeverMoves(Process *process) {
+bool _memoryBackendGetBoxNeverMoves(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_BOX_NEVER_MOVES.offset, &address1, sizeof(address1));
     if (!success) {
@@ -773,7 +811,7 @@ bool _rawApiGetBoxNeverMoves(Process *process) {
     return value == CHEAT_BOX_NEVER_MOVES.on.u32;
 }
 
-bool _rawApiSetBoxNeverMoves(Process *process, bool enabled) {
+bool _memoryBackendSetBoxNeverMoves(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_BOX_NEVER_MOVES.offset, &address1, sizeof(address1));
     if (!success) {
@@ -784,7 +822,7 @@ bool _rawApiSetBoxNeverMoves(Process *process, bool enabled) {
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
 
-bool _rawApiGetThirdPerson(Process *process) {
+bool _memoryBackendGetThirdPerson(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_THIRD_PERSON.offset, &address1, sizeof(address1));
     if (!success) {
@@ -800,7 +838,7 @@ bool _rawApiGetThirdPerson(Process *process) {
     return value == CHEAT_THIRD_PERSON.on.byte;
 }
 
-bool _rawApiSetThirdPerson(Process *process, bool enabled) {
+bool _memoryBackendSetThirdPerson(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_THIRD_PERSON.offset, &address1, sizeof(address1));
     if (!success) {
@@ -811,7 +849,7 @@ bool _rawApiSetThirdPerson(Process *process, bool enabled) {
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
 
-bool _rawApiGetInfiniteAmmo(Process *process) {
+bool _memoryBackendGetInfiniteAmmo(Process *process) {
     uint8_t buffer[MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE];
     bool success = processRead(process, CHEAT_ASM_INFINITE_AMMO.offset, &buffer, sizeof(buffer));
     if (!success) {
@@ -829,14 +867,14 @@ bool _rawApiGetInfiniteAmmo(Process *process) {
     return false;
 }
 
-bool _rawApiSetInfiniteAmmo(Process *process, bool enabled) {
+bool _memoryBackendSetInfiniteAmmo(Process *process, bool enabled) {
     CheatAsm *instructionSet = &CHEAT_ASM_INFINITE_AMMO;
     uint8_t *instructions = enabled ? instructionSet->on.instructions : instructionSet->off.instructions;
     size_t size = enabled ? instructionSet->on.size : instructionSet->off.size;
     return processWrite(process, instructionSet->offset, instructions, size);
 }
 
-bool _rawApiGetSmallCrosshair(Process *process) {
+bool _memoryBackendGetSmallCrosshair(Process *process) {
     uint8_t buffer[MAX_CHEAT_ASM_INSTRUCTION_SET_SIZE];
     bool success = processRead(process, CHEAT_ASM_SMALL_CROSSHAIR.offset, &buffer, sizeof(buffer));
     if (!success) {
@@ -854,7 +892,7 @@ bool _rawApiGetSmallCrosshair(Process *process) {
     return false;
 }
 
-bool _rawApiSetSmallCrosshair(Process *process, bool enabled) {
+bool _memoryBackendSetSmallCrosshair(Process *process, bool enabled) {
     CheatAsm *instructionSet = &CHEAT_ASM_SMALL_CROSSHAIR;
     uint8_t *instructions = enabled ? instructionSet->on.instructions : instructionSet->off.instructions;
     size_t size = enabled ? instructionSet->on.size : instructionSet->off.size;
@@ -874,7 +912,7 @@ bool _rawApiSetSmallCrosshair(Process *process, bool enabled) {
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
 
-bool _rawApiGetInstantKill(Process *process, Map *hooks) {
+bool _memoryBackendGetInstantKill(Process *process, Map *hooks) {
     CheatAsm *instructionSet = &CHEAT_ASM_INSTANT_KILL;
     Hook *hook;
     if (!mapContains(hooks, HOOK_INSTANT_KILL_ID)) {
@@ -887,7 +925,7 @@ bool _rawApiGetInstantKill(Process *process, Map *hooks) {
     return hookIsActivated(hook);
 }
 
-bool _rawApiSetInstantKill(Process *process, Map *hooks, bool enabled) {
+bool _memoryBackendSetInstantKill(Process *process, Map *hooks, bool enabled) {
     CheatAsm *instructionSet = &CHEAT_ASM_INSTANT_KILL;
     Hook *hook;
     if (!mapContains(hooks, HOOK_INSTANT_KILL_ID)) {
@@ -899,15 +937,15 @@ bool _rawApiSetInstantKill(Process *process, Map *hooks, bool enabled) {
     return enabled ? hookActivate(hook) : hookDeactivate(hook);
 }
 
-bool _rawApiGetMakeBorderless(Process *process) {
+bool _memoryBackendGetMakeBorderless(Process *process) {
     return processIsBorderless(process);
 }
 
-bool _rawApiSetMakeBorderless(Process *process, bool enabled) {
+bool _memoryBackendSetMakeBorderless(Process *process, bool enabled) {
     return processMakeBorderless(process, enabled);
 }
 
-bool _rawApiGetUnlimitFps(Process *process) {
+bool _memoryBackendGetUnlimitFps(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_UNLIMIT_FPS.offset, &address1, sizeof(address1));
     if (!success) {
@@ -923,7 +961,7 @@ bool _rawApiGetUnlimitFps(Process *process) {
     return value == CHEAT_UNLIMIT_FPS.on.u32;
 }
 
-bool _rawApiSetUnlimitFps(Process *process, Controller *controller, bool enabled) {
+bool _memoryBackendSetUnlimitFps(Process *process, Controller *controller, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_UNLIMIT_FPS.offset, &address1, sizeof(address1));
     if (!success) {
@@ -934,7 +972,7 @@ bool _rawApiSetUnlimitFps(Process *process, Controller *controller, bool enabled
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
 
-bool _rawApiGetDisableHud(Process *process) {
+bool _memoryBackendGetDisableHud(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_DISABLE_HUD.offset, &address1, sizeof(address1));
     if (!success) {
@@ -950,7 +988,7 @@ bool _rawApiGetDisableHud(Process *process) {
     return value == CHEAT_DISABLE_HUD.on.byte;
 }
 
-bool _rawApiSetDisableHud(Process *process, bool enabled) {
+bool _memoryBackendSetDisableHud(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_DISABLE_HUD.offset, &address1, sizeof(address1));
     if (!success) {
@@ -962,7 +1000,7 @@ bool _rawApiSetDisableHud(Process *process, bool enabled) {
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
 
-bool _rawApiGetDisableFog(Process *process) {
+bool _memoryBackendGetDisableFog(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_DISABLE_FOG.offset, &address1, sizeof(address1));
     if (!success) {
@@ -978,7 +1016,7 @@ bool _rawApiGetDisableFog(Process *process) {
     return value == CHEAT_DISABLE_FOG.on.byte;
 }
 
-bool _rawApiSetDisableFog(Process *process, bool enabled) {
+bool _memoryBackendSetDisableFog(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_DISABLE_FOG.offset, &address1, sizeof(address1));
     if (!success) {
@@ -989,7 +1027,7 @@ bool _rawApiSetDisableFog(Process *process, bool enabled) {
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
 
-bool _rawApiGetFullbright(Process *process) {
+bool _memoryBackendGetFullbright(Process *process) {
     uint32_t value = 0;
     bool success = processRead(process, CHEAT_FULLBRIGHT.offset, &value, sizeof(value));
     if (!success) {
@@ -999,12 +1037,12 @@ bool _rawApiGetFullbright(Process *process) {
     return value == CHEAT_FULLBRIGHT.on.u32;
 }
 
-bool _rawApiSetFullbright(Process *process, bool enabled) {
+bool _memoryBackendSetFullbright(Process *process, bool enabled) {
     uint32_t value = enabled ? CHEAT_FULLBRIGHT.on.u32 : CHEAT_FULLBRIGHT.off.u32;
     return processWrite(process, CHEAT_FULLBRIGHT.offset, &value, sizeof(value));
 }
 
-bool _rawApiGetColorized(Process *process) {
+bool _memoryBackendGetColorized(Process *process) {
     uint32_t value = 0;
     bool success = processRead(process, CHEAT_COLORIZED.offset, &value, sizeof(value));
     if (!success) {
@@ -1014,12 +1052,12 @@ bool _rawApiGetColorized(Process *process) {
     return value == CHEAT_COLORIZED.on.u32;
 }
 
-bool _rawApiSetColorized(Process *process, bool enabled) {
+bool _memoryBackendSetColorized(Process *process, bool enabled) {
     uint32_t value = enabled ? CHEAT_COLORIZED.on.u32 : CHEAT_COLORIZED.off.u32;
     return processWrite(process, CHEAT_COLORIZED.offset, &value, sizeof(value));
 }
 
-bool _rawApiGetFixMovementSpeed(Process *process) {
+bool _memoryBackendGetFixMovementSpeed(Process *process) {
     uint32_t backwardsAddress1 = 0;
     bool success = processRead(process, CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.offset, &backwardsAddress1, sizeof(backwardsAddress1));
     if (!success) {
@@ -1047,7 +1085,7 @@ bool _rawApiGetFixMovementSpeed(Process *process) {
     return backwardsValue == CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.on.f32 && straifValue == CHEAT_FIX_MOVEMENT_SPEED_STRAIF.on.f32;
 }
 
-bool _rawApiSetFixMovementSpeed(Process *process, bool enabled) {
+bool _memoryBackendSetFixMovementSpeed(Process *process, bool enabled) {
     uint32_t backwardsAddress1 = 0;
     bool success = processRead(process, CHEAT_FIX_MOVEMENT_SPEED_BACKWARDS.offset, &backwardsAddress1, sizeof(backwardsAddress1));
     if (!success) {
@@ -1065,7 +1103,7 @@ bool _rawApiSetFixMovementSpeed(Process *process, bool enabled) {
     return processWrite(process, backwardsAddress1 + 0x18, &backwardsValue, sizeof(backwardsValue)) && processWrite(process, straifAddress1 + 0x18, &straifValue, sizeof(straifValue));
 }
 
-bool _rawApiGetPatchChat(Process *process) {
+bool _memoryBackendGetPatchChat(Process *process) {
     uint8_t value = 0;
     bool success = processRead(process, CHEAT_PATCH_CHAT.offset, &value, sizeof(value));
     if (!success) {
@@ -1075,7 +1113,7 @@ bool _rawApiGetPatchChat(Process *process) {
     return value == CHEAT_PATCH_CHAT.on.byte;
 }
 
-bool _rawApiSetPatchChat(Process *process, bool enabled) {
+bool _memoryBackendSetPatchChat(Process *process, bool enabled) {
     uint8_t value = enabled ? CHEAT_PATCH_CHAT.on.byte : CHEAT_PATCH_CHAT.off.byte;
     uint32_t oldProtect;
     processVirtualProtect(process, CHEAT_PATCH_CHAT.offset, sizeof(value), PAGE_EXECUTE_READWRITE, &oldProtect);
@@ -1084,7 +1122,7 @@ bool _rawApiSetPatchChat(Process *process, bool enabled) {
     return success;
 }
 
-bool _rawApiGetShowFps(Process *process) {
+bool _memoryBackendGetShowFps(Process *process) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_SHOW_FPS.offset, &address1, sizeof(address1));
     if (!success) {
@@ -1100,7 +1138,7 @@ bool _rawApiGetShowFps(Process *process) {
     return value == CHEAT_SHOW_FPS.on.byte;
 }
 
-bool _rawApiSetShowFps(Process *process, bool enabled) {
+bool _memoryBackendSetShowFps(Process *process, bool enabled) {
     uint32_t address1 = 0;
     bool success = processRead(process, CHEAT_SHOW_FPS.offset, &address1, sizeof(address1));
     if (!success) {
@@ -1113,12 +1151,12 @@ bool _rawApiSetShowFps(Process *process, bool enabled) {
 
 // Simple cheats
 
-bool _rawApiChangeName(Process *process, char *name) {
+bool _memoryBackendChangeName(Process *process, char *name) {
     SimpleCheat cheat = SIMPLE_CHEAT_CHANGE_NAME;
     return processWrite(process, cheat.offset, name, strlen(name) + 1);
 }
 
-bool _rawApiSetSpeed(Process *process, uint32_t value) {
+bool _memoryBackendSetSpeed(Process *process, uint32_t value) {
     SimpleCheat cheat = SIMPLE_CHEAT_SET_SPEED;
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.offset, &address1, sizeof(address1));
@@ -1130,18 +1168,18 @@ bool _rawApiSetSpeed(Process *process, uint32_t value) {
     return processWrite(process, address1 + 0x18, &value, sizeof(uint32_t));
 }
 
-bool _rawApiTeleport(Process *process, TeleportCoords value) {
+bool _memoryBackendTeleport(Process *process, TeleportCoords value) {
     return processWrite(process, TELEPORT_CHEAT.xOffset, &(value.x), sizeof(value.x)) &&
            processWrite(process, TELEPORT_CHEAT.yOffset, &(value.y), sizeof(value.y)) &&
            processWrite(process, TELEPORT_CHEAT.zOffset, &(value.z), sizeof(value.z));
 }
 
-bool _rawApiChangeHostname(Process *process, char *hostname) {
+bool _memoryBackendChangeHostname(Process *process, char *hostname) {
     SimpleCheat cheat = SIMPLE_CHEAT_CHANGE_HOSTNAME;
     return processWrite(process, cheat.offset, hostname, strlen(hostname) + 1);
 }
 
-bool _rawApiFov(Process *process, float value) {
+bool _memoryBackendFov(Process *process, float value) {
     SimpleCheat cheat = SIMPLE_CHEAT_FOV;
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.offset, &address1, sizeof(address1));
@@ -1153,7 +1191,7 @@ bool _rawApiFov(Process *process, float value) {
     return processWrite(process, address1 + 0x18, &value, sizeof(float));
 }
 
-bool _rawApiFovScale(Process *process, float value) {
+bool _memoryBackendFovScale(Process *process, float value) {
     SimpleCheat cheat = SIMPLE_CHEAT_FOV_SCALE;
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.offset, &address1, sizeof(address1));
@@ -1166,7 +1204,7 @@ bool _rawApiFovScale(Process *process, float value) {
     return processWrite(process, address1 + 0x18, &value, sizeof(float));
 }
 
-bool _rawApiFpsCap(Process *process, uint32_t value) {
+bool _memoryBackendFpsCap(Process *process, uint32_t value) {
     SimpleCheat cheat = SIMPLE_CHEAT_FPS_CAP;
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.offset, &address1, sizeof(address1));
@@ -1187,7 +1225,7 @@ static uint32_t _mergeColorComponents(Color color) {
     return mergedColor;
 }
 
-bool _rawApiCustomizerColor(Process *process, SimpleCheatName cheatName, Color color) {
+bool _memoryBackendCustomizerColor(Process *process, SimpleCheatName cheatName, Color color) {
     CustomizerCheat cheat = cheatGetCustomizerCheat(cheatName);
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.baseOffset, &address1, sizeof(address1));
@@ -1199,7 +1237,7 @@ bool _rawApiCustomizerColor(Process *process, SimpleCheatName cheatName, Color c
     return processWrite(process, address1 + cheat.offset, &mergedColor, 3);
 }
 
-bool _rawApiCustomizerFloat(Process *process, SimpleCheatName cheatName, float value) {
+bool _memoryBackendCustomizerFloat(Process *process, SimpleCheatName cheatName, float value) {
     CustomizerCheat cheat = cheatGetCustomizerCheat(cheatName);
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.baseOffset, &address1, sizeof(address1));
@@ -1210,19 +1248,19 @@ bool _rawApiCustomizerFloat(Process *process, SimpleCheatName cheatName, float v
     return processWrite(process, address1 + cheat.offset, &value, sizeof(value));
 }
 
-bool _rawApiSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheatName, uint32_t value) {
+bool _memoryBackendSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheatName, uint32_t value) {
     SimpleCheat cheat = cheatGetSimpleCheat(simpleCheatName);
     LOG_DEBUG("Writing %d in %x", value, cheat.offset);
     return processWrite(process, cheat.offset, &value, sizeof(uint32_t));
 }
 
-int rawApiGetClaymoreCount(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+int memoryBackendGetClaymoreCount(MemoryBackend *memoryBackend) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return 0;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return 0;
@@ -1257,13 +1295,13 @@ int rawApiGetClaymoreCount(RawApi *rawApi) {
     return claymoreCount;
 }
 
-int rawApiGetCurrentSnapshotEntities(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+int memoryBackendGetCurrentSnapshotEntities(MemoryBackend *memoryBackend) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return 0;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return 0;
@@ -1274,13 +1312,13 @@ int rawApiGetCurrentSnapshotEntities(RawApi *rawApi) {
     return current;
 }
 
-int rawApiGetMaxSnapshotEntities(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+int memoryBackendGetMaxSnapshotEntities(MemoryBackend *memoryBackend) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return 0;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return 0;
@@ -1292,13 +1330,13 @@ int rawApiGetMaxSnapshotEntities(RawApi *rawApi) {
     return 2147483646 - maxRaw;
 }
 
-bool rawApiIsChatOpen(RawApi *rawApi) {
-    if (!rawApi || !rawApi->controller) {
-        LOG_ERROR("RawApi or Controller is null");
+bool memoryBackendIsChatOpen(MemoryBackend *memoryBackend) {
+    if (!memoryBackend || !memoryBackend->controller) {
+        LOG_ERROR("MemoryBackend or Controller is null");
         return false;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         LOG_ERROR("Process is null");
         return false;
@@ -1312,17 +1350,17 @@ bool rawApiIsChatOpen(RawApi *rawApi) {
     return chatStatus == 0x20; // 0x20 -> Chat is opened
 }
 
-bool rawApiWriteToChatInput(RawApi *rawApi, const char *text) {
-    if (!rawApi || !rawApi->controller) {
+bool memoryBackendWriteToChatInput(MemoryBackend *memoryBackend, const char *text) {
+    if (!memoryBackend || !memoryBackend->controller) {
         return false;
     }
     
-    Process *process = controllerGetProcess(rawApi->controller);
+    Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
         return false;
     }
 
-    if (!rawApiIsChatOpen(rawApi)) {
+    if (!memoryBackendIsChatOpen(memoryBackend)) {
         LOG_WARN("Writing to Chat Input when chat is not open shouldn't happen!");
         return false;
     }

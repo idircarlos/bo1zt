@@ -1,6 +1,6 @@
 #include "logic/config.h"
 #include "logger.h"
-#include "gui/widgets.h"
+#include "logic/widget/manager.h"
 #include "logic/cheat.h"
 #include <iniparser.h>
 #include <stdlib.h>
@@ -140,12 +140,12 @@ static bool configLoad(Config *config) {
         char keyHideOutsideGame[128];
         char keyRect[128];
         char keyFontSize[128];
-        snprintf(keyEnabled, sizeof(keyEnabled), "Widgets:%sEnabled", uiWidgetsGetName(i));
-        snprintf(keyFont, sizeof(keyFont), "Widgets:%sFont", uiWidgetsGetName(i));
-        snprintf(keyTextColor, sizeof(keyTextColor), "Widgets:%sTextColor", uiWidgetsGetName(i));
-        snprintf(keyHideOutsideGame, sizeof(keyHideOutsideGame), "Widgets:%sHideOutsideGame", uiWidgetsGetName(i));
-        snprintf(keyRect, sizeof(keyRect), "Widgets:%sRect", uiWidgetsGetName(i));
-        snprintf(keyFontSize, sizeof(keyFontSize), "Widgets:%sFontSize", uiWidgetsGetName(i));
+        snprintf(keyEnabled, sizeof(keyEnabled), "Widgets:%sEnabled", widgetName(i));
+        snprintf(keyFont, sizeof(keyFont), "Widgets:%sFont", widgetName(i));
+        snprintf(keyTextColor, sizeof(keyTextColor), "Widgets:%sTextColor", widgetName(i));
+        snprintf(keyHideOutsideGame, sizeof(keyHideOutsideGame), "Widgets:%sHideOutsideGame", widgetName(i));
+        snprintf(keyRect, sizeof(keyRect), "Widgets:%sRect", widgetName(i));
+        snprintf(keyFontSize, sizeof(keyFontSize), "Widgets:%sFontSize", widgetName(i));
         config->widgets[i].enabled = iniparser_getboolean(dictionary, keyEnabled, config->widgets[i].enabled);
         strcpy(config->widgets[i].font, iniparser_getstring(dictionary, keyFont, config->widgets[i].font));
         config->widgets[i].textColor = colorFromString(iniparser_getstring(dictionary, keyTextColor, COLOR_INI_DEFAULT));
@@ -186,8 +186,8 @@ Config* configCreate() {
 
     configReset(config);
     for (int i = 0; i < N_CONFIG_WIDGETS; i++) {
-        config->widgets[i].rect = uiWidgetsGetDefaultRect(i);
-        config->widgets[i].fontSize = uiWidgetsGetDefaultFontSize(i);
+        config->widgets[i].rect = widgetDefaultRect(i);
+        config->widgets[i].fontSize = widgetDefaultFontSize(i);
     }
     configSave(config);
     return config;
@@ -250,12 +250,12 @@ bool configSave(Config *config) {
         char keyHideOutsideGame[128];
         char keyRect[128];
         char keyFontSize[128];
-        snprintf(keyEnabled, sizeof(keyEnabled), "Widgets:%sEnabled", uiWidgetsGetName(i));
-        snprintf(keyFont, sizeof(keyFont), "Widgets:%sFont", uiWidgetsGetName(i));
-        snprintf(keyTextColor, sizeof(keyTextColor), "Widgets:%sTextColor", uiWidgetsGetName(i));
-        snprintf(keyHideOutsideGame, sizeof(keyHideOutsideGame), "Widgets:%sHideOutsideGame", uiWidgetsGetName(i));
-        snprintf(keyRect, sizeof(keyRect), "Widgets:%sRect", uiWidgetsGetName(i));
-        snprintf(keyFontSize, sizeof(keyFontSize), "Widgets:%sFontSize", uiWidgetsGetName(i));
+        snprintf(keyEnabled, sizeof(keyEnabled), "Widgets:%sEnabled", widgetName(i));
+        snprintf(keyFont, sizeof(keyFont), "Widgets:%sFont", widgetName(i));
+        snprintf(keyTextColor, sizeof(keyTextColor), "Widgets:%sTextColor", widgetName(i));
+        snprintf(keyHideOutsideGame, sizeof(keyHideOutsideGame), "Widgets:%sHideOutsideGame", widgetName(i));
+        snprintf(keyRect, sizeof(keyRect), "Widgets:%sRect", widgetName(i));
+        snprintf(keyFontSize, sizeof(keyFontSize), "Widgets:%sFontSize", widgetName(i));
         ret += iniparser_set(dictionary, keyEnabled, strfmt(valueBuffer, "%d", config->widgets[i].enabled));
         ret += iniparser_set(dictionary, keyFont, strfmt(valueBuffer, "%s", config->widgets[i].font));
         ret += iniparser_set(dictionary, keyTextColor, strfmt(valueBuffer, COLOR_INI_FMT, config->widgets[i].textColor.r, config->widgets[i].textColor.g, config->widgets[i].textColor.b, config->widgets[i].textColor.a));

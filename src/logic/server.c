@@ -2,7 +2,7 @@
 #include "logger.h"
 #include "utils/common.h"
 #include "controller/controller_internal.h"
-#include "api.h"
+#include "engine.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +20,7 @@
 
 struct Server {
     Controller *controller;
-    Api *api;
+    Engine *engine;
 };
 
 static char *serverBuildMessage(const char key, const char *message) {
@@ -34,7 +34,7 @@ Server *serverCreate(Controller *controller) {
     Server *server = (Server*)malloc(sizeof(Server));
     if (!server) return NULL;
     server->controller = controller;
-    server->api = _controllerGetApi(controller);
+    server->engine = _controllerGetEngine(controller);
     return server;
 }
 
@@ -45,14 +45,14 @@ void serverDestroy(Server *server) {
 
 bool serverExecuteCommand(Server *server, const char *command) {
     if (!server) return false;
-    bool result = apiCBuffAddText(server->api, command);
+    bool result = engineCBuffAddText(server->engine, command);
     return result;
 }
 
 bool serverSendServerCommand(Server *server, const char *command) {
     if (!server) return false;
     LOG_DEBUG("Sending Server Command: %s", command);
-    bool result = apiSVSendServerCommand(server->api, SV_CMD_RELIABLE, SV_CMD_BROADCAST, command);
+    bool result = engineSVSendServerCommand(server->engine, SV_CMD_RELIABLE, SV_CMD_BROADCAST, command);
     return result;
 }
 
@@ -137,7 +137,7 @@ bool serverSetDVarString(Server *server, const char *dVar, const char* value) {
 
 uintptr_t getDVarPointer(Server *server, const char *dVar) {
     if (!server) return 0;
-    uintptr_t dVarPointer = apiGetDVarPointer(server->api, dVar);
+    uintptr_t dVarPointer = engineGetDVarPointer(server->engine, dVar);
     if (!dVarPointer) {
         LOG_ERROR("DVar %s not found", dVar);
         return 0;

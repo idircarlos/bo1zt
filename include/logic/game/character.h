@@ -12,4 +12,7 @@ typedef enum {
     CHARACTER_RANDOM,
 } Character;
 
+const char *characterName(Character character);
+Character characterFromName(const char *name);
+
 #endif // CHARACTER_H_

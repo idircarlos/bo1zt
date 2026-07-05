@@ -4,7 +4,7 @@
 #include <windows.h>
 #include "controller.h"
 #include "win/process.h"
-#include "api.h"
+#include "engine.h"
 #include "logic/gsc.h"
 #include "logic/server.h"
 #include "logic/state.h"
@@ -12,18 +12,23 @@
 #include "logic/cheat/manager.h"
 #include "logic/command/manager.h"
 
+typedef struct WidgetManager WidgetManager;
+typedef struct BindManager BindManager;
+
 struct Controller {
     Process *process;
-    Api *api;
+    Engine *engine;
     Server *server;
     GSC *gsc;
     State *state;
     Config *config;
     CheatManager *cheatManager;
     CommandManager *commandManager;
+    WidgetManager *widgetManager;
+    BindManager *bindManager;
 };
 
-Api *_controllerGetApi(Controller *controller);
+Engine *_controllerGetEngine(Controller *controller);
 GSC *_controllerGetGsc(Controller *controller);
 Server *_controllerGetServer(Controller *controller);
 CheatManager *_controllerGetCheatManager(Controller *controller);
