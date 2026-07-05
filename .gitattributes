@@ -1,5 +1,6 @@
-# Auto detect text files and normalize line endings to LF in the repo
-* text=auto eol=lf
+# Auto detect text files and normalize line endings to LF in the repo.
+# Working directory keeps native endings (CRLF on Windows via core.autocrlf).
+* text=auto
 
 # Force binary for these
 *.png binary
