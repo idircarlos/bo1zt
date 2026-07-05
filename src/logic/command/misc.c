@@ -1,29 +1,27 @@
 #include "logic/command/misc.h"
-#include "api.h"
 #include "controller/controller_internal.h"
-#include "logic/cheat.h"
-#include "logic/game/perk.h"
-#include "logic/game/level.h"
-#include "logic/game/trade.h"
-#include "logic/game.h"
-#include "logic/game/weapon.h"
 #include "logic/server.h"
-#include "logic/state.h"
+#include "logic/game/perk.h"
+#include "logic/game/weapon.h"
+#include "client.h"
+#include "client/player.h"
+#include "client/stats.h"
+#include "client/round.h"
+#include "client/trade.h"
+#include "client/actions.h"
+#include "client/game.h"
+#include "service.h"
 #include "logger.h"
-#include "utils/list.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 
-static Controller *controller;
 static Server *server;
-static Api *api;
+static int clientPort;
 
 void commandMiscInit(Controller *controllerInstance) {
-    controller = controllerInstance;
-    server = _controllerGetServer(controller);
-    api = _controllerGetApi(controller);
+    server = _controllerGetServer(controllerInstance);
+    clientPort = serviceResolvePort();
 }
 
 static Perk getPerkFromAbbreviation(const char *perkAbbreviation) {
@@ -48,30 +46,9 @@ static Weapon getWeaponFromAbbreviation(const char *weaponAbbreviation) {
     return WEAPON_INVALID;
 }
 
-static List *buildPerkList(Command command) {
-    List *perks = listCreate();
-    for (int i = 2; i < command.argc; i++) {
-        Perk perk = getPerkFromAbbreviation(command.argv[i]);
-        if (perk == PERK_INVALID) {
-            LOG_WARN("Invalid perk abbreviation: %s", command.argv[i]);
-            continue;
-        }
-        listAddInt(perks, perk);
-    }
-    return perks;
-}
-
-static List *buildWeaponList(Command command) {
-    List *weapons = listCreate();
-    for (int i = 1; i < command.argc; i++) {
-        Weapon weapon = getWeaponFromAbbreviation(command.argv[i]);
-        if (weapon == WEAPON_INVALID) {
-            LOG_WARN("Invalid weapon abbreviation: %s", command.argv[i]);
-            continue;
-        }
-        listAddInt(weapons, weapon);
-    }
-    return weapons;
+static void formatDuration(int ms, char *hms, size_t size) {
+    int secs = ms / 1000;
+    snprintf(hms, size, "%02d:%02d:%02d", secs / 3600, (secs % 3600) / 60, secs % 60);
 }
 
 bool commandPerkHandle(Command command) {
@@ -81,23 +58,31 @@ bool commandPerkHandle(Command command) {
         return false;
     }
 
-    List *perks = buildPerkList(command);
-    if (listIsEmpty(perks)) {
-        listDestroy(perks);
+    bool isAdd = strcmp(command.argv[1], "add") == 0;
+    bool isRemove = strcmp(command.argv[1], "rm") == 0;
+    if (!isAdd && !isRemove) {
+        serverChatMessage(server, "Unknown perk action. Use: add, rm");
         return false;
     }
 
-    bool success = false;
-    if (strcmp(command.argv[1], "add") == 0) {
-        success = apiAddPerks(api, perks);
-    } else if (strcmp(command.argv[1], "rm") == 0) {
-        success = apiRemovePerks(api, perks);
-    } else {
-        serverChatMessage(server, "Unknown perk action. Use: add, rm");
+    Perk perks[16];
+    int count = 0;
+    for (int i = 2; i < command.argc && count < 16; i++) {
+        Perk perk = getPerkFromAbbreviation(command.argv[i]);
+        if (perk == PERK_INVALID) {
+            LOG_WARN("Invalid perk abbreviation: %s", command.argv[i]);
+            continue;
+        }
+        perks[count++] = perk;
     }
+    if (count == 0) return false;
 
-    listDestroy(perks);
-    return success;
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
+    ClientResult r = isAdd ? clientAddPerks(client, perks, count)
+                           : clientRemovePerks(client, perks, count);
+    clientDestroy(client);
+    return r == CLIENT_OK;
 }
 
 bool commandGiveHandle(Command command) {
@@ -106,38 +91,57 @@ bool commandGiveHandle(Command command) {
         serverChatMessage(server, "Usage: /give ammo | <weapon>");
         return false;
     }
+
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
+
     if (strcmp("ammo", command.argv[1]) == 0) {
-        serverExecuteCommand(server, "give ammo");
-        return true;
+        ClientResult r = clientGiveAmmo(client);
+        clientDestroy(client);
+        return r == CLIENT_OK;
     }
 
-    List *weapons = buildWeaponList(command);
-    if (listIsEmpty(weapons)) {
-        listDestroy(weapons);
+    Weapon weapons[16];
+    int count = 0;
+    for (int i = 1; i < command.argc && count < 16; i++) {
+        Weapon weapon = getWeaponFromAbbreviation(command.argv[i]);
+        if (weapon == WEAPON_INVALID) {
+            LOG_WARN("Invalid weapon abbreviation: %s", command.argv[i]);
+            continue;
+        }
+        weapons[count++] = weapon;
+    }
+    if (count == 0) {
+        clientDestroy(client);
         return false;
     }
 
-    bool success = apiGiveWeapons(api, weapons);
-    listDestroy(weapons);
-    return success;
+    ClientResult r = clientGiveWeapons(client, weapons, count);
+    clientDestroy(client);
+    return r == CLIENT_OK;
 }
 
 bool commandTpHandle(Command command) {
     char buffer[64];
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
 
     if (command.argc == 1) {
-        TeleportCoords *coords = controllerGetPlayerCurrentCoords(controller);
-        if (coords) {
-            snprintf(buffer, 64, "Position: (%d, %d, %d)", (int)coords->x, (int)coords->y, (int)coords->z);
+        TeleportCoords coords;
+        if (clientGetPosition(client, &coords) == CLIENT_OK) {
+            snprintf(buffer, 64, "Position: (%d, %d, %d)", (int)coords.x, (int)coords.y, (int)coords.z);
             serverChatMessage(server, buffer);
+            clientDestroy(client);
             return true;
         }
         serverChatMessage(server, "Failed to get current position!");
+        clientDestroy(client);
         return false;
     }
 
     if (command.argc < 4) {
         serverChatMessage(server, "Usage: /tp [x y z]");
+        clientDestroy(client);
         return false;
     }
 
@@ -145,24 +149,27 @@ bool commandTpHandle(Command command) {
     float y = (float)atof(command.argv[2]);
     float z = (float)atof(command.argv[3]);
 
-    TeleportCoords coords = { x, y, z };
-    bool success = controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_TELEPORT, &coords);
-
-    if (!success) {
-        serverChatMessage(server, "Failed to teleport!");
-    }
-
-    return success;
+    bool ok = clientTeleport(client, x, y, z) == CLIENT_OK;
+    if (!ok) serverChatMessage(server, "Failed to teleport!");
+    clientDestroy(client);
+    return ok;
 }
 
 bool commandNextSpecialRoundHandle(Command command) {
     (void)command;
-    State *state = controllerGetState(controller);
-    Game *game = &state->activeGame;
-    const char *result = gameNextPotentialSpecialRounds(game);
-    if (result) {
-        serverChatMessage(server, result);
-        free((void*)result);
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
+
+    SpecialRound special;
+    ClientResult r = clientGetSpecialRound(client, &special);
+    clientDestroy(client);
+
+    if (r != CLIENT_OK) {
+        serverChatMessage(server, "No special rounds");
+        return false;
+    }
+    if (special.next[0] != '\0') {
+        serverChatMessage(server, special.next);
         return true;
     }
     serverChatMessage(server, "No special rounds");
@@ -171,188 +178,177 @@ bool commandNextSpecialRoundHandle(Command command) {
 
 bool commandClaymoresHandle(Command command) {
     (void)command;
-    int count = apiGetClaymoreCount(api);
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
+
+    int claymores = 0;
+    ClientResult r = clientGetClaymores(client, &claymores);
+    clientDestroy(client);
+    if (r != CLIENT_OK) return false;
+
     char buffer[64];
-    snprintf(buffer, 64, "Claymores: %d", count);
+    snprintf(buffer, 64, "Claymores: %d", claymores);
     serverChatMessage(server, buffer);
     return true;
 }
 
 bool commandEntitiesHandle(Command command) {
     (void)command;
-    State *state = controllerGetState(controller);
-    Game *game = &state->activeGame;
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
+
+    int current = 0, max = 0;
+    ClientResult r = clientGetEntities(client, &current, &max);
+    clientDestroy(client);
+    if (r != CLIENT_OK) return false;
+
     char buffer[64];
-    snprintf(buffer, 64, "Entities: %d/%d", game->currentEntities, game->maxEntities);
+    snprintf(buffer, 64, "Entities: %d/%d", current, max);
     serverChatMessage(server, buffer);
     return true;
 }
 
 bool commandSphHandle(Command command) {
-    State *state = controllerGetState(controller);
-    Game *game = &state->activeGame;
     char buffer[128];
 
-    // Check if there are any completed rounds
-    if (game->currentRound.number <= 1) {
-        serverChatMessage(server, "No previous rounds to display SPH for!");
-        return false;
-    }
-
-    RoundType levelSpecial = levelGetSpecialRound(game->levelName);
-
-    // If argument provided, get specific round
+    int scopeRound = 0;
     if (command.argc >= 2) {
-        int roundNum = atoi(command.argv[1]);
-        if (roundNum <= 0 || roundNum >= game->currentRound.number) {
-            snprintf(buffer, 128, "Usage: /sph or /sph <1-%d>", game->currentRound.number - 1);
-            serverChatMessage(server, buffer);
+        scopeRound = atoi(command.argv[1]);
+        if (scopeRound <= 0) {
+            serverChatMessage(server, "Usage: /sph or /sph <round>");
             return false;
         }
-        
-        Round *targetRound = &game->rounds[roundNum - 1];
-        
-        // Check if it's a special round (except George rounds)
-        if (targetRound->isSpecial && levelSpecial != RT_GEORGE) {
-            snprintf(buffer, 128, "Round %d was a special round!", targetRound->number);
+    }
+
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
+
+    double sph = 0.0;
+    ClientResult r = clientGetSph(client, scopeRound, &sph);
+    clientDestroy(client);
+
+    if (r == CLIENT_OK) {
+        if (scopeRound > 0) {
+            snprintf(buffer, 128, "SPH for round %d: %.1f", scopeRound, sph);
             serverChatMessage(server, buffer);
             return true;
         }
-
-        // Calculate SPH for specific round
-        int elapsedSeconds = (targetRound->endTimestamp - targetRound->startTimestamp) / 1000;
-        float hordeCount = roundHordeCount(targetRound);
-        if (hordeCount < 1.0f) hordeCount = 1.0f;
-
-        double sph = round((double)elapsedSeconds / hordeCount * 10.0) / 10.0;
-        snprintf(buffer, 128, "SPH for round %d: %.1f", targetRound->number, sph);
+        if (sph <= 0.0) {
+            serverChatMessage(server, "No valid rounds to calculate SPH yet!");
+            return false;
+        }
+        snprintf(buffer, 128, "Average SPH: %.2f", sph);
         serverChatMessage(server, buffer);
         return true;
     }
 
-    // No argument: calculate average SPH across all completed rounds
-    double totalSph = 0.0;
-    int validRounds = 0;
-
-    for (int i = 0; i < game->currentRound.number - 1; i++) {
-        Round *r = &game->rounds[i];
-        
-        // Skip special rounds (except George)
-        if (r->isSpecial && levelSpecial != RT_GEORGE) continue;
-
-        int elapsedSeconds = (r->endTimestamp - r->startTimestamp) / 1000;
-        float hordeCount = roundHordeCount(r);
-        if (hordeCount < 1.0f) hordeCount = 1.0f;
-
-        totalSph += (double)elapsedSeconds / hordeCount;
-        validRounds++;
+    if (r == CLIENT_ERR_INVALID_PARAM && scopeRound > 0) {
+        snprintf(buffer, 128, "Round %d was special or out of range!", scopeRound);
+        serverChatMessage(server, buffer);
+    } else if (r == CLIENT_ERR_CONFLICT) {
+        serverChatMessage(server, "No previous rounds to display SPH for!");
+    } else {
+        serverChatMessage(server, "Failed to get SPH!");
     }
-
-    if (validRounds == 0) {
-        serverChatMessage(server, "No valid rounds to calculate SPH yet!");
-        return false;
-    }
-
-    double avgSph = round((totalSph / validRounds) * 10.0) / 10.0;
-    snprintf(buffer, 128, "Average SPH: %.2f", avgSph);
-    serverChatMessage(server, buffer);
-    return true;
+    return false;
 }
 
 bool commandRestartHandle(Command command) {
     (void)command;
-    return serverExecuteCommand(server, "map_restart");
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
+    ClientResult r = clientRestartGame(client);
+    clientDestroy(client);
+    return r == CLIENT_OK;
 }
 
 bool commandMusicHandle(Command command) {
     (void)command;
-    return apiPlayEasterEggSong(api);
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
+    ClientResult r = clientPlayMusic(client);
+    clientDestroy(client);
+    return r == CLIENT_OK;
 }
 
 bool commandTradeHandle(Command command) {
-    State *state = controllerGetState(controller);
-    Game *game = &state->activeGame;
-    Trade *trade = &game->currentTrade;
-    int timestamp = controllerGetLevelElapsedTime(controller);
     char buffer[128];
+    char hms[16];
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
 
     if (command.argc < 2) {
-        if (!tradeRunning(trade)) {
+        TradeStatus status;
+        if (clientGetTrade(client, &status) != CLIENT_OK || !status.running) {
             serverChatMessage(server, "No trade running");
+            clientDestroy(client);
             return true;
         }
-        int ms = tradeGetElapsed(trade, timestamp);
-        int secs = ms / 1000;
-        int h = secs / 3600, m = (secs % 3600) / 60, s = secs % 60;
-        snprintf(buffer, 128, "Trade: %02d:%02d:%02d | Hits: %d", h, m, s, tradeGetHits(trade));
+        formatDuration(status.elapsedMs, hms, sizeof(hms));
+        snprintf(buffer, 128, "Trade: %s | Hits: %d", hms, status.hits);
         serverChatMessage(server, buffer);
+        clientDestroy(client);
         return true;
     }
 
     if (strcmp(command.argv[1], "start") == 0) {
-        if (tradeStart(trade, timestamp)) {
-            serverChatMessage(server, "Trade started");
-        } else {
-            serverChatMessage(server, "Trade already running");
-        }
+        bool ok = clientStartTrade(client) == CLIENT_OK;
+        serverChatMessage(server, ok ? "Trade started" : "Trade already running");
+        clientDestroy(client);
         return true;
     }
 
     if (strcmp(command.argv[1], "end") == 0) {
-        if (tradeEnd(trade, timestamp)) {
-            int ms = tradeGetElapsed(trade, timestamp);
-            int secs = ms / 1000;
-            int h = secs / 3600, m = (secs % 3600) / 60, s = secs % 60;
-            snprintf(buffer, 128, "Trade ended: %02d:%02d:%02d | Hits: %d", h, m, s, tradeGetHits(trade));
+        TradeStatus status;
+        if (clientEndTrade(client, &status) == CLIENT_OK) {
+            formatDuration(status.elapsedMs, hms, sizeof(hms));
+            snprintf(buffer, 128, "Trade ended: %s | Hits: %d", hms, status.hits);
             serverChatMessage(server, buffer);
-            if (game->tradeCount < MAX_TRADES) {
-                game->trades[game->tradeCount++] = *trade;
-            }
-            tradeClear(trade);
         } else {
             serverChatMessage(server, "No trade running");
         }
+        clientDestroy(client);
         return true;
     }
 
     if (strcmp(command.argv[1], "cancel") == 0) {
-        if (tradeCancel(trade)) {
-            serverChatMessage(server, "Trade cancelled");
-        } else {
-            serverChatMessage(server, "No trade running");
-        }
+        bool ok = clientCancelTrade(client) == CLIENT_OK;
+        serverChatMessage(server, ok ? "Trade cancelled" : "No trade running");
+        clientDestroy(client);
         return true;
     }
 
     if (strcmp(command.argv[1], "total") == 0) {
-        if (game->tradeCount == 0) {
+        TradeTotal total;
+        if (clientGetTradeTotal(client, &total) != CLIENT_OK || total.trades == 0) {
             serverChatMessage(server, "No trades recorded");
+            clientDestroy(client);
             return true;
         }
-        int totalMs = 0, totalHits = 0;
-        for (int i = 0; i < game->tradeCount; i++) {
-            totalMs += game->trades[i].endTimestamp - game->trades[i].startTimestamp;
-            totalHits += game->trades[i].hits;
-        }
-        int secs = totalMs / 1000;
-        int h = secs / 3600, m = (secs % 3600) / 60, s = secs % 60;
-        snprintf(buffer, 128, "Total: %02d:%02d:%02d | Hits: %d (%d trades)", h, m, s, totalHits, game->tradeCount);
+        formatDuration(total.totalMs, hms, sizeof(hms));
+        snprintf(buffer, 128, "Total: %s | Hits: %d (%d trades)", hms, total.totalHits, total.trades);
         serverChatMessage(server, buffer);
+        clientDestroy(client);
         return true;
     }
 
     serverChatMessage(server, "Usage: /trade [start | end | cancel | total]");
+    clientDestroy(client);
     return false;
 }
 
 bool commandRevivesHandle(Command command) {
     (void)command;
-    State *state = controllerGetState(controller);
-    Game *game = &state->activeGame;
-    if (!game) return false;
-    int quickRevives = gameGetQuickRevivesDrunk(game);
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
+
+    int revives = 0;
+    ClientResult r = clientGetRevives(client, &revives);
+    clientDestroy(client);
+    if (r != CLIENT_OK) return false;
+
     char buffer[64];
-    snprintf(buffer, 64, "Quick Revives Drunk: %d", quickRevives);
+    snprintf(buffer, 64, "Quick Revives Drunk: %d", revives);
     serverChatMessage(server, buffer);
     return true;
 }

@@ -1,16 +1,27 @@
 #include "logic/command/hacks.h"
-#include "logic/cheat/manager.h"
-#include "logic/cheat/manager/actions.h"
-#include "controller.h"
+#include "client.h"
+#include "client/cheats.h"
+#include "service.h"
 
-static Controller *controller;
+static int clientPort;
 
 void commandHacksInit(Controller *controllerInstance) {
-    controller = controllerInstance;
+    (void)controllerInstance;
+    clientPort = serviceResolvePort();
 }
 
 static bool toggle(CheatName cheat) {
-    return cheatManagerToggle(controllerGetCheatManager(controller), cheat) != CHEAT_RESULT_API_FAILED;
+    Client *client = clientCreate(clientPort);
+    if (!client) return false;
+
+    bool enabled = false;
+    bool ok = false;
+    if (clientGetCheat(client, cheat, &enabled) == CLIENT_OK) {
+        ok = clientSetCheat(client, cheat, !enabled) == CLIENT_OK;
+    }
+
+    clientDestroy(client);
+    return ok;
 }
 
 bool commandNoclipHandle(Command command) { (void)command; return toggle(CHEAT_NAME_NO_CLIP); }
