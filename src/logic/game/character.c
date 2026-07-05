@@ -2,9 +2,6 @@
 
 #include <string.h>
 
-// Single source of truth for the character catalog: the kebab-case API name of
-// each Character. Used by service/game (the /game/config resource), gui/character
-// and the CLI. GameConfig.character stores the enum value.
 static const struct {
     const char *name;
     Character value;
