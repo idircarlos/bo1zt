@@ -4,6 +4,5 @@
 #include "gui.h"
 
 UIControlGroup *uiHacksBuildControlGroup();
-bool uiHacksIsChecked(CheatName cheat);
 
 #endif // UI_HACKS_H_

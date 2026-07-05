@@ -3,10 +3,9 @@
 
 #include "gui.h"
 
+#include <stddef.h>
+
 UIControlGroup *uiGameBuildControlGroup();
-bool uiGameIsChecked(CheatName cheat);
-char *uiGameGetLocation();
-char *uiGameGetHostname();
-bool uiGamePromptLocation(void);
+bool uiGamePromptLocation(char *outDir, size_t size);
 
 #endif // UI_GAME_H_

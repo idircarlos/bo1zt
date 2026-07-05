@@ -1,8 +1,9 @@
 #include "gui/player.h"
+#include "client/player.h"
 #include "logger.h"
 
-// Controller instance
-static Controller *controller;
+// Shared HTTP client
+static Client *client;
 
 // Parent Window instance
 static uiWindow *parent;
@@ -25,45 +26,37 @@ static void onPlayerChangeNameButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
     char *name = uiEntryText(nameEntry);
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_CHANGE_NAME, (void*)name);
+    clientSetPlayerName(client, name);
     uiFreeText(name);
 }
 
 static void onPlayerButtonClick(uiButton *button, void *data) {
     (void)button;
     SimpleCheatName simpleCheatName = (SimpleCheatName)(uintptr_t)data;
-    void *value = NULL;
-    int spinBoxValue;
 
     switch(simpleCheatName) {
         case SIMPLE_CHEAT_NAME_SET_HEALTH:
-            spinBoxValue = uiSpinboxValue(healthSpin);
-            value = &spinBoxValue;
+            clientSetPlayerHealth(client, uiSpinboxValue(healthSpin));
             break;
         case SIMPLE_CHEAT_NAME_SET_POINTS:
-            spinBoxValue = uiSpinboxValue(pointsSpin);
-            value = &spinBoxValue;
+            clientSetPlayerPoints(client, uiSpinboxValue(pointsSpin));
             break;
         case SIMPLE_CHEAT_NAME_SET_SPEED:
-            spinBoxValue = uiSpinboxValue(speedSpin);
-            value = &spinBoxValue;
+            clientSetPlayerMovementSpeed(client, uiSpinboxValue(speedSpin));
             break;
         case SIMPLE_CHEAT_NAME_SET_KILLS:
-            spinBoxValue = uiSpinboxValue(killsSpin);
-            value = &spinBoxValue;
+            clientSetPlayerKills(client, uiSpinboxValue(killsSpin));
             break;
         case SIMPLE_CHEAT_NAME_SET_HEADSHOTS:
-            spinBoxValue = uiSpinboxValue(headshotsSpin);
-            value = &spinBoxValue;
+            clientSetPlayerHeadshots(client, uiSpinboxValue(headshotsSpin));
             break;
         default:
             LOG_WARN("Cheat %d shouldn't be handled here or it doesn't exist", simpleCheatName);
     }
-    controllerSetSimpleCheat(controller, simpleCheatName, value);
 }
 
-static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
-    controller = controllerInstance;
+static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
+    client = clientInstance;
     parent = parentInstance;
     uiGroup *playerGroup = uiNewGroup("Player");
     uiBox *playerBox = uiNewVerticalBox();

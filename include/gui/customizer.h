@@ -5,8 +5,6 @@
 #include "utils/common.h"
 
 UIControlGroup *uiCustomizerBuildControlGroup();
-Color uiCustomizerGetCheatColor(SimpleCheatName cheat);
-int uiCustomizerGetCheatInt(SimpleCheatName cheat);
 bool uiCustomizerIsSavable();
 void uiCustomizerReset();
 

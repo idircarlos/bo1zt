@@ -1,20 +1,16 @@
 #include "gui/binds.h"
 #include "gui/binds/help.h"
-#include "controller.h"
-#include "gui/binds/keymap.h"
+#include "client/binds.h"
+#include "logic/bind/keymap.h"
 #include "gui/binds/colors.h"
 #include "gui/binds/layout.h"
 #include "logger.h"
-#include "logic/command.h"
-#include "logic/command/manager.h"
-#include "controller/controller_internal.h"
+#include "logic/config.h"
 #include "resource_ids.h"
 #include <ui.h>
 #include <windows.h>
 #include <string.h>
 #include <stdlib.h>
-
-static bool prevKeyStates[256] = {false};
 
 typedef enum {
     KEYBIND_STATE_EMPTY,
@@ -28,15 +24,16 @@ typedef struct {
     char *command;
     KeyBindState state;
     bool modifierProcessed;
-    int vkCode;
 } KeyBind;
 
 #define MAX_KEYS 100
 static KeyBind keyBinds[MAX_KEYS];
 static int keyBindCount = 0;
 
-static Controller *controller;
-static CommandManager *commandManager;
+#define BINDS_POLL_INTERVAL_MS 250
+static ULONGLONG lastPoll = 0;
+
+static Client *client = NULL;
 static uiFlexBox *flexBox;
 static uiEntry *entryCommand;
 static uiButton *btnReset;
@@ -45,9 +42,9 @@ static uiButton *btnHelp;
 static uiWindow *parent;
 static uiCustomButton *selectedKey = NULL;
 static bool hasUnsavedChanges = false;
+static bool syncingEntry = false;
 
 // Help window
-static UIControlGroup *helpControlGroup = NULL;
 static uiWindow *helpWindow = NULL;
 
 static void onHelpClick(uiButton *button, void *data);
@@ -56,68 +53,22 @@ static void onResetClick(uiButton *button, void *data);
 static void onSaveClick(uiButton *button, void *data);
 static void onEntryChanged(uiEntry *entry, void *data);
 static void init(void);
-static void loadBindingsFromConfig(void);
+static void loadBindingsFromClient(void);
 static KeyBind *findKeyBindByButton(uiCustomButton *button);
-static void executeCommands(const char *commandString);
-
-static inline bool isValidVKCode(int vkCode) {
-    return vkCode > 0 && vkCode < 256;
-}
 
 static inline bool hasCommand(const KeyBind *kb) {
     return kb != NULL && kb->command != NULL && kb->command[0] != '\0';
 }
 
-static void executeCommands(const char *commandString) {
-    if (commandString == NULL || commandString[0] == '\0') return;
-    
-    const char *ptr = commandString;
-    
-    // Skip leading whitespace
-    while (*ptr == ' ' || *ptr == '\t') ptr++;
-    
-    while (*ptr != '\0') {
-        // Each command should start with '/'
-        if (*ptr != '/') {
-            ptr++;
-            continue;
-        }
-        
-        // Find the end of this command (next '/' or end of string)
-        const char *cmdStart = ptr;
-        ptr++; // Skip the initial '/'
-        
-        while (*ptr != '\0' && *ptr != '/') {
-            ptr++;
-        }
-        
-        // Extract the command
-        size_t cmdLen = ptr - cmdStart;
-        char *cmd = (char *)malloc(cmdLen + 1);
-        strncpy(cmd, cmdStart, cmdLen);
-        cmd[cmdLen] = '\0';
-        
-        // Trim trailing whitespace
-        char *end = cmd + strlen(cmd) - 1;
-        while (end > cmd && (*end == ' ' || *end == '\t')) {
-            *end = '\0';
-            end--;
-        }
-        
-        if (cmd[0] != '\0') {
-            Command builtCmd = commandBuild(commandManager, cmd);
-            if (builtCmd.name != COMMAND_NONE && builtCmd.name != COMMAND_UNKNOWN) {
-                commandHandle(builtCmd);
-            }
-        }
-        
-        free(cmd);
-    }
+static void setCommandText(const char *text) {
+    syncingEntry = true;
+    uiEntrySetText(entryCommand, text != NULL ? text : "");
+    syncingEntry = false;
 }
 
 static void updateKeyState(KeyBind *kb) {
     if (kb == NULL || kb->button == NULL) return;
-    
+
     if (selectedKey == kb->button) {
         kb->state = KEYBIND_STATE_SELECTED;
     } else if (kb->command != NULL && kb->command[0] != '\0') {
@@ -129,7 +80,7 @@ static void updateKeyState(KeyBind *kb) {
 
 static void updateKeyColor(KeyBind *kb) {
     if (kb == NULL || kb->button == NULL) return;
-    
+
     switch (kb->state) {
         case KEYBIND_STATE_EMPTY:
             uiCustomButtonSetBackgroundColor(kb->button, COLOR_EMPTY.r, COLOR_EMPTY.g, COLOR_EMPTY.b);
@@ -144,7 +95,7 @@ static void updateKeyColor(KeyBind *kb) {
             uiCustomButtonSetHoverColor(kb->button, COLOR_SELECTED.r, COLOR_SELECTED.g, COLOR_SELECTED.b);
             break;
     }
-    
+
     uiCustomButtonSetPressedColor(kb->button, COLOR_PRESSED.r, COLOR_PRESSED.g, COLOR_PRESSED.b);
     uiCustomButtonSetBorderColor(kb->button, COLOR_BORDER.r, COLOR_BORDER.g, COLOR_BORDER.b);
 }
@@ -158,9 +109,9 @@ static void updateAllKeyStates(void) {
 
 static int getModifierPairIndex(KeyBind *kb) {
     if (kb == NULL || !keymapIsModifier(kb->keyName)) return -1;
-    
+
     for (int i = 0; i < keyBindCount; i++) {
-        if (keyBinds[i].button != kb->button && 
+        if (keyBinds[i].button != kb->button &&
             strcmp(keyBinds[i].keyName, kb->keyName) == 0) {
             return i;
         }
@@ -175,7 +126,7 @@ static KeyBind *getModifierPair(KeyBind *kb) {
 
 static void syncModifierCommand(KeyBind *kb, const char *command) {
     if (kb == NULL || !keymapIsModifier(kb->keyName)) return;
-    
+
     KeyBind *pair = getModifierPair(kb);
     if (pair != NULL) {
         if (pair->command != NULL) {
@@ -200,7 +151,6 @@ static uiCustomButton *buildKey(const char *label, const char *keyName, int x, i
         keyBinds[keyBindCount].keyName = keyName;
         keyBinds[keyBindCount].command = NULL;
         keyBinds[keyBindCount].state = KEYBIND_STATE_EMPTY;
-        keyBinds[keyBindCount].vkCode = keymapGetVKCode(keyName);
         updateKeyColor(&keyBinds[keyBindCount]);
         uiCustomButtonOnClicked(btn, onKeyClick, &keyBinds[keyBindCount]);
         keyBindCount++;
@@ -211,32 +161,32 @@ static uiCustomButton *buildKey(const char *label, const char *keyName, int x, i
 
 static void updateKeyBindCommand(void) {
     if (selectedKey == NULL) return;
-    
+
     KeyBind *kb = findKeyBindByButton(selectedKey);
     if (kb == NULL) return;
-    
+
     char *command = uiEntryText(entryCommand);
     const char *oldCommand = kb->command;
     bool commandChanged = false;
-    
+
     if ((oldCommand == NULL && command != NULL && strlen(command) > 0) ||
         (oldCommand != NULL && command == NULL) ||
         (oldCommand != NULL && command != NULL && strcmp(oldCommand, command) != 0)) {
         commandChanged = true;
     }
-    
+
     if (kb->command != NULL) {
         free(kb->command);
         kb->command = NULL;
     }
-    
+
     if (command != NULL && strlen(command) > 0) {
         kb->command = strdup(command);
     }
-    
+
     syncModifierCommand(kb, command);
     uiFreeText(command);
-    
+
     if (commandChanged) {
         hasUnsavedChanges = true;
         uiControlEnable(uiControl(btnReset));
@@ -246,13 +196,13 @@ static void updateKeyBindCommand(void) {
 
 static void onKeyClick(uiCustomButton *button, void *data) {
     KeyBind *kb = (KeyBind *)data;
-    
+
     if (selectedKey != NULL && selectedKey != button) {
         updateKeyBindCommand();
-        
+
         KeyBind *prevKb = findKeyBindByButton(selectedKey);
         selectedKey = NULL;  // Clear before updating state
-        
+
         if (prevKb != NULL) {
             KeyBind *prevPair = getModifierPair(prevKb);
             if (prevPair != NULL) {
@@ -263,19 +213,19 @@ static void onKeyClick(uiCustomButton *button, void *data) {
             updateKeyColor(prevKb);
         }
     }
-    
+
     selectedKey = button;
     kb->state = KEYBIND_STATE_SELECTED;
     updateKeyColor(kb);
-    
+
     KeyBind *pair = getModifierPair(kb);
     if (pair != NULL) {
         pair->state = KEYBIND_STATE_SELECTED;
         updateKeyColor(pair);
     }
 
-    uiEntrySetText(entryCommand, kb->command != NULL ? kb->command : "");
-    
+    setCommandText(kb->command);
+
     if (hasCommand(kb)) {
         uiControlEnable(uiControl(btnReset));
     } else {
@@ -294,53 +244,58 @@ static KeyBind *findKeyBindByButton(uiCustomButton *button) {
 
 static void buildBindsConfigFromUI(BindsConfig *bindsConfig) {
     bindsConfig->bindCount = 0;
-    
+
     for (int i = 0; i < keyBindCount; i++) {
         keyBinds[i].modifierProcessed = false;
     }
-    
+
     for (int i = 0; i < keyBindCount && bindsConfig->bindCount < MAX_BINDS; i++) {
         if (keyBinds[i].command == NULL || keyBinds[i].command[0] == '\0') continue;
-        
+
         if (keymapIsModifier(keyBinds[i].keyName)) {
             if (keyBinds[i].modifierProcessed) continue;
-            
+
             int pairIndex = getModifierPairIndex(&keyBinds[i]);
             if (pairIndex >= 0) {
                 keyBinds[pairIndex].modifierProcessed = true;
             }
         }
-        
-        strncpy(bindsConfig->binds[bindsConfig->bindCount].keyName, 
+
+        strncpy(bindsConfig->binds[bindsConfig->bindCount].keyName,
                 keyBinds[i].keyName, MAX_KEY_NAME_LENGTH - 1);
         bindsConfig->binds[bindsConfig->bindCount].keyName[MAX_KEY_NAME_LENGTH - 1] = '\0';
-        
-        strncpy(bindsConfig->binds[bindsConfig->bindCount].command, 
+
+        strncpy(bindsConfig->binds[bindsConfig->bindCount].command,
                 keyBinds[i].command, MAX_COMMAND_LENGTH - 1);
         bindsConfig->binds[bindsConfig->bindCount].command[MAX_COMMAND_LENGTH - 1] = '\0';
-        
+
         bindsConfig->bindCount++;
     }
 }
 
-static void loadBindingsFromConfig(void) {
-    if (!controller) return;
-    
-    BindsConfig bindsConfig = controllerGetBindsConfig(controller);
+static const char *commandForKeyInConfig(const BindsConfig *cfg, const char *keyName) {
+    for (int i = 0; i < cfg->bindCount; i++) {
+        if (strcmp(cfg->binds[i].keyName, keyName) == 0) {
+            return cfg->binds[i].command;
+        }
+    }
+    return NULL;
+}
 
+static void applyBindsConfig(const BindsConfig *bindsConfig) {
     for (int i = 0; i < keyBindCount; i++) {
         if (keyBinds[i].command != NULL) {
             free(keyBinds[i].command);
             keyBinds[i].command = NULL;
         }
     }
-    
-    for (int i = 0; i < bindsConfig.bindCount; i++) {
-        const char *keyName = bindsConfig.binds[i].keyName;
-        const char *command = bindsConfig.binds[i].command;
-        
+
+    for (int i = 0; i < bindsConfig->bindCount; i++) {
+        const char *keyName = bindsConfig->binds[i].keyName;
+        const char *command = bindsConfig->binds[i].command;
+
         if (keyName[0] == '\0' || command[0] == '\0') continue;
-        
+
         for (int j = 0; j < keyBindCount; j++) {
             if (strcmp(keyBinds[j].keyName, keyName) == 0) {
                 if (keyBinds[j].command != NULL) free(keyBinds[j].command);
@@ -348,57 +303,64 @@ static void loadBindingsFromConfig(void) {
             }
         }
     }
-    
-    for (int i = 0; i < keyBindCount; i++) {
-        int vkCode = keyBinds[i].vkCode;
-        if (isValidVKCode(vkCode)) {
-            prevKeyStates[vkCode] = (GetAsyncKeyState(vkCode) & 0x8000) != 0;
-        }
-    }
-    
+
     updateAllKeyStates();
+}
+
+static bool bindsConfigDiffersFromUI(const BindsConfig *cfg) {
+    for (int i = 0; i < keyBindCount; i++) {
+        const char *cfgCmd = commandForKeyInConfig(cfg, keyBinds[i].keyName);
+        const char *uiCmd = keyBinds[i].command;
+        bool cfgEmpty = (cfgCmd == NULL || cfgCmd[0] == '\0');
+        bool uiEmpty = (uiCmd == NULL || uiCmd[0] == '\0');
+        if (cfgEmpty != uiEmpty) return true;
+        if (!cfgEmpty && strcmp(cfgCmd, uiCmd) != 0) return true;
+    }
+    return false;
+}
+
+static void loadBindingsFromClient(void) {
+    BindsConfig bindsConfig;
+    if (clientGetBinds(client, &bindsConfig) != CLIENT_OK) {
+        bindsConfig.bindCount = 0;
+    }
+    applyBindsConfig(&bindsConfig);
     hasUnsavedChanges = false;
 }
 
 static void onEntryChanged(uiEntry *entry, void *data) {
     (void)entry; (void)data;
+    if (syncingEntry) return;
     if (selectedKey == NULL) return;
-    
+
     KeyBind *kb = findKeyBindByButton(selectedKey);
     char *text = uiEntryText(entryCommand);
     bool hasText = text != NULL && text[0] != '\0';
     uiFreeText(text);
-    
+
     if (hasCommand(kb) || hasText) {
         uiControlEnable(uiControl(btnReset));
     } else {
         uiControlDisable(uiControl(btnReset));
     }
-    
+
     hasUnsavedChanges = true;
     uiControlEnable(uiControl(btnSave));
 }
 
 static void onSaveClick(uiButton *button, void *data) {
     (void)button; (void)data;
-    
+
     updateKeyBindCommand();
     updateAllKeyStates();
-    
+
     BindsConfig bindsConfig;
     buildBindsConfigFromUI(&bindsConfig);
-    controllerUpdateBindsConfig(controller, &bindsConfig);
-    
-    for (int i = 0; i < keyBindCount; i++) {
-        int vkCode = keyBinds[i].vkCode;
-        if (isValidVKCode(vkCode)) {
-            prevKeyStates[vkCode] = (GetAsyncKeyState(vkCode) & 0x8000) != 0;
-        }
-    }
-    
+    clientSetBinds(client, &bindsConfig);
+
     hasUnsavedChanges = false;
     uiControlDisable(uiControl(btnSave));
-    
+
     if (selectedKey != NULL) {
         KeyBind *kb = findKeyBindByButton(selectedKey);
         if (hasCommand(kb)) {
@@ -414,23 +376,23 @@ static void onSaveClick(uiButton *button, void *data) {
 
 static void onResetClick(uiButton *button, void *data) {
     (void)button; (void)data;
-    
+
     if (selectedKey == NULL) return;
-    
+
     KeyBind *kb = findKeyBindByButton(selectedKey);
     if (kb == NULL) return;
-    
+
     if (kb->command != NULL) {
         free(kb->command);
         kb->command = NULL;
     }
-    
+
     syncModifierCommand(kb, NULL);
-    uiEntrySetText(entryCommand, "");
-    
+    setCommandText(NULL);
+
     updateKeyState(kb);
     updateKeyColor(kb);
-    
+
     hasUnsavedChanges = true;
     uiControlDisable(uiControl(btnReset));
     uiControlEnable(uiControl(btnSave));
@@ -444,11 +406,9 @@ static int onHelpWindowClose(uiWindow *w, void *data) {
 }
 
 static void buildHelp(void) {
-    helpControlGroup = uiBindsHelpBuildControlGroup(commandManager);
-    
     helpWindow = uiNewWindow("Commands Help", 500, 400, 0);
-    uiControl *helpGroup = helpControlGroup->build(controller, helpWindow);
-    
+    uiControl *helpGroup = uiBindsHelpBuild(client, helpWindow);
+
     uiWindowOnClosing(helpWindow, onHelpWindowClose, NULL);
     uiWindowSetMargined(helpWindow, 1);
     uiWindowSetChild(helpWindow, uiControl(helpGroup));
@@ -462,11 +422,10 @@ static void onHelpClick(uiButton *button, void *data) {
     uiControlShow(uiControl(helpWindow));
 }
 
-static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
-    controller = controllerInstance;
+uiControl *uiBindsBuild(Client *clientInstance, uiWindow *parentInstance) {
+    client = clientInstance;
     parent = parentInstance;
     keyBindCount = 0;
-    commandManager = _controllerGetCommandManager(controller);
 
     uiBox *outerBox = uiNewVerticalBox();
     uiBoxSetPadded(outerBox, 1);
@@ -504,49 +463,10 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     return uiControl(outerBox);
 }
 
-static void update(void) {
-    commandManager = _controllerGetCommandManager(controller);
-    // Update command history polling for chat arrow keys
-    commandManagerUpdate(commandManager);
-    
-    if (!controller || !controllerIsGameAttached(controller)) return;
-    if (!controllerIsGameWindowFocused(controller)) return;
-    if (controllerIsChatOpen(controller) || controllerIsZombiesGamePaused(controller)) return;
-    
-    bool processedThisFrame[MAX_KEYS] = {false};
-    
-    for (int i = 0; i < keyBindCount; i++) {
-        if (keyBinds[i].command == NULL || keyBinds[i].command[0] == '\0') continue;
-        if (processedThisFrame[i]) continue;
-        
-        int vkCode = keyBinds[i].vkCode;
-        if (vkCode == 0) continue;
-        
-        bool isPressed = (GetAsyncKeyState(vkCode) & 0x8000) != 0;
-        
-        if (isPressed && !prevKeyStates[vkCode]) {
-            executeCommands(keyBinds[i].command);
-            LOG_DEBUG("Keybind executed: %s -> %s", keyBinds[i].keyName, keyBinds[i].command);
-            
-            if (keymapIsModifier(keyBinds[i].keyName)) {
-                int pairIndex = getModifierPairIndex(&keyBinds[i]);
-                if (pairIndex >= 0) processedThisFrame[pairIndex] = true;
-            }
-        }
-        
-        prevKeyStates[vkCode] = isPressed;
-    }
-}
-
 static void init(void) {
-    loadBindingsFromConfig();
+    loadBindingsFromClient();
     uiControlDisable(uiControl(btnReset));
     uiControlDisable(uiControl(btnSave));
-}
-
-UIControlGroup *uiBindsBuildControlGroup() {
-    UIControlGroup *cg = guiControlGroupCreate(build, update);
-    return cg;
 }
 
 bool uiBindsIsSavable() {
@@ -555,8 +475,35 @@ bool uiBindsIsSavable() {
 
 void uiBindsReset() {
     selectedKey = NULL;
-    uiEntrySetText(entryCommand, "");
-    loadBindingsFromConfig();
+    setCommandText(NULL);
+    loadBindingsFromClient();
     uiControlDisable(uiControl(btnReset));
     uiControlDisable(uiControl(btnSave));
+}
+
+void uiBindsUpdate(void) {
+    if (parent == NULL || !uiControlVisible(uiControl(parent))) return;
+    if (hasUnsavedChanges) return;
+
+    ULONGLONG now = GetTickCount64();
+    if (lastPoll != 0 && now - lastPoll < BINDS_POLL_INTERVAL_MS) return;
+    lastPoll = now;
+
+    BindsConfig fresh;
+    if (clientGetBinds(client, &fresh) != CLIENT_OK) return;
+    if (!bindsConfigDiffersFromUI(&fresh)) return;
+
+    applyBindsConfig(&fresh);
+
+    if (selectedKey != NULL) {
+        KeyBind *kb = findKeyBindByButton(selectedKey);
+        if (kb != NULL) {
+            KeyBind *pair = getModifierPair(kb);
+            if (pair != NULL) {
+                pair->state = KEYBIND_STATE_SELECTED;
+                updateKeyColor(pair);
+            }
+            setCommandText(kb->command);
+        }
+    }
 }

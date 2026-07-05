@@ -3,8 +3,9 @@
 
 #include "gui.h"
 
-UIControlGroup *uiBindsBuildControlGroup();
+uiControl *uiBindsBuild(Client *client, uiWindow *parent);
 bool uiBindsIsSavable();
 void uiBindsReset();
+void uiBindsUpdate(void);
 
 #endif // UI_BINDS_H_

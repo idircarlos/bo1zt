@@ -2,8 +2,7 @@
 #define UI_BINDS_HELP_H_
 
 #include "gui.h"
-#include "logic/command/manager.h"
 
-UIControlGroup *uiBindsHelpBuildControlGroup(CommandManager *manager);
+uiControl *uiBindsHelpBuild(Client *client, uiWindow *parent);
 
 #endif // UI_BINDS_HELP_H_

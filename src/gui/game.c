@@ -2,10 +2,11 @@
 #include "gui.h"
 #include "gui/widgets.h"
 #include "gui/binds.h"
+#include "client/cheats.h"
+#include "client/game.h"
+#include "client/round.h"
 #include "logger.h"
-#include "logic/state.h"
-#include "logic/cheat/manager.h"
-#include "logic/cheat/manager/actions.h"
+#include "logic/cheat.h"
 #include "win/thread.h"
 #include "utils/map.h"
 #include "resource_ids.h"
@@ -15,6 +16,8 @@
 #include <ui.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#define GAME_EXECUTABLE_NAME "BlackOps.exe"
 
 #define RUNNING_TEXT "Running"
 #define NOT_RUNNING_TEXT "Not running"
@@ -28,8 +31,8 @@
 
 static Map *cache = NULL;
 
-// Controller instance
-static Controller *controller;
+// Shared HTTP client
+static Client *client;
 static uiWindow *parent;
 
 // UI Elements
@@ -61,23 +64,20 @@ static uiButton *widgetsButton = NULL;
 static uiButton *launchButton = NULL;
 static uiButton *closeButton = NULL;
 
-static uiEntry *locationEntry = NULL; // Using this conponent to act as another UI Component but it's purpose is only to update ConfigGame. This componente will be always hidden and not have any parent.
+static uiEntry *locationEntry = NULL;
 
-// Widgets window
 static uiWindow *widgetsWindow = NULL;
-static UIControlGroup *widgetsControlGroup = NULL;
 
-// Binds window
 static uiWindow *bindsWindow = NULL;
-static UIControlGroup *bindsControlGroup = NULL;
 
-// Threads
 static int threadLaunchGame(void *data) {
     (void)data;
     LOG_INFO("Launching game from UI");
     uiControlDisable(uiControl(launchButton));
     mapPutBool(cache, CACHE_OPENING_GAME, true);
-    bool success = controllerLaunchGame(controller);
+    Client *localClient = clientCreate(guiClientPort());
+    bool success = localClient && clientLaunchGame(localClient) == CLIENT_OK;
+    clientDestroy(localClient);
     mapPutBool(cache, CACHE_OPENING_GAME, false);
     if (!success) {
         uiMsgBoxError(parent, "Launch game", "Couldn't launch Call of Duty Black Ops 1. Location may have changed or the game is already running.");
@@ -91,7 +91,9 @@ static int threadCloseGame(void *data) {
     LOG_INFO("Closing game from UI");
     uiControlDisable(uiControl(closeButton));
     mapPutBool(cache, CACHE_CLOSING_GAME, true);
-    bool success = controllerCloseGame(controller);
+    Client *localClient = clientCreate(guiClientPort());
+    bool success = localClient && clientCloseGame(localClient) == CLIENT_OK;
+    clientDestroy(localClient);
     mapPutBool(cache, CACHE_CLOSING_GAME, false);
     if (!success) {
         uiMsgBoxError(parent, "Close game", "Couldn't close Call of Duty Black Ops 1. Game is probably already closed.");
@@ -119,11 +121,6 @@ static int onCloseGameError(void *data) {
 static int onWidgetsWindowClose(uiWindow *window, void *data) {
     (void)window;
     (void)data;
-    if (uiWidgetsIsSavable()) {
-        int okPressed = uiMsgBoxOkCancel(parent, "Are you sure?", "You have pending changes.");
-        if (!okPressed) return 0;
-        uiWidgetsReset();
-    }
     uiControlHide(uiControl(widgetsWindow));
     return 0;
 }
@@ -211,13 +208,11 @@ static void handlerStatusDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
-    
-    CheatManager *cheatManager = controllerGetCheatManager(controller);    
-    CheatResult result = cheatManagerSetToggle(cheatManager, cheatName, enabled);
-    
-    // If API failed, revert checkbox to previous state
-    if (result == CHEAT_RESULT_API_FAILED) {
+
+    if (clientSetCheat(client, cheatName, enabled) != CLIENT_OK) {
         uiCheckboxSetChecked(checkbox, !enabled);
+    } else {
+        guiSnapshotSetCheat(cheatName, enabled);
     }
 }
 
@@ -225,22 +220,16 @@ static void onHostnameEntryChange(uiEntry *entry, void *data) {
     (void)data;
     (void)entry;
     char *hostname = uiEntryText(hostnameEntry);
-    
-    CheatManager *cheatManager = controllerGetCheatManager(controller);
-    cheatManagerSetValue(cheatManager, SIMPLE_CHEAT_NAME_CHANGE_HOSTNAME, hostname);
-    
+    clientSetGameHostname(client, hostname);
     uiFreeText(hostname);
 }
 
 static void onLocationEntryChange(uiEntry *entry, void *data) {
     (void)data;
     (void)entry;
-    Config *config = controllerGetConfig(controller);
-    
     char *location = uiEntryText(locationEntry);
-    strncpy(config->game.location, location, sizeof(config->game.location) - 1);
+    clientSetGameLocation(client, location);
     uiFreeText(location);
-    configSave(config);
 }
 
 static void onChangeRoundSpinChanged(uiSpinbox *spin, void *data) {
@@ -255,8 +244,9 @@ static void onChangeRoundSpinChanged(uiSpinbox *spin, void *data) {
 static void onLaunchButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    GameConfig config = controllerGetGameConfig(controller);
-    if (strcmp(config.location, "") == 0) {
+    GameConfigInfo config;
+    bool haveLocation = (clientGetGameConfig(client, &config) == CLIENT_OK) && config.location[0] != '\0';
+    if (!haveLocation) {
         uiMsgBox(parent, "Launch game", "Couldn't find game location. Only for this time, manually open Call of Duty Black Ops 1 to resolve the executable location.");
         char *gamePath = uiOpenFile(parent);
         if (!gamePath) {
@@ -270,9 +260,7 @@ static void onLaunchButtonClick(uiButton *button, void *data) {
         char gameDir[MAX_PATH];
         extractDirectory(gamePath, gameDir, MAX_PATH);
         uiEntrySetText(locationEntry, gameDir);
-        Config *config = controllerGetConfig(controller);
-        strncpy(config->game.location, gameDir, sizeof(config->game.location) - 1);
-        configSave(config);
+        clientSetGameLocation(client, gameDir);
         uiFreeText(gamePath);
     }
     // Run a new thread to avoid blocking the UI while game starts.
@@ -283,13 +271,13 @@ static void onLaunchButtonClick(uiButton *button, void *data) {
 static void onChangeRoundButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    int round = uiSpinboxValue(changeRoundSpin);
-    controllerSetRound(controller, round);
+    clientSetRound(client, uiSpinboxValue(changeRoundSpin));
 }
 
 static void onBindsButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
+    uiBindsReset();
     uiWindowSetResizeable(bindsWindow, false);
     uiWindowSetMargined(bindsWindow, true);
     uiWindowSetIcon(bindsWindow, IDI_ICON1);
@@ -299,6 +287,7 @@ static void onBindsButtonClick(uiButton *button, void *data) {
 static void onWidgetsButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
+    uiWidgetsReload();
     uiControlShow(uiControl(widgetsWindow));
 }
 
@@ -328,10 +317,8 @@ static uiAttributedString *buildInfoAttributedString(const char *str, uiAttribut
 }
 
 static void buildWidgets() {
-    widgetsControlGroup = uiWidgetsBuildControlGroup();
-    
     widgetsWindow = uiNewWindow("Widget Settings", 50, 200, 0);
-    uiControl *widgetsGroup = widgetsControlGroup->build(controller, widgetsWindow);
+    uiControl *widgetsGroup = uiWidgetsBuild(client, widgetsWindow);
     
     uiWindowOnClosing(widgetsWindow, onWidgetsWindowClose, NULL);
     uiWindowSetMargined(widgetsWindow, 1);
@@ -342,10 +329,8 @@ static void buildWidgets() {
 }
 
 static void buildBinds() {
-    bindsControlGroup = uiBindsBuildControlGroup();
-    
     bindsWindow = uiNewWindow("Bind Manager", 800, 350, 0);
-    uiControl *bindsGroup = bindsControlGroup->build(controller, bindsWindow);
+    uiControl *bindsGroup = uiBindsBuild(client, bindsWindow);
     
     uiWindowOnClosing(bindsWindow, onBindsWindowClose, NULL);
     uiWindowSetMargined(bindsWindow, 1);
@@ -358,15 +343,15 @@ static void init() {
     mapPutInt(cache, CACHE_RESETS, 0);
     mapPutBool(cache, CACHE_OPENING_GAME, false);
     mapPutBool(cache, CACHE_CLOSING_GAME, false);
-    GameConfig config = controllerGetGameConfig(controller);
-    uiCheckboxSetChecked(patchMovementCheckbox, config.fixMovementSpeed);
-    uiCheckboxSetChecked(showFpsCheckbox, config.showFps);
-    uiEntrySetText(hostnameEntry, config.hostname);
-    uiEntrySetText(locationEntry, config.location);
+    GameConfigInfo config;
+    if (clientGetGameConfig(client, &config) == CLIENT_OK) {
+        uiEntrySetText(hostnameEntry, config.hostname);
+        uiEntrySetText(locationEntry, config.location);
+    }
 }
 
-static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
-    controller = controllerInstance;
+static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
+    client = clientInstance;
     parent = parentInstance;
 
     attrRed = uiNewColorAttribute(181/256.0, 38/256.0, 62/256.0, 1.0);
@@ -452,26 +437,29 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
 
 static void update() {
-    Config *config = controllerGetConfig(controller);
-    GameConfig *game = &config->game;
-    
-    // Sync UI with config values (in case commands changed them)
-    if (uiCheckboxChecked(patchMovementCheckbox) != game->fixMovementSpeed) {
-        uiCheckboxSetChecked(patchMovementCheckbox, game->fixMovementSpeed);
+    const GuiSnapshot *s = guiGetSnapshot();
+
+    // fix-movement-speed / show-fps checkboxes reflect live cheat state.
+    bool enabled;
+    if (guiSnapshotCheat(CHEAT_NAME_FIX_MOVEMENT_SPEED, &enabled) &&
+        uiCheckboxChecked(patchMovementCheckbox) != enabled) {
+        uiCheckboxSetChecked(patchMovementCheckbox, enabled);
     }
-    if (uiCheckboxChecked(showFpsCheckbox) != game->showFps) {
-        uiCheckboxSetChecked(showFpsCheckbox, game->showFps);
+    if (guiSnapshotCheat(CHEAT_NAME_SHOW_FPS, &enabled) &&
+        uiCheckboxChecked(showFpsCheckbox) != enabled) {
+        uiCheckboxSetChecked(showFpsCheckbox, enabled);
     }
-    
-    // Sync hostname entry with config
-    char *currentHostname = uiEntryText(hostnameEntry);
-    if (strcmp(currentHostname, game->hostname) != 0) {
-        uiEntrySetText(hostnameEntry, game->hostname);
+
+    // Sync hostname entry with the configured value.
+    if (s->gameConfigValid) {
+        char *currentHostname = uiEntryText(hostnameEntry);
+        if (strcmp(currentHostname, s->gameConfig.hostname) != 0) {
+            uiEntrySetText(hostnameEntry, s->gameConfig.hostname);
+        }
+        uiFreeText(currentHostname);
     }
-    uiFreeText(currentHostname);
-    
-    State *state = controllerGetState(controller);
-    bool gameAttached = state->isGameAttached;
+
+    bool gameAttached = s->statusValid ? s->status.attached : mapGetBool(cache, CACHE_GAME_ATTACHED);
     // Avoid redrawing the area and modifying components constantly
     if (gameAttached != mapGetBool(cache, CACHE_GAME_ATTACHED)) {
         statusCurrentText = gameAttached ? statusRunningText : statusNotRunningText;
@@ -491,45 +479,21 @@ static void update() {
         statusCurrentText = statusClosingText;
         uiAreaQueueRedrawAll(statusArea);
     }
-    int resets = state->gameResets;
-    if (resets != mapGetInt(cache, CACHE_RESETS)) {
-        char resetsStr[4];
-        sprintf(resetsStr, "%d", resets);
-        uiLabelSetText(resetsNumLabel, resetsStr);
-        mapPutInt(cache, CACHE_RESETS, resets);
+    if (s->stateValid) {
+        int resets = s->state.gameResets;
+        if (resets != mapGetInt(cache, CACHE_RESETS)) {
+            char resetsStr[16];
+            sprintf(resetsStr, "%d", resets);
+            uiLabelSetText(resetsNumLabel, resetsStr);
+            mapPutInt(cache, CACHE_RESETS, resets);
+        }
     }
-    widgetsControlGroup->update();
-    bindsControlGroup->update();
+    uiWidgetsUpdate();
+    uiBindsUpdate();
 }
 
-// External API for Controller
-bool uiGameIsChecked(CheatName cheat) {
-    switch (cheat) {
-        case CHEAT_NAME_FIX_MOVEMENT_SPEED:
-            return uiCheckboxChecked(patchMovementCheckbox);
-        case CHEAT_NAME_SHOW_FPS:
-            return uiCheckboxChecked(showFpsCheckbox);
-        default:
-            LOG_ERROR("Unknown cheat %d", cheat);
-            return false;
-    }
-}
-
-char *uiGameGetLocation() {
-    return uiEntryText(locationEntry);
-}
-
-char *uiGameGetHostname() {
-    return uiEntryText(hostnameEntry);
-}
-
-void uiGameSetLocation(const char *location) {
-    if (locationEntry && location) {
-        uiEntrySetText(locationEntry, location);
-    }
-}
-
-bool uiGamePromptLocation(void) {    
+bool uiGamePromptLocation(char *outDir, size_t size) {
+    if (!outDir || size == 0) return false;
     int okPressed = uiMsgBoxOkCancel(parent, "Welcome to Black Ops 1 Zombies Trainer!", 
              "Before training the be next Black Ops 1 Zombies hero...\nI need to know where your game is installed.\nPlease select the BlackOps.exe executable to continue.");
 
@@ -549,11 +513,9 @@ bool uiGamePromptLocation(void) {
     // Store only the directory, not the full executable path
     char gameDir[MAX_PATH];
     extractDirectory(gamePath, gameDir, MAX_PATH);
-    uiGameSetLocation(gameDir);
     uiFreeText(gamePath);
-    Config *config = controllerGetConfig(controller);
-    strncpy(config->game.location, gameDir, sizeof(config->game.location) - 1);
-    configSave(config);
+    if (locationEntry) uiEntrySetText(locationEntry, gameDir);
+    snprintf(outDir, size, "%s", gameDir);
     return true;
 }
 

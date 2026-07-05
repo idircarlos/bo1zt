@@ -1,5 +1,5 @@
-#ifndef UI_BINDS_KEYMAP_H_
-#define UI_BINDS_KEYMAP_H_
+#ifndef LOGIC_BIND_KEYMAP_H_
+#define LOGIC_BIND_KEYMAP_H_
 
 #include <stdbool.h>
 
@@ -12,4 +12,4 @@ int keymapGetVKCode(const char *keyName);
 const KeyMapping *keymapGetMappings(void);
 bool keymapIsModifier(const char *keyName);
 
-#endif // UI_BINDS_KEYMAP_H_
+#endif // LOGIC_BIND_KEYMAP_H_

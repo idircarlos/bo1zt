@@ -11,8 +11,12 @@
 #include "logic/event.h"
 #include "win/resources.h"
 #include "resource_ids.h"
+#include "service.h"
+#include "client.h"
+#include "cli.h"
 
 static Controller *controller = NULL;
+static Service *service = NULL;
 
 int processRunningThread(void *data) {
     (void)data;
@@ -87,6 +91,7 @@ int updateGameThread(void *data) {
     while (true) {
         controllerUpdateState(controller);
         controllerUpdateTrainerConfig(controller);
+        controllerUpdateManagers(controller);
         threadSleep(1000/60); // 60 FPS
     }
 }
@@ -121,27 +126,50 @@ static void setupResources() {
 static void promptGameLocationAware() {
     GameConfig gameConfig = controllerGetGameConfig(controller);
     if (strlen(gameConfig.location) == 0) {
-        if (!uiGamePromptLocation()) {
+        char dir[MAX_PATH];
+        if (!uiGamePromptLocation(dir, sizeof(dir))) {
             uiQuit();
             exit(0);
         }
+        Config *config = controllerGetConfig(controller);
+        strncpy(config->game.location, dir, sizeof(config->game.location) - 1);
+        config->game.location[sizeof(config->game.location) - 1] = '\0';
+        configSave(config);
     }
 }
 
 
-int main(void) {
+int main(int argc, char **argv) {
+    if (argc > 1) {
+        return cliMain(argc, argv);
+    }
+
     loggerInit(NULL);
     controller = controllerCreate();
     setupResources();
-    guiInit(controller);
-    
-    // Prompt game location MsgBox if first time using the app
+
+    controllerInitManagers(controller);
+
+    service = serviceCreate(controller);
+    int port = serviceResolvePort();
+    serviceServe(service, port);
+
+    Client *client = clientCreate(port);
+    for (int i = 0; i < 100; i++) {
+        char version[64];
+        if (clientGetVersion(client, version, sizeof(version)) == CLIENT_OK) break;
+        threadSleep(20);
+    }
+
+    guiInit(client, port);
+
     promptGameLocationAware();
-    
+
     threadCreate(processRunningThread, NULL);
     threadCreate(updateGameThread, NULL);
     threadCreate(eventHandlerThread, NULL);
     guiRun();
     guiCleanup();
+    clientDestroy(client);
     return 0;
 }

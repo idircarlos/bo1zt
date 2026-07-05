@@ -1,66 +1,34 @@
 #include "gui/widgets.h"
 #include "gui/gui_internal.h"
-#include "utils/common.h"
-#include "widget/timer.h"
-#include "widget/velocity.h"
-#include "widget/cycle.h"
-#include "widget/zombies.h"
-#include "widget/entities.h"
-#include "utils/map.h"
+#include "client/widgets.h"
 #include "logger.h"
-#include "logic/state.h"
-#include "logic/game.h"
 #include <ui.h>
+#include <windows.h>
 #include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
+
+#define WIDGETS_POLL_INTERVAL_MS 250
 
 #define N_WIDGETS 6
-#define WIDGET_TIMER "Timer"
-#define WIDGET_ROUND_TIMER "Round Timer"
-#define WIDGET_VELOCITY "Velocity"
-#define WIDGET_CYCLE "Powerup Cycle"
-#define WIDGET_ZOMBIES "Zombies Left"
-#define WIDGET_ENTITIES "Entities"
-
-#define WIDGET_TRANSFORMING "WIDGET_TRANSFORMING"
-#define WIDGET_GAME_WAS_RUNNING "WIDGET_GAME_WAS_RUNNING"
-
 #define N_FONTS 21
 
-// Widget types for the table
-typedef enum {
-    WIDGET_NAME_TIMER,
-    WIDGET_NAME_ROUND_TIMER,
-    WIDGET_NAME_VELOCITY,
-    WIDGET_NAME_CYCLE,
-    WIDGET_NAME_ZOMBIES,
-    WIDGET_NAME_ENTITIES
-} WidgetName;
+static const char *widgetLabels[N_WIDGETS] = {
+    "Timer", "Round Timer", "Velocity", "Powerup Cycle", "Zombies Left", "Entities",
+};
 
-typedef struct {
-    bool enabled;
-    int fontIndex;
-    Color color;
-    bool hideOutsideGame;
-    bool resetable;
-    Rect rect;
-    int fontSize;
-} WidgetProps;
+static const char *fontNames[N_FONTS] = {
+    "Digital-7 Mono", "Arial", "Times New Roman", "Calibri", "Segoe UI",
+    "Tahoma", "Verdana", "Georgia", "Trebuchet MS", "Comic Sans MS",
+    "Impact", "Arial Black", "Palatino Linotype", "Book Antiqua",
+    "Lucida Console", "Courier New", "MS Sans Serif", "MS Serif",
+    "Small Fonts", "Symbol", "Wingdings",
+};
 
-typedef struct {
-    Widget *widget;
-    WidgetProps status;
-    char name[32];
-} WidgetObj;
+static Client *client = NULL;
+static uiWindow *parent = NULL;
 
-// Controller instance
-static Controller *controller;
-static uiWindow *parent;
-
-static Map *cache = NULL;
-
-static WidgetObj *widgets[N_WIDGETS] = { NULL, NULL, NULL, NULL, NULL, NULL };
+static WidgetConfig widgets[N_WIDGETS];
 
 // UI Components
 static uiTable *widgetTable = NULL;
@@ -71,7 +39,6 @@ static uiLabel *fontLabel = NULL;
 static uiLabel *colorLabel = NULL;
 static uiCheckbox *hideOutsideGameCheckbox = NULL;
 static uiButton *btnReset = NULL;
-static uiButton *btnSave = NULL;
 static uiTableModelHandler tableHandler;
 static uiTableParams tableParams;
 
@@ -81,100 +48,80 @@ static uiAttributedString *hintText = NULL;
 
 static int selectedWidgetIndex = 0;
 
-static const char* widgetNames[N_WIDGETS] = {
-    "Timer",
-    "Round Timer",
-    "Velocity",
-    "Powerup Cycle",
-    "Zombies Left",
-    "Entities"
-};
+static ULONGLONG lastPoll = 0;
 
-static const char* widgetConfigNames[N_WIDGETS] = {
-    "Timer",
-    "RoundTimer",
-    "Velocity",
-    "Cycle",
-    "Zombies",
-    "Entities"
-};
+// --- Helpers ----------------------------------------------------------------
 
-static const char* fontNames[N_FONTS] = {
-    "Digital-7 Mono",
-    "Arial",
-    "Times New Roman",
-    "Calibri",
-    "Segoe UI",
-    "Tahoma",
-    "Verdana",
-    "Georgia",
-    "Trebuchet MS",
-    "Comic Sans MS",
-    "Impact",
-    "Arial Black",
-    "Palatino Linotype",
-    "Book Antiqua",
-    "Lucida Console",
-    "Courier New",
-    "MS Sans Serif",
-    "MS Serif",
-    "Small Fonts",
-    "Symbol",
-    "Wingdings"
-};
+static bool colorEquals(Color a, Color b) {
+    return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
+}
 
+static const char *widgetNameAt(int index) {
+    return clientWidgetNameAt(index);
+}
 
-static void updateWidgetVisibility(WidgetObj *obj, bool isGameRunning);
-static void updateAllWidgetsVisibility();
+static int fontIndexOf(const char *font) {
+    for (int i = 0; i < N_FONTS; i++) {
+        if (strcmp(font, fontNames[i]) == 0) return i;
+    }
+    return 0;
+}
 
-// Table model functions
+static bool pullWidget(int index) {
+    const char *name = widgetNameAt(index);
+    if (!name) return false;
+    return clientGetWidget(client, name, &widgets[index]) == CLIENT_OK;
+}
+
+static void pushWidget(int index) {
+    const char *name = widgetNameAt(index);
+    if (!name) return;
+    WidgetConfig fresh;
+    if (clientGetWidget(client, name, &fresh) == CLIENT_OK) {
+        fresh.enabled = widgets[index].enabled;
+        snprintf(fresh.font, sizeof(fresh.font), "%s", widgets[index].font);
+        fresh.textColor = widgets[index].textColor;
+        fresh.hideOutsideGame = widgets[index].hideOutsideGame;
+        widgets[index] = fresh;
+    }
+    clientSetWidget(client, name, &widgets[index]);
+}
+
+// --- Table model ------------------------------------------------------------
+
 static int tableModelNumColumns(uiTableModelHandler *mh, uiTableModel *m) {
-    (void)mh;
-    (void)m;
+    (void)mh; (void)m;
     return 2; // Checkbox and Name
 }
 
 static uiTableValueType tableModelColumnType(uiTableModelHandler *mh, uiTableModel *m, int column) {
-    (void)mh;
-    (void)m;
-    if (column == 0) {
-        return uiTableValueTypeInt; // For checkbox
-
-    }
-    return uiTableValueTypeString; // For widget name
+    (void)mh; (void)m;
+    if (column == 0) return uiTableValueTypeInt; // checkbox
+    return uiTableValueTypeString;
 }
 
 static int tableModelNumRows(uiTableModelHandler *mh, uiTableModel *m) {
-    (void)mh;
-    (void)m;
+    (void)mh; (void)m;
     return N_WIDGETS;
 }
 
 static uiTableValue *tableModelCellValue(uiTableModelHandler *mh, uiTableModel *m, int row, int column) {
-    (void)mh;
-    (void)m;
-    
+    (void)mh; (void)m;
     if (column == 0) {
-        // Checkbox column
-        return uiNewTableValueInt(widgets[row]->status.enabled ? 1 : 0);
-    } else {
-        // Widget column
-        return uiNewTableValueString(widgets[row]->name);
+        return uiNewTableValueInt(widgets[row].enabled ? 1 : 0);
     }
+    return uiNewTableValueString(widgetLabels[row]);
 }
 
 static void tableModelSetCellValue(uiTableModelHandler *mh, uiTableModel *m, int row, int column, const uiTableValue *val) {
-    (void)mh;
-    (void)m;
-    // Checkbox column
+    (void)mh; (void)m;
     if (column == 0) {
-        bool checked = uiTableValueInt(val) != 0;
-        widgets[row]->status.enabled = checked;
-        State *state = controllerGetState(controller);
-        updateWidgetVisibility(widgets[row], gameRunning(&state->activeGame));
-        uiControlEnable(uiControl(btnSave));
+        widgets[row].enabled = uiTableValueInt(val) != 0;
+        pushWidget(row);
     }
 }
+
+// --- Hint area (ALT drag/resize) --------------------------------------------
 
 static void hintHandlerDragBroken(uiAreaHandler *a, uiArea *area) { (void)a; (void)area; }
 static int hintHandlerKeyEvent(uiAreaHandler *a, uiArea *area, uiAreaKeyEvent *e) { (void)a; (void)area; (void)e; return 0; }
@@ -182,10 +129,8 @@ static void hintHandlerMouseCrossed(uiAreaHandler *a, uiArea *area, int left) { 
 static void hintHandlerMouseEvent(uiAreaHandler *a, uiArea *area, uiAreaMouseEvent *e) { (void)a; (void)area; (void)e; }
 
 static void hintHandlerDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
-    (void)a;
-    (void)area;
-    if (!hintText)
-        return;
+    (void)a; (void)area;
+    if (!hintText) return;
     uiFontDescriptor font;
     uiDrawTextLayoutParams params;
     uiDrawTextLayout *layout;
@@ -199,7 +144,6 @@ static void hintHandlerDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p)
     layout = uiDrawNewTextLayout(&params);
     uiDrawText(p->Context, layout, 0, 0);
     uiDrawFreeTextLayout(layout);
-
     uiFreeFontButtonFont(&font);
 }
 
@@ -218,190 +162,70 @@ static uiAttributedString *buildHintAttributedString() {
     return attributedString;
 }
 
-static void resetWidgetStatus(WidgetObj *obj) {
-    obj->status.fontIndex = 0;
-    obj->status.color = colorCreate(255, 255, 255, 255);
-    obj->status.hideOutsideGame = false;
-    obj->status.resetable = false;
-    widgetSetFont(obj->widget,fontNames[obj->status.fontIndex]);
-    widgetSetTextColor(obj->widget, obj->status.color);
+// --- Event handlers ---------------------------------------------------------
+
+static void refreshCustomizationControls(int index) {
+    uiComboboxSetSelected(widgetFontCombobox, fontIndexOf(widgets[index].font));
+    setColorButton(widgetColorBtn, widgets[index].textColor);
+    uiCheckboxSetChecked(hideOutsideGameCheckbox, widgets[index].hideOutsideGame);
 }
 
-static void updateWidgetVisibility(WidgetObj *obj, bool isGameRunning) {
-    if (!obj->status.enabled || (obj->status.hideOutsideGame && !isGameRunning)) {
-        widgetHide(obj->widget);
-    } else {
-        widgetShow(obj->widget);
-    }
-}
-
-static void updateAllWidgetsVisibility() {
-    State *state = controllerGetState(controller);
-    bool isGameRunning = gameRunning(&state->activeGame);
-    for (int i = 0; i < N_WIDGETS; i++) {
-        updateWidgetVisibility(widgets[i], isGameRunning);
-    }
-}
-
-static WidgetObj *createWidgetObj(WidgetName widgetName, Widget *widget) {
-    WidgetObj *obj = (WidgetObj *)malloc(sizeof(WidgetObj));
-    if (!obj) return NULL;
-    const char *name = widgetNames[widgetName];
-    strcpy(obj->name, name);
-    obj->status.enabled = false;
-    obj->status.fontIndex = 0;
-    obj->status.color = colorCreate(255, 255, 255, 255);
-    obj->status.hideOutsideGame = false;
-    obj->status.resetable = false;
-    obj->widget = widget;
-    widgets[widgetName] = obj; 
-    return obj;
-}
-
-static void updateWidgetObj(WidgetObj *obj, WidgetProps props) {
-    obj->status.enabled = props.enabled;
-    obj->status.fontIndex = props.fontIndex;
-    obj->status.color = props.color;
-    obj->status.hideOutsideGame = props.hideOutsideGame;
-    obj->status.resetable = props.resetable;
-    obj->status.rect = props.rect;
-    obj->status.fontSize = props.fontSize;
-    widgetSetFont(obj->widget, fontNames[obj->status.fontIndex]);
-    widgetSetTextColor(obj->widget, obj->status.color);
-    widgetSetPosition(obj->widget, obj->status.rect);
-    widgetSetFontSize(obj->widget, obj->status.fontSize);
-}
-
-
-// Event handlers
 static void onTableSelectionChanged(uiTable *table, void *data) {
     (void)data;
     uiTableSelection *selection = uiTableGetSelection(table);
     if (selection && selection->NumRows > 0 && selection->Rows) {
-        selectedWidgetIndex = selection->Rows[0]; // Get first selected row
+        selectedWidgetIndex = selection->Rows[0];
     }
-    WidgetObj *obj = widgets[selectedWidgetIndex];
-    uiComboboxSetSelected(widgetFontCombobox, obj->status.fontIndex);
-    setColorButton(widgetColorBtn, obj->status.color);
-    uiCheckboxSetChecked(hideOutsideGameCheckbox, obj->status.hideOutsideGame);
-    if (obj->status.resetable) uiControlEnable(uiControl(btnReset));
-    else uiControlDisable(uiControl(btnReset));
-    if (selection) {
-        uiFreeTableSelection(selection);
-    }
+    refreshCustomizationControls(selectedWidgetIndex);
+    if (selection) uiFreeTableSelection(selection);
 }
 
 static void onFontChanged(uiCombobox *combobox, void *data) {
-    (void)combobox;
     (void)data;
-    // TODO: Apply Font on update()
-    if (selectedWidgetIndex >= 0) {
-        int fontIndex = uiComboboxSelected(combobox);
-        if (fontIndex >= 0) {
-            widgets[selectedWidgetIndex]->status.fontIndex = fontIndex;
-            widgetSetFont(widgets[selectedWidgetIndex]->widget, fontNames[fontIndex]);
-        }
-        widgets[selectedWidgetIndex]->status.resetable = true;
-        uiControlEnable(uiControl(btnReset));
-        uiControlEnable(uiControl(btnSave));
-    }
+    if (selectedWidgetIndex < 0) return;
+    int fontIndex = uiComboboxSelected(combobox);
+    if (fontIndex < 0) return;
+    snprintf(widgets[selectedWidgetIndex].font, sizeof(widgets[selectedWidgetIndex].font),
+             "%s", fontNames[fontIndex]);
+    pushWidget(selectedWidgetIndex);
 }
 
 static void onColorChanged(uiColorButton *button, void *data) {
-    (void)button;
-    (void)data;
-    // TODO: Apply Color on update()
-    if (selectedWidgetIndex >= 0) {
-        widgets[selectedWidgetIndex]->status.color = buildColor(widgetColorBtn);
-        widgetSetTextColor(widgets[selectedWidgetIndex]->widget, widgets[selectedWidgetIndex]->status.color);
-        widgets[selectedWidgetIndex]->status.resetable = true;
-        uiControlEnable(uiControl(btnReset));
-        uiControlEnable(uiControl(btnSave));
-    }
+    (void)button; (void)data;
+    if (selectedWidgetIndex < 0) return;
+    widgets[selectedWidgetIndex].textColor = buildColor(widgetColorBtn);
+    pushWidget(selectedWidgetIndex);
 }
 
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
-    (void)checkbox;
-    (void)data;
-    if (selectedWidgetIndex >= 0) {
-        bool hideOutsideGame = uiCheckboxChecked(hideOutsideGameCheckbox);
-        widgets[selectedWidgetIndex]->status.hideOutsideGame = hideOutsideGame;
-        widgets[selectedWidgetIndex]->status.resetable = true;
-        uiControlEnable(uiControl(btnReset));
-        uiControlEnable(uiControl(btnSave));
-        
-        // Update visibility using centralized logic
-        State *state = controllerGetState(controller);
-        updateWidgetVisibility(widgets[selectedWidgetIndex], gameRunning(&state->activeGame));
-    }
+    (void)checkbox; (void)data;
+    if (selectedWidgetIndex < 0) return;
+    widgets[selectedWidgetIndex].hideOutsideGame = uiCheckboxChecked(hideOutsideGameCheckbox);
+    pushWidget(selectedWidgetIndex);
 }
 
 static void onResetButtonClick(uiButton *button, void *data) {
-    (void)button;
-    (void)data;
-    WidgetObj *obj = widgets[selectedWidgetIndex];
-    resetWidgetStatus(obj);
-    controllerResetWidgetConfig(controller, selectedWidgetIndex);
-    uiComboboxSetSelected(widgetFontCombobox, 0);
-    setColorButton(widgetColorBtn, colorCreate(255, 255, 255, 255));
-    uiCheckboxSetChecked(hideOutsideGameCheckbox, false);
-    uiControlDisable(uiControl(btnReset));
-    uiControlEnable(uiControl(btnSave));
-    obj->status.resetable = false;
+    (void)button; (void)data;
+    const char *name = widgetNameAt(selectedWidgetIndex);
+    if (!name) return;
+    clientResetWidget(client, name);
+    pullWidget(selectedWidgetIndex);
+    refreshCustomizationControls(selectedWidgetIndex);
+    uiTableModelRowChanged(widgetTableModel, selectedWidgetIndex);
 }
 
-static void onSaveButtonClick(uiButton *button, void *data) {
-    (void)button;
-    (void)data;
-    Config *config = controllerGetConfig(controller);
-    for (int i = 0; i < N_WIDGETS; i++) {
-        config->widgets[i].enabled = widgets[i]->status.enabled;
-        strcpy(config->widgets[i].font, fontNames[widgets[i]->status.fontIndex]);
-        config->widgets[i].textColor = widgets[i]->status.color;
-        config->widgets[i].hideOutsideGame = widgets[i]->status.hideOutsideGame;
-        config->widgets[i].rect = widgetGetPosition(widgets[i]->widget);
-        config->widgets[i].fontSize = widgetGetFontSize(widgets[i]->widget);
-    }
-    configSave(config);
-    uiControlDisable(uiControl(btnSave));
-}
-
-static WidgetProps getWidgetPropsFromConfig(int index) {
-    WidgetConfig widgetConfig = controllerGetWidgetConfig(controller, index);
-    int fontIndex = 0;
-    for (int j = 0; j < N_FONTS; j++) {
-        if (strcmp(widgetConfig.font, fontNames[j]) == 0) {
-            fontIndex = j;
-            break;
-        }
-    }
-    WidgetProps props = {
-        widgetConfig.enabled,
-        fontIndex,
-        widgetConfig.textColor,
-        widgetConfig.hideOutsideGame,
-        false,
-        widgetConfig.rect,
-        widgetConfig.fontSize,
-    };
-    return props;
-}
+// --- Build ------------------------------------------------------------------
 
 static void init() {
     for (int i = 0; i < N_WIDGETS; i++) {
-        WidgetProps props = getWidgetPropsFromConfig(i);
-        updateWidgetObj(widgets[i], props);
+        pullWidget(i);
     }
-    updateAllWidgetsVisibility();
-    uiComboboxSetSelected(widgetFontCombobox, widgets[WIDGET_NAME_TIMER]->status.fontIndex);
-    setColorButton(widgetColorBtn, widgets[WIDGET_NAME_TIMER]->status.color);
     selectedWidgetIndex = 0;
-    uiControlDisable(uiControl(btnSave));
+    refreshCustomizationControls(selectedWidgetIndex);
 }
 
-
-static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
-    controller = controllerInstance;
+uiControl *uiWidgetsBuild(Client *clientInstance, uiWindow *parentInstance) {
+    client = clientInstance;
     parent = parentInstance;
 
     uiBox *mainBox = uiNewHorizontalBox();
@@ -420,15 +244,15 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     tableParams.Model = widgetTableModel;
     tableParams.RowBackgroundColorModelColumn = -1;
-    
+
     widgetTable = uiNewTable(&tableParams);
     uiTableSetSelectionMode(widgetTable, uiTableSelectionModeOne);
     uiTableHeaderSetVisible(widgetTable, 0);
-    
+
     uiTableAppendCheckboxColumn(widgetTable, "Enabled", 0, uiTableModelColumnAlwaysEditable);
     uiTableAppendTextColumn(widgetTable, "Widget", 1, uiTableModelColumnNeverEditable, NULL);
     uiTableColumnSetWidth(widgetTable, 0, -1);
-    
+
     uiTableOnSelectionChanged(widgetTable, onTableSelectionChanged, NULL);
 
     uiBoxAppend(leftBox, uiControl(widgetTable), 1);
@@ -438,37 +262,30 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 
     uiGrid *customizationGrid = uiNewGrid();
     uiGridSetPadded(customizationGrid, 1);
-    
+
     fontLabel = uiNewLabel("Font ");
     widgetFontCombobox = uiNewCombobox();
-
-    for (int i = 0; i < 21; i++) {
+    for (int i = 0; i < N_FONTS; i++) {
         uiComboboxAppend(widgetFontCombobox, fontNames[i]);
     }
     uiComboboxSetSelected(widgetFontCombobox, 0);
-    
+
     colorLabel = uiNewLabel("Color ");
     widgetColorBtn = uiNewColorButton();
     hideOutsideGameCheckbox = uiNewCheckbox(" Hide Outside Game");
     btnReset = uiNewButton("Reset");
 
-    uiControlDisable(uiControl(btnReset));
-    
     uiGridAppend(customizationGrid, uiControl(fontLabel),               0, 0, 1, 1, 0, uiAlignStart, 0, uiAlignCenter);
     uiGridAppend(customizationGrid, uiControl(widgetFontCombobox),      1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(customizationGrid, uiControl(colorLabel),              0, 1, 1, 1, 0, uiAlignStart, 0, uiAlignCenter);
     uiGridAppend(customizationGrid, uiControl(widgetColorBtn),          1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(customizationGrid, uiControl(hideOutsideGameCheckbox), 0, 2, 2, 1, 1, uiAlignFill, 0, uiAlignFill);
-    
-    
-    hintText = buildHintAttributedString();
 
+    hintText = buildHintAttributedString();
     hintArea = uiNewArea(&hintHandler);
-    
     uiAreaQueueRedrawAll(hintArea);
     uiGridAppend(customizationGrid, uiControl(hintArea),                0, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(customizationGrid, uiControl(btnReset),                0, 4, 2, 1, 1, uiAlignFill, 0, uiAlignFill);
-    
 
     uiBoxAppend(rightBox, uiControl(customizationGrid), 1);
 
@@ -480,168 +297,62 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     uiBoxAppend(mainBox, uiControl(leftBox), 1);
     uiBoxAppend(mainBox, uiControl(rightBox), 1);
 
-    btnSave = uiNewButton("Save");
-    
-    uiButtonOnClicked(btnSave, onSaveButtonClick, NULL);
-
     uiBox *outerBox = uiNewVerticalBox();
     uiBoxSetPadded(outerBox, 1);
     uiBoxAppend(outerBox, uiControl(mainBox), 1);
-    uiBoxAppend(outerBox, uiControl(btnSave), 0);
- 
-    State *state = controllerGetState(controller);
-    Game *activeGame = &state->activeGame;
 
-    createWidgetObj(WIDGET_NAME_TIMER, timerWidgetCreate(&(activeGame->elapsed)));
-    createWidgetObj(WIDGET_NAME_ROUND_TIMER, timerWidgetCreate(&(activeGame->currentRound.elapsed)));
-    createWidgetObj(WIDGET_NAME_VELOCITY, velocityWidgetCreate(&(activeGame->movementSpeed)));
-    createWidgetObj(WIDGET_NAME_CYCLE, cycleWidgetCreate());
-    createWidgetObj(WIDGET_NAME_ZOMBIES, zombiesWidgetCreate(&(activeGame->currentRound.zombiesLeft)));
-    createWidgetObj(WIDGET_NAME_ENTITIES, entitiesWidgetCreate(&(activeGame->currentEntities), &(activeGame->maxEntities)));
-    cache = mapCreate();
-    mapPutBool(cache, WIDGET_TRANSFORMING, false);
-    mapPutBool(cache, WIDGET_GAME_WAS_RUNNING, false);
     init();
 
     return uiControl(outerBox);
 }
 
-static void update() {
-    // For some reason uiTableSelectionModeOne does not work properly when clicking on an empty area of the table, having 0 row selected.
-    // As a workaround, if user is deselecting any row, keep focusing to that one. Do it only when the window is visible.
-    if (uiControlVisible(uiControl(parent))) {
-        uiTableSelection *selection = uiTableGetSelection(widgetTable);
-        
-        if (selection != NULL) {
-            if (selection->NumRows == 0 || selection->Rows == NULL) {
-                uiTableSelection currentSelection;
-                int indexes[] = {selectedWidgetIndex};
-                currentSelection.NumRows = 1;
-                currentSelection.Rows = indexes;
-                uiTableSetSelection(widgetTable, &currentSelection);
-            }
-            uiFreeTableSelection(selection);
-        }
-    }
-    
-    bool wasTransforming = mapGetBool(cache, WIDGET_TRANSFORMING);
-    bool isTransformingNow = false;
+void uiWidgetsReload(void) {
     for (int i = 0; i < N_WIDGETS; i++) {
-        if (widgetIsTransforming(widgets[i]->widget)) {
-            isTransformingNow = true;
-            break;
+        pullWidget(i);
+        uiTableModelRowChanged(widgetTableModel, i);
+    }
+    refreshCustomizationControls(selectedWidgetIndex);
+}
+
+static void livePoll(void) {
+    ULONGLONG now = GetTickCount64();
+    if (lastPoll != 0 && now - lastPoll < WIDGETS_POLL_INTERVAL_MS) return;
+    lastPoll = now;
+
+    for (int i = 0; i < N_WIDGETS; i++) {
+        const char *name = widgetNameAt(i);
+        if (!name) continue;
+
+        WidgetConfig fresh;
+        if (clientGetWidget(client, name, &fresh) != CLIENT_OK) continue;
+
+        bool enabledChanged = fresh.enabled != widgets[i].enabled;
+        bool controlsChanged = (i == selectedWidgetIndex) &&
+            (strcmp(fresh.font, widgets[i].font) != 0 ||
+             !colorEquals(fresh.textColor, widgets[i].textColor) ||
+             fresh.hideOutsideGame != widgets[i].hideOutsideGame);
+
+        widgets[i] = fresh;
+
+        if (enabledChanged) uiTableModelRowChanged(widgetTableModel, i);
+        if (controlsChanged) refreshCustomizationControls(selectedWidgetIndex);
+    }
+}
+
+void uiWidgetsUpdate(void) {
+    if (!parent || !uiControlVisible(uiControl(parent))) return;
+
+    livePoll();
+
+    uiTableSelection *selection = uiTableGetSelection(widgetTable);
+    if (selection != NULL) {
+        if (selection->NumRows == 0 || selection->Rows == NULL) {
+            uiTableSelection currentSelection;
+            int indexes[] = {selectedWidgetIndex};
+            currentSelection.NumRows = 1;
+            currentSelection.Rows = indexes;
+            uiTableSetSelection(widgetTable, &currentSelection);
         }
+        uiFreeTableSelection(selection);
     }
-    if (wasTransforming && !isTransformingNow) {
-        Config *config = controllerGetConfig(controller);
-        for (int i = 0; i < N_WIDGETS; i++) {
-            config->widgets[i].rect = widgetGetPosition(widgets[i]->widget);
-            config->widgets[i].fontSize = widgetGetFontSize(widgets[i]->widget);
-        }
-        configSave(config);
-    }
-    mapPutBool(cache, WIDGET_TRANSFORMING, isTransformingNow);
-
-    // Dynamic show/hide based on game state changes
-    State *state = controllerGetState(controller);
-    bool isGameRunning = gameRunning(&state->activeGame);
-    bool wasGameRunning = mapGetBool(cache, WIDGET_GAME_WAS_RUNNING);
-    
-    if (isGameRunning != wasGameRunning) {
-        updateAllWidgetsVisibility();
-        mapPutBool(cache, WIDGET_GAME_WAS_RUNNING, isGameRunning);
-    }
-}
-
-
-// External API for Controller
-UIControlGroup *uiWidgetsBuildControlGroup() {
-    UIControlGroup *cg = guiControlGroupCreate(build, update);
-    return cg;
-}
-
-const char *uiWidgetsGetName(int index) {
-    if (index < 0 || index >= N_WIDGETS) return NULL;
-    return widgetConfigNames[index];
-}
-
-bool uiWidgetsIsEnabled(int index) {
-    if (index < 0 || index >= N_WIDGETS) return false;
-    return widgets[index]->status.enabled;
-}
-
-const char *uiWidgetsGetFont(int index) {
-    if (index < 0 || index >= N_WIDGETS) return NULL;
-    int fontIndex = widgets[index]->status.fontIndex;
-    if (fontIndex < 0 || fontIndex >= N_FONTS) return NULL;
-    return fontNames[fontIndex];
-}
-
-Color uiWidgetsGetTextColor(int index) {
-    if (index < 0 || index >= N_WIDGETS) return colorCreate(255, 255, 255, 255);
-    return widgets[index]->status.color;
-}
-
-bool uiWidgetsIsHideOutsideGameChecked(int index) {
-    if (index < 0 || index >= N_WIDGETS) return false;
-    return widgets[index]->status.hideOutsideGame;
-}
-
-bool uiWidgetsIsSavable() {
-    return uiControlEnabled(uiControl(btnSave));
-}
-
-void uiWidgetsReset() {
-    init();
-}
-
-Rect uiWidgetsGetRect(int index) {
-    return widgetGetPosition(widgets[index]->widget);
-}
-
-int uiWidgetsGetFontSize(int index) {
-    return widgetGetFontSize(widgets[index]->widget);
-}
-
-Rect uiWidgetsGetDefaultRect(int index) {
-    switch(index) {
-        case WIDGET_NAME_TIMER:
-        case WIDGET_NAME_ROUND_TIMER:
-            return WIDGET_TIMER_RECT;
-        case WIDGET_NAME_VELOCITY:
-            return WIDGET_VELOCITY_RECT;
-        case WIDGET_NAME_CYCLE:
-            return WIDGET_CYCLE_RECT;
-        case WIDGET_NAME_ZOMBIES:
-            return WIDGET_ZOMBIES_RECT;
-        case WIDGET_NAME_ENTITIES:
-            return WIDGET_ENTITIES_RECT;
-        default:
-            LOG_ERROR("Unknown widget index %d", index);
-            return rectCreate(0, 0, 0, 0);
-    }
-}
-
-int uiWidgetsGetDefaultFontSize(int index) {
-    switch(index) {
-        case WIDGET_NAME_TIMER:
-        case WIDGET_NAME_ROUND_TIMER:
-            return WIDGET_TIMER_FONT_SIZE;
-        case WIDGET_NAME_VELOCITY:
-            return WIDGET_VELOCITY_FONT_SIZE;
-        case WIDGET_NAME_CYCLE:
-            return 0; // Cycle widget doesn't use font
-        case WIDGET_NAME_ZOMBIES:
-            return WIDGET_ZOMBIES_FONT_SIZE;
-        case WIDGET_NAME_ENTITIES:
-            return WIDGET_ENTITIES_FONT_SIZE;
-        default:
-            LOG_ERROR("Unknown widget index %d", index);
-            return 0;
-    }
-}
-
-Widget* uiWidgetsGetCycleWidget() {
-    if (!widgets[WIDGET_NAME_CYCLE]) return NULL;
-    return widgets[WIDGET_NAME_CYCLE]->widget;
 }

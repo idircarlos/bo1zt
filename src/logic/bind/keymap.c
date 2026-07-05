@@ -1,4 +1,4 @@
-#include "gui/binds/keymap.h"
+#include "logic/bind/keymap.h"
 #include <windows.h>
 #include <string.h>
 #include <stdbool.h>
@@ -47,7 +47,7 @@ const KeyMapping *keymapGetMappings(void) {
 
 bool keymapIsModifier(const char *keyName) {
     if (keyName == NULL) return false;
-    return (strcmp(keyName, "CTRL") == 0 || 
-            strcmp(keyName, "ALT") == 0 || 
+    return (strcmp(keyName, "CTRL") == 0 ||
+            strcmp(keyName, "ALT") == 0 ||
             strcmp(keyName, "SHIFT") == 0);
 }

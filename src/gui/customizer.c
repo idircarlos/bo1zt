@@ -1,14 +1,13 @@
 #include "gui/customizer.h"
+#include "client/customizer.h"
 #include "logger.h"
-#include "logic/cheat.h"
-#include "logic/cheat/manager.h"
 #include "logic/config.h"
 #include "gui/gui_internal.h"
 #include "utils/common.h"
 #include <ui.h>
 
-// Controller instance
-static Controller *controller;
+// Shared HTTP client
+static Client *client;
 static uiWindow *parent;
 
 // Components
@@ -37,135 +36,76 @@ static uiButton *btnSave;
 
 static void init();
 
-// Handlers
-static void onColorButtonChange(uiColorButton *button, void *data) {
-    SimpleCheatName cheat = (SimpleCheatName)(uintptr_t)data;
-    Color color = buildColor(button);
-    Config *config = controllerGetConfig(controller);
-    CustomizerConfig *customizer = &config->customizer;
-    
-    switch (cheat) {
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND:
-            customizer->scoreBackground = color;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1:
-            customizer->scorePlayer1 = color;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2:
-            customizer->scorePlayer2 = color;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3:
-            customizer->scorePlayer3 = color;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4:
-            customizer->scorePlayer4 = color;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY:
-            customizer->reloadWarnPrimary = color;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY:
-            customizer->reloadWarnSecondary = color;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY:
-            customizer->lowAmmoWarnPrimary = color;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY:
-            customizer->lowAmmoWarnSecondary = color;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY:
-            customizer->noAmmoWarnPrimary = color;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY:
-            customizer->noAmmoWarnSecondary = color;
-            break;
-        default:
-            break;
-    }
-    
-    // Apply immediately to game if attached
-    if (controllerIsGameAttached(controller)) {
-        controllerSetSimpleCheat(controller, cheat, &color);
-    }
-    
+static CustomizerConfig readCustomizerUi(void) {
+    CustomizerConfig c;
+    c.scoreBackground = buildColor(scoreBgBtn);
+    c.scorePlayer1 = buildColor(scoreP1Btn);
+    c.scorePlayer2 = buildColor(scoreP2Btn);
+    c.scorePlayer3 = buildColor(scoreP3Btn);
+    c.scorePlayer4 = buildColor(scoreP4Btn);
+    c.reloadWarnPrimary = buildColor(reloadPrimaryBtn);
+    c.reloadWarnSecondary = buildColor(reloadSecondaryBtn);
+    c.lowAmmoWarnPrimary = buildColor(lowAmmoPrimaryBtn);
+    c.lowAmmoWarnSecondary = buildColor(lowAmmoSecondaryBtn);
+    c.noAmmoWarnPrimary = buildColor(noAmmoPrimaryBtn);
+    c.noAmmoWarnSecondary = buildColor(noAmmoSecondaryBtn);
+    c.scoreboardTransparency = uiSliderValue(scoreboardTransparencySlider);
+    c.pointsTransparency = uiSliderValue(pointsTransparencySlider);
+    c.warningTransitionsFrequency = uiSpinboxValue(freqSpin);
+    c.warningTransitionsMin = uiSpinboxValue(minSpin);
+    c.warningTransitionsMax = uiSpinboxValue(maxSpin);
+    return c;
+}
+
+static void applyCustomizer(void) {
+    CustomizerConfig c = readCustomizerUi();
+    clientSetCustomizer(client, &c);
     uiControlEnable(uiControl(btnReset));
     uiControlEnable(uiControl(btnSave));
+}
+
+// Handlers
+static void onColorButtonChange(uiColorButton *button, void *data) {
+    (void)button;
+    (void)data;
+    applyCustomizer();
 }
 
 static void onSliderChange(uiSlider *slider, void *data) {
-    SimpleCheatName cheat = (SimpleCheatName)(uintptr_t)data;
-    int value = uiSliderValue(slider);
-    Config *config = controllerGetConfig(controller);
-    CustomizerConfig *customizer = &config->customizer;
-    
-    switch (cheat) {
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD:
-            customizer->scoreboardTransparency = value;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS:
-            customizer->pointsTransparency = value;
-            break;
-        default:
-            break;
-    }
-    
-    // Apply immediately to game if attached
-    if (controllerIsGameAttached(controller)) {
-        controllerSetSimpleCheat(controller, cheat, &value);
-    }
-    
-    uiControlEnable(uiControl(btnReset));
-    uiControlEnable(uiControl(btnSave));
+    (void)slider;
+    (void)data;
+    applyCustomizer();
 }
 
 static void onSpinboxChange(uiSpinbox *spinbox, void *data) {
-    SimpleCheatName cheat = (SimpleCheatName)(uintptr_t)data;
-    int value = uiSpinboxValue(spinbox);
-    Config *config = controllerGetConfig(controller);
-    CustomizerConfig *customizer = &config->customizer;
-    
-    switch (cheat) {
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY:
-            customizer->warningTransitionsFrequency = value;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN:
-            customizer->warningTransitionsMin = value;
-            break;
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX:
-            customizer->warningTransitionsMax = value;
-            break;
-        default:
-            break;
-    }
-    
-    // Apply immediately to game if attached
-    if (controllerIsGameAttached(controller)) {
-        controllerSetSimpleCheat(controller, cheat, &value);
-    }
-    
-    uiControlEnable(uiControl(btnReset));
-    uiControlEnable(uiControl(btnSave));
+    (void)spinbox;
+    (void)data;
+    applyCustomizer();
 }
 
 static void onResetButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    Config *config = controllerGetConfig(controller);
-    configResetCustomizer(config);
+    clientResetCustomizer(client);
     init();
     uiControlDisable(uiControl(btnReset));
-    uiControlEnable(uiControl(btnSave));
+    uiControlDisable(uiControl(btnSave));
 }
 
 static void onSaveButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    Config *config = controllerGetConfig(controller);
-    configSave(config);
+    CustomizerConfig c = readCustomizerUi();
+    clientSetCustomizer(client, &c);
     uiControlDisable(uiControl(btnSave));
 }
 
 static void init() {
-    CustomizerConfig config = controllerGetCustomizerConfig(controller);
+    CustomizerConfig config;
+    if (clientGetCustomizer(client, &config) != CLIENT_OK) {
+        uiControlDisable(uiControl(btnSave));
+        return;
+    }
     setColorButton(scoreBgBtn, config.scoreBackground);
     setColorButton(scoreP1Btn, config.scorePlayer1);
     setColorButton(scoreP2Btn, config.scorePlayer2);
@@ -185,8 +125,8 @@ static void init() {
     uiControlDisable(uiControl(btnSave));
 }
 
-static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
-    controller = controllerInstance;
+static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
+    client = clientInstance;
     parent = parentInstance;
 
     uiBox *outerBox = uiNewVerticalBox();
@@ -298,74 +238,6 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 }
 
 static void update() {
-    // Sync UI with config values (in case external sources changed them)
-    CustomizerConfig config = controllerGetCustomizerConfig(controller);
-    
-    if (uiSliderValue(scoreboardTransparencySlider) != config.scoreboardTransparency) {
-        uiSliderSetValue(scoreboardTransparencySlider, config.scoreboardTransparency);
-    }
-    if (uiSliderValue(pointsTransparencySlider) != config.pointsTransparency) {
-        uiSliderSetValue(pointsTransparencySlider, config.pointsTransparency);
-    }
-    if (uiSpinboxValue(freqSpin) != config.warningTransitionsFrequency) {
-        uiSpinboxSetValue(freqSpin, config.warningTransitionsFrequency);
-    }
-    if (uiSpinboxValue(minSpin) != config.warningTransitionsMin) {
-        uiSpinboxSetValue(minSpin, config.warningTransitionsMin);
-    }
-    if (uiSpinboxValue(maxSpin) != config.warningTransitionsMax) {
-        uiSpinboxSetValue(maxSpin, config.warningTransitionsMax);
-    }
-}
-
-
-// External API for Controller
-Color uiCustomizerGetCheatColor(SimpleCheatName cheat) {
-    switch (cheat) {
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_BACKGROUND:
-            return buildColor(scoreBgBtn);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P1:
-            return buildColor(scoreP1Btn);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P2:
-            return buildColor(scoreP2Btn);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P3:
-            return buildColor(scoreP3Btn);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_SCORE_P4:
-            return buildColor(scoreP4Btn);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_PRIMARY:
-            return buildColor(reloadPrimaryBtn);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_RELOAD_SECONDARY:
-            return buildColor(reloadSecondaryBtn);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_PRIMARY:
-            return buildColor(lowAmmoPrimaryBtn);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY:
-            return buildColor(lowAmmoSecondaryBtn);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY:
-            return buildColor(noAmmoPrimaryBtn);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY:
-            return buildColor(noAmmoSecondaryBtn);
-        default:
-            LOG_ERROR("Unknown cheat %d", cheat);
-            return buildColor(scoreBgBtn); // Just return random color
-    }
-}
-
-int uiCustomizerGetCheatInt(SimpleCheatName cheat) {
-    switch (cheat) {
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD:
-            return uiSliderValue(scoreboardTransparencySlider);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS:
-            return uiSliderValue(pointsTransparencySlider);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_FREQUENCY:
-            return uiSpinboxValue(freqSpin);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN:
-            return uiSpinboxValue(minSpin);
-        case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MAX:
-            return uiSpinboxValue(maxSpin);
-        default:
-            LOG_ERROR("Unknown cheat %d", cheat);
-            return 0;
-    }
 }
 
 bool uiCustomizerIsSavable() {

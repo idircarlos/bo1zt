@@ -1,9 +1,9 @@
 #include "gui/weapons.h"
+#include "client/player.h"
 #include "logic/game/weapon.h"
-#include "utils/list.h"
 
-// Controller instance
-static Controller *controller;
+// Shared HTTP client
+static Client *client;
 
 // Parent Window instance
 static uiWindow *parent;
@@ -93,28 +93,24 @@ static const int weaponListCount = sizeof(weaponList) / sizeof(weaponList[0]);
 static void onTakeWeaponsButtonClicked(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    controllerTakeWeapons(controller);
+    clientTakeWeapons(client);
 }
 
 static void onGiveWeaponButtonClicked(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    int index = uiComboboxSelected(weaponsCombo);
-    Weapon weapon = (Weapon)index;
-    List *weapons = listCreate();
-    listAddInt(weapons, weapon);
-    controllerGiveWeapons(controller, weapons);
-    listDestroy(weapons);
+    Weapon weapon = (Weapon)uiComboboxSelected(weaponsCombo);
+    clientGiveWeapons(client, &weapon, 1);
 }
 
 static void onGiveAmmoButtonClicked(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    controllerGiveAmmo(controller);
+    clientGiveAmmo(client);
 }
 
-static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
-    controller = controllerInstance;
+static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
+    client = clientInstance;
     parent = parentInstance;
     // --- Weapons Group ---
     uiGroup *weaponGroup = uiNewGroup("Weapons");

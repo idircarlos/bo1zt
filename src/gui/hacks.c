@@ -1,11 +1,9 @@
 #include "gui/hacks.h"
+#include "client/cheats.h"
 #include "logger.h"
-#include "logic/config.h"
-#include "logic/cheat/manager.h"
-#include "logic/cheat/manager/actions.h"
 
-// Controller instance
-static Controller *controller;
+// Shared HTTP client
+static Client *client;
 
 // Parent Window instance
 static uiWindow *parent;
@@ -28,18 +26,16 @@ static uiCheckbox *thirdPersonCheckbox = NULL;
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
-    
-    CheatManager *cheatManager = controllerGetCheatManager(controller);
-    CheatResult result = cheatManagerSetToggle(cheatManager, cheatName, enabled);
-    
-    // If API failed, revert checkbox to previous state
-    if (result == CHEAT_RESULT_API_FAILED) {
+
+    if (clientSetCheat(client, cheatName, enabled) != CLIENT_OK) {
         uiCheckboxSetChecked(checkbox, !enabled);
+    } else {
+        guiSnapshotSetCheat(cheatName, enabled);
     }
 }
 
-static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
-    controller = controllerInstance;
+static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
+    client = clientInstance;
     parent = parentInstance;
     
     uiGroup *hacksGroup = uiNewGroup("Hacks");
@@ -94,82 +90,30 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     return uiControl(hacksGroup);
 }
 
+static void syncCheckbox(uiCheckbox *checkbox, CheatName cheat) {
+    bool enabled;
+    if (!guiSnapshotCheat(cheat, &enabled)) return;
+    if (uiCheckboxChecked(checkbox) != enabled) {
+        uiCheckboxSetChecked(checkbox, enabled);
+    }
+}
+
 static void update() {
-    Config *config = controllerGetConfig(controller);
-    HacksConfig *hacks = &config->hacks;
-    
-    if (uiCheckboxChecked(godModeCheckbox) != hacks->godMode) {
-        uiCheckboxSetChecked(godModeCheckbox, hacks->godMode);
-    }
-    if (uiCheckboxChecked(noClipCheckbox) != hacks->noClip) {
-        uiCheckboxSetChecked(noClipCheckbox, hacks->noClip);
-    }
-    if (uiCheckboxChecked(invisibleCheckbox) != hacks->invisible) {
-        uiCheckboxSetChecked(invisibleCheckbox, hacks->invisible);
-    }
-    if (uiCheckboxChecked(infiniteAmoCheckbox) != hacks->infiniteAmmo) {
-        uiCheckboxSetChecked(infiniteAmoCheckbox, hacks->infiniteAmmo);
-    }
-    if (uiCheckboxChecked(instantKillCheckbox) != hacks->instantKill) {
-        uiCheckboxSetChecked(instantKillCheckbox, hacks->instantKill);
-    }
-    if (uiCheckboxChecked(noRecoilCheckbox) != hacks->noRecoil) {
-        uiCheckboxSetChecked(noRecoilCheckbox, hacks->noRecoil);
-    }
-    if (uiCheckboxChecked(smallCrosshairCheckbox) != hacks->smallCrosshair) {
-        uiCheckboxSetChecked(smallCrosshairCheckbox, hacks->smallCrosshair);
-    }
-    if (uiCheckboxChecked(fastGameplayCheckbox) != hacks->fastGameplay) {
-        uiCheckboxSetChecked(fastGameplayCheckbox, hacks->fastGameplay);
-    }
-    if (uiCheckboxChecked(noShellshockCheckbox) != hacks->noShellshock) {
-        uiCheckboxSetChecked(noShellshockCheckbox, hacks->noShellshock);
-    }
-    if (uiCheckboxChecked(increaseKnifeRangeCheckbox) != hacks->increaseKnifeRange) {
-        uiCheckboxSetChecked(increaseKnifeRangeCheckbox, hacks->increaseKnifeRange);
-    }
-    if (uiCheckboxChecked(boxNeverMovesCheckbox) != hacks->boxNeverMoves) {
-        uiCheckboxSetChecked(boxNeverMovesCheckbox, hacks->boxNeverMoves);
-    }
-    if (uiCheckboxChecked(thirdPersonCheckbox) != hacks->thirdPerson) {
-        uiCheckboxSetChecked(thirdPersonCheckbox, hacks->thirdPerson);
-    }
+    syncCheckbox(godModeCheckbox, CHEAT_NAME_GOD_MODE);
+    syncCheckbox(noClipCheckbox, CHEAT_NAME_NO_CLIP);
+    syncCheckbox(invisibleCheckbox, CHEAT_NAME_INVISIBLE);
+    syncCheckbox(infiniteAmoCheckbox, CHEAT_NAME_INFINITE_AMMO);
+    syncCheckbox(instantKillCheckbox, CHEAT_NAME_INSTANT_KILL);
+    syncCheckbox(noRecoilCheckbox, CHEAT_NAME_NO_RECOIL);
+    syncCheckbox(smallCrosshairCheckbox, CHEAT_NAME_SMALL_CROSSHAIR);
+    syncCheckbox(fastGameplayCheckbox, CHEAT_NAME_FAST_GAMEPLAY);
+    syncCheckbox(noShellshockCheckbox, CHEAT_NAME_NO_SHELLSHOCK);
+    syncCheckbox(increaseKnifeRangeCheckbox, CHEAT_NAME_INCREASE_KNIFE_RANGE);
+    syncCheckbox(boxNeverMovesCheckbox, CHEAT_NAME_BOX_NEVER_MOVES);
+    syncCheckbox(thirdPersonCheckbox, CHEAT_NAME_THIRD_PERSON);
 }
 
 UIControlGroup *uiHacksBuildControlGroup() {
     UIControlGroup *cg = guiControlGroupCreate(build, update);
     return cg;
-}
-
-// External API for Controller
-bool uiHacksIsChecked(CheatName cheat) {
-    switch (cheat) {
-        case CHEAT_NAME_GOD_MODE:
-            return uiCheckboxChecked(godModeCheckbox);
-        case CHEAT_NAME_INVISIBLE:
-            return uiCheckboxChecked(invisibleCheckbox);
-        case CHEAT_NAME_NO_CLIP:
-            return uiCheckboxChecked(noClipCheckbox);
-        case CHEAT_NAME_NO_RECOIL:
-            return uiCheckboxChecked(noRecoilCheckbox);
-        case CHEAT_NAME_SMALL_CROSSHAIR:
-            return uiCheckboxChecked(smallCrosshairCheckbox);
-        case CHEAT_NAME_FAST_GAMEPLAY:
-            return uiCheckboxChecked(fastGameplayCheckbox);
-        case CHEAT_NAME_NO_SHELLSHOCK:
-            return uiCheckboxChecked(noShellshockCheckbox);
-        case CHEAT_NAME_INCREASE_KNIFE_RANGE:
-            return uiCheckboxChecked(increaseKnifeRangeCheckbox);
-        case CHEAT_NAME_BOX_NEVER_MOVES:
-            return uiCheckboxChecked(boxNeverMovesCheckbox);
-        case CHEAT_NAME_THIRD_PERSON:
-            return uiCheckboxChecked(thirdPersonCheckbox);
-        case CHEAT_NAME_INFINITE_AMMO:
-            return uiCheckboxChecked(infiniteAmoCheckbox);
-        case CHEAT_NAME_INSTANT_KILL:
-            return uiCheckboxChecked(instantKillCheckbox);
-        default:
-            LOG_ERROR("Unknown cheat %d", cheat);
-            return false;
-    }
 }

@@ -1,8 +1,14 @@
 #include <stdlib.h>
+#include <string.h>
+#include <windows.h>
 #include <ui.h>
 #include "gui.h"
 #include "logger.h"
 #include "resource_ids.h"
+#include "client/cheats.h"
+#include "client/state.h"
+#include "client/game.h"
+#include "client/graphics.h"
 #include "gui/player.h"
 #include "gui/character.h"
 #include "gui/weapons.h"
@@ -16,12 +22,11 @@
 #define WINDOW_HEIGHT 540
 #define UI_CONTROL_GROUP_SIZE 8
 
-
-// UIControlGroup
+#define GUI_POLL_INTERVAL_MS 250
 static UIControlGroup *controlGroups[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-
-// Controller instance
-static Controller *controller = NULL;
+static Client *client = NULL;
+static int clientPort = 0;
+static GuiSnapshot snapshot;
 
 // UI Elements
 static uiWindow *window = NULL;
@@ -40,9 +45,76 @@ static int onTimerUpdate(void *data) {
     return 1;
 }
 
+static ULONGLONG lastPoll = 0;
+
+static void guiPoll(void) {
+    if (!client) return;
+
+    snapshot.statusValid = (clientGetGameStatus(client, &snapshot.status) == CLIENT_OK);
+    snapshot.stateValid = (clientGetState(client, &snapshot.state) == CLIENT_OK);
+    snapshot.graphicsValid = (clientGetGraphics(client, &snapshot.graphics) == CLIENT_OK);
+    snapshot.gameConfigValid = (clientGetGameConfig(client, &snapshot.gameConfig) == CLIENT_OK);
+
+    int count = 0;
+    if (clientGetCheats(client, snapshot.cheats, 32, &count) == CLIENT_OK) {
+        snapshot.cheatCount = count;
+        snapshot.cheatsValid = true;
+    } else {
+        snapshot.cheatsValid = false;
+    }
+    snapshot.valid = true;
+}
+
+void guiPollNow(void) {
+    guiPoll();
+    lastPoll = GetTickCount64();
+}
+
 void guiUpdate() {
+    ULONGLONG now = GetTickCount64();
+    if (lastPoll == 0 || now - lastPoll >= GUI_POLL_INTERVAL_MS) {
+        guiPoll();
+        lastPoll = now;
+    }
     for (int i = 0; i < UI_CONTROL_GROUP_SIZE; i++) {
         controlGroups[i]->update();
+    }
+}
+
+Client *guiClient(void) {
+    return client;
+}
+
+int guiClientPort(void) {
+    return clientPort;
+}
+
+const GuiSnapshot *guiGetSnapshot(void) {
+    return &snapshot;
+}
+
+bool guiSnapshotCheat(CheatName cheat, bool *out) {
+    if (!snapshot.cheatsValid || !out) return false;
+    for (int i = 0; i < snapshot.cheatCount; i++) {
+        CheatName cn;
+        const char *name = clientCheatNameAt(i);
+        if (name && clientCheatFromName(name, &cn) && cn == cheat) {
+            *out = snapshot.cheats[i];
+            return true;
+        }
+    }
+    return false;
+}
+
+void guiSnapshotSetCheat(CheatName cheat, bool enabled) {
+    if (!snapshot.cheatsValid) return;
+    for (int i = 0; i < snapshot.cheatCount; i++) {
+        CheatName cn;
+        const char *name = clientCheatNameAt(i);
+        if (name && clientCheatFromName(name, &cn) && cn == cheat) {
+            snapshot.cheats[i] = enabled;
+            return;
+        }
     }
 }
 
@@ -88,16 +160,16 @@ static uiControl* buildWindowContent() {
     controlGroups[5] = graphicsControlGroup;
     controlGroups[6] = gameControlGroup;
     controlGroups[7] = aboutControlGroup;
-    
+
     // UI Groups
-    uiControl *playerGroup = playerControlGroup->build(controller, window);
-    uiControl *cheatGroup = cheatsControlGroup->build(controller, window);
-    uiControl *weaponsGroup = weaponsControlGroup->build(controller, window);
-    uiControl *teleportGroup = teleportControlGroup->build(controller, window);
-    uiControl *characterGroup = characterControlGroup->build(controller, window);
-    uiControl *graphicsGroup = graphicsControlGroup->build(controller, window);
-    uiControl *gameGroup = gameControlGroup->build(controller, window);
-    uiControl *aboutGroup = aboutControlGroup->build(controller, window);
+    uiControl *playerGroup = playerControlGroup->build(client, window);
+    uiControl *cheatGroup = cheatsControlGroup->build(client, window);
+    uiControl *weaponsGroup = weaponsControlGroup->build(client, window);
+    uiControl *teleportGroup = teleportControlGroup->build(client, window);
+    uiControl *characterGroup = characterControlGroup->build(client, window);
+    uiControl *graphicsGroup = graphicsControlGroup->build(client, window);
+    uiControl *gameGroup = gameControlGroup->build(client, window);
+    uiControl *aboutGroup = aboutControlGroup->build(client, window);
 
     uiBox *ctVBox = uiNewVerticalBox();
     uiBoxSetPadded(ctVBox, 1);
@@ -123,7 +195,7 @@ static uiControl* buildWindowContent() {
     return uiControl(mainGrid);
 }
 
-UIControlGroup *guiControlGroupCreate(uiControl *(*build)(Controller *, uiWindow *), void (*update)()) {
+UIControlGroup *guiControlGroupCreate(uiControl *(*build)(Client *, uiWindow *), void (*update)()) {
     UIControlGroup *cg = (UIControlGroup*)malloc(sizeof(UIControlGroup));
     if (!cg) {
         LOG_ERROR("Couldn't allocate memory for UIControlGroup");
@@ -134,8 +206,10 @@ UIControlGroup *guiControlGroupCreate(uiControl *(*build)(Controller *, uiWindow
     return cg;
 }
 
-void guiInit(Controller *controllerInstance) {
-    controller = controllerInstance;
+void guiInit(Client *clientInstance, int port) {
+    client = clientInstance;
+    clientPort = port;
+    memset(&snapshot, 0, sizeof(snapshot));
     setupUi();
     setupWindow();
     uiControl *c = buildWindowContent();

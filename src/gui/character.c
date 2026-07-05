@@ -1,17 +1,27 @@
 #include "gui/character.h"
+#include "gui.h"
+#include "client/game.h"
 #include "logic/game/character.h"
-#include "logic/cheat/manager.h"
-#include "logic/cheat/manager/actions.h"
-#include "logic/config.h"
 #include "ui.h"
+
+#include <stdint.h>
 
 #define CHARACTER_NUM 5
 
-// Controller instance
-static Controller *controller;
+// Shared HTTP client
+static Client *client;
 
 // Parent Window instance
 static uiWindow *parent;
+
+static int shownIndex = -1;
+
+static bool applyingSnapshot = false;
+
+static int characterIndexFromName(const char *name) {
+    Character character = characterFromName(name);
+    return (character == CHARACTER_INVALID) ? 4 : (int)character;
+}
 
 static uiRadioButtons *radioButton1;
 static uiRadioButtons *radioButton2;
@@ -22,20 +32,21 @@ static uiRadioButtons *radioButton5;
 static uiRadioButtons *charactersRadioButtons[CHARACTER_NUM];
 
 static void onRadioButtonSelect(uiRadioButtons *singleRadioButton, void *data) {
+    if (applyingSnapshot) return;
     Character character = (Character)(uintptr_t)data;
     for (int i = 0; i < CHARACTER_NUM; i++) {
         if (charactersRadioButtons[i] != singleRadioButton) {
             uiRadioButtonsSetSelected(charactersRadioButtons[i], -1);
         }
     }
-    
-    int characterValue = (int)character;
-    CheatManager *cheatManager = controllerGetCheatManager(controller);
-    cheatManagerSetValue(cheatManager, SIMPLE_CHEAT_NAME_CHARACTER, &characterValue);
+
+    clientSetGameCharacter(client, characterName(character));
+    shownIndex = -1;
+    guiPollNow();
 }
 
-static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
-    controller = controllerInstance;
+static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
+    client = clientInstance;
     parent = parentInstance;
 
     uiGroup *characterGroup = uiNewGroup("Character");
@@ -60,13 +71,7 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
     charactersRadioButtons[3] = radioButton4;
     charactersRadioButtons[4] = radioButton5;
 
-    Config *config = controllerGetConfig(controller);
-    int savedCharacter = config ? config->game.character : CHARACTER_RANDOM;
-    if (savedCharacter >= 0 && savedCharacter < CHARACTER_NUM) {
-        uiRadioButtonsSetSelected(charactersRadioButtons[savedCharacter], 0);
-    } else {
-        uiRadioButtonsSetSelected(radioButton5, 0);
-    }
+    uiRadioButtonsSetSelected(radioButton5, 0);
 
     uiRadioButtonsOnSelected(radioButton1, onRadioButtonSelect, (void*)CHARACTER_DEMPSEY);
     uiRadioButtonsOnSelected(radioButton2, onRadioButtonSelect, (void*)CHARACTER_NIKOLAI);
@@ -90,6 +95,18 @@ static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance
 }
 
 static void update() {
+    const GuiSnapshot *snap = guiGetSnapshot();
+    if (!snap->valid || !snap->gameConfigValid) return;
+
+    int idx = characterIndexFromName(snap->gameConfig.character);
+    if (idx == shownIndex) return;
+    shownIndex = idx;
+
+    applyingSnapshot = true;
+    for (int i = 0; i < CHARACTER_NUM; i++) {
+        uiRadioButtonsSetSelected(charactersRadioButtons[i], i == idx ? 0 : -1);
+    }
+    applyingSnapshot = false;
 }
 
 UIControlGroup *uiCharacterBuildControlGroup() {

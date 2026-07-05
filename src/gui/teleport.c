@@ -1,10 +1,11 @@
 #include "gui/teleport.h"
-#include "controller.h"
+#include "client/player.h"
+#include "logic/cheat.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-// Controller instance
-static Controller *controller;
+// Shared HTTP client
+static Client *client;
 
 // Parent Window instance
 static uiWindow *parent;
@@ -18,29 +19,29 @@ static uiButton *goBtn = NULL;
 static void onTeleportGoButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    TeleportCoords coords = {.x = (float)uiSpinboxValue(xSpin), .y = (float)uiSpinboxValue(ySpin), .z = (float)uiSpinboxValue(zSpin)};
-    controllerSetSimpleCheat(controller, SIMPLE_CHEAT_NAME_TELEPORT, &coords);
+    clientTeleport(client, (float)uiSpinboxValue(xSpin), (float)uiSpinboxValue(ySpin), (float)uiSpinboxValue(zSpin));
 }
 
 static void onTeleportSaveButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    if (!controllerIsZombiesGameOngoing(controller)) {
+    TeleportCoords coords;
+    if (clientGetPosition(client, &coords) != CLIENT_OK) {
         uiMsgBoxError(parent, "Error", "You should be on a Zombies Game to save your current coords!");
         return;
     }
-    TeleportCoords *coords = controllerGetPlayerCurrentCoords(controller);
     char *filePath = uiSaveFile(parent);
     if (filePath == NULL) return;
 
     FILE *fp = fopen(filePath, "w");
     if (fp == NULL) {
         uiMsgBoxError(parent, "Unexpected error", "Error saving the coords");
+        uiFreeText(filePath);
+        return;
     }
 
-    fprintf(fp, "%d %d %d", (int)coords->x, (int)coords->y, (int)coords->z);
+    fprintf(fp, "%d %d %d", (int)coords.x, (int)coords.y, (int)coords.z);
     fclose(fp);
-    free(coords);
     uiFreeText(filePath);
 }
 
@@ -64,8 +65,8 @@ static void onTeleportLoadButtonClick(uiButton *button, void *data) {
     uiFreeText(filePath);
 }
 
-static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
-    controller = controllerInstance;
+static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
+    client = clientInstance;
     parent = parentInstance;
 
     uiGroup *teleportGroup = uiNewGroup("Teleport");

@@ -3,14 +3,11 @@
 #include "resource_ids.h"
 
 
-// Controller instance
-static Controller *controller;
-
 // Parent Window instance
 static uiWindow *parent;
 
-static uiControl *build(Controller *controllerInstance, uiWindow *parentInstance) {
-    controller = controllerInstance;
+static uiControl *build(Client *client, uiWindow *parentInstance) {
+    (void)client;
     parent = parentInstance;
 
     // Main group
