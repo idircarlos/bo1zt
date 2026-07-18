@@ -1,0 +1,387 @@
+{
+  "version": 1,
+  "weapons": [
+    {
+      "id": "ak74u",
+      "name": "Ak74u",
+      "files": {
+        "spec": "~~-gt5_weapon_ak74u_sc-rgb&~-~d53dcd03.iwi",
+        "color": "~-gt5_weapon_ak74u_c.iwi",
+        "env": "~t5_weapon_ak74u_env-rgb&t5_w~6a21924f.iwi",
+        "normal": "t5_weapon_ak74u_n.iwi"
+      }
+    },
+    {
+      "id": "arisaka",
+      "name": "Arisaka",
+      "files": {
+        "spec": "~~-gweapon_arisaka_type99_mp_~7eb76f2c.iwi",
+        "spec_1": "~~-gweapon_arisaka_type99_mp_~cf0d9ea1.iwi",
+        "color": "~-gweapon_arisaka_type99_mp_c.iwi",
+        "env": "~weapon_arisaka_type99_env-rg~4d0334be.iwi",
+        "normal": "weapon_arisaka_type99_n.iwi"
+      }
+    },
+    {
+      "id": "aug",
+      "name": "AUG",
+      "files": {
+        "spec": "~~-gw_aug_sc-rgb&~-rw_aug_sr&w_aug_n-l.iwi",
+        "color": "~-gw_aug_c.iwi",
+        "env": "~w_aug_env-rgb&w_aug_occ-l.iwi",
+        "normal": "w_aug_n.iwi"
+      }
+    },
+    {
+      "id": "bar",
+      "name": "BAR",
+      "files": {
+        "spec": "~~-gw_bar_mp_s-rgb&~-rw_bar_m~9e8badd3.iwi",
+        "color": "~-gw_bar_mp_c.iwi",
+        "env": "~w_bar_mp_env-rgb&w_bar_mp_ao-l.iwi",
+        "normal": "w_bar_n.iwi"
+      }
+    },
+    {
+      "id": "china_lake",
+      "name": "China Lake",
+      "files": {
+        "spec": "~~-gt5_weapon_ex41_sc-rgb&~-r~0dec4f2d.iwi",
+        "color": "~-gt5_weapon_ex41_c.iwi",
+        "env": "~t5_weapon_ex41_env-rgb&t5_we~233887ff.iwi",
+        "normal": "t5_weapon_ex41_n.iwi"
+      }
+    },
+    {
+      "id": "commando",
+      "name": "Commando",
+      "files": {
+        "spec": "~~-gcommando_spec_color-rgb&~~6d003480.iwi",
+        "env": "~commando_reflection-rgb&commando_ao-l.iwi",
+        "color": "~-gcommando_c.iwi",
+        "normal": "commando_n.iwi"
+      }
+    },
+    {
+      "id": "cz-75",
+      "name": "Cz-75",
+      "files": {
+        "spec": "~~-gt5_weapon_cz_75_corr-rgb&~a0bb5868.iwi",
+        "color": "~-gt5_weapon_cz_75_c.iwi",
+        "env": "~t5_weapon_cz75_ao-rgbl.iwi",
+        "normal": "t5_weapon_cz_75_n.iwi"
+      }
+    },
+    {
+      "id": "double_barrel",
+      "name": "Double Barrel",
+      "files": {
+        "spec": "~~-gdouble_barrel_mp_s-rgb&~-~f84c5f10.iwi",
+        "color": "~-gdouble_barrel_mp_c.iwi",
+        "env": "~double_barrel_env-rgb&double~34db92ad.iwi",
+        "normal": "double_barrel_n.iwi"
+      }
+    },
+    {
+      "id": "dragunov",
+      "name": "Dragunov",
+      "files": {
+        "spec": "~~-gt5_dragunov_sc-rgb&~-rt5_~83b8d338.iwi",
+        "color": "~-gt5_dragunov_c.iwi",
+        "env": "~t5_dragunov_env-rgb&t5_dragunov_ao-l.iwi",
+        "normal": "t5_dragunov_n.iwi"
+      }
+    },
+    {
+      "id": "fal",
+      "name": "FAL",
+      "files": {
+        "spec": "~~-gt5_weapon_fal_col_spec-rg~7bedabb5.iwi",
+        "color": "~-gt5_weapon_fal_c.iwi",
+        "env": "~t5_weapon_fal_env-rgb&t5_wea~a882bec3.iwi",
+        "normal": "t5_weapon_fal_n.iwi"
+      }
+    },
+    {
+      "id": "famas",
+      "name": "Famas",
+      "files": {
+        "spec": "~~-gw_famas_sc-rgb&~-rw_famas~a0192da0.iwi",
+        "color": "~-gw_famas_c.iwi",
+        "env": "~w_famas_reflection-rgb&w_famas_ao-l.iwi",
+        "normal": "w_famas_n.iwi"
+      }
+    },
+    {
+      "id": "fg-42",
+      "name": "FG-42",
+      "files": {
+        "spec": "~~-gw_fg42_mp_s-rgb&~-rw_fg42~d1c67469.iwi",
+        "color": "~-gw_fg42_mp_c.iwi",
+        "env": "~w_fg42_env-rgb&w_fg42_ao-l.iwi",
+        "normal": "w_fg422_n.iwi"
+      }
+    },
+    {
+      "id": "g11",
+      "name": "G11",
+      "files": {
+        "spec": "~~-gt5_weapon_g11_sc-rgb&~-rt~e0039a03.iwi",
+        "color": "~-gt5_weapon_g11_c.iwi",
+        "env": "~t5_weapon_g11_env-rgb&t5_wea~dd9aefe4.iwi",
+        "normal": "t5_weapon_g11_n.iwi",
+        "normal_1": "cammo_base_g11.iwi"
+      }
+    },
+    {
+      "id": "galil",
+      "name": "Galil",
+      "files": {
+        "spec": "~~-gt5_weapon_galil_sc-rgb&~-~e2bd12c5.iwi",
+        "color": "~-gt5_weapon_galil_c.iwi",
+        "env": "~t5_weapon_galil_env-rgb&t5_w~7b389e52.iwi",
+        "normal": "t5_weapon_galil_n.iwi"
+      }
+    },
+    {
+      "id": "garand",
+      "name": "Garand",
+      "files": {
+        "spec": "~~-gw_m1garand_mp_s-rgb&~-rw_~ecc41aa6.iwi",
+        "color": "~-gw_m1garand_mp_c.iwi",
+        "env": "~w_m1garand_env-rgb&w_m1garand_ao-l.iwi",
+        "normal": "w_m1garand_n.iwi"
+      }
+    },
+    {
+      "id": "gewehr",
+      "name": "Gewehr",
+      "files": {
+        "spec": "~~-gw_ge43_mp_s-rgb&~-rw_ge43~1baf1916.iwi",
+        "color": "~-gw_ge43_mp_c.iwi",
+        "env": "~w_ge43_mp_env-rgb&w_ge43_mp_ao-l.iwi",
+        "normal": "w_ge43_n.iwi"
+      }
+    },
+    {
+      "id": "hk21",
+      "name": "HK21",
+      "files": {
+        "spec": "~~-gt5_weapon_hk21_sc-rgb&~-r~5ec1b84d.iwi",
+        "color": "~-gt5_weapon_hk21_c.iwi",
+        "env": "~t5_weapon_hk21_env-rgb&t5_we~8cd32f89.iwi",
+        "normal": "t5_weapon_hk21_n.iwi"
+      }
+    },
+    {
+      "id": "hs10",
+      "name": "HS10",
+      "files": {
+        "spec": "~~-gt5_weapon_hs10_sc-rgb&~-r~9b1a3687.iwi",
+        "color": "~-gt5_weapon_hs10_c.iwi",
+        "env": "~t5_weapon_hs10_env-rgb&t5_we~5f083395.iwi",
+        "normal": "t5_weapon_hs10_n.iwi"
+      }
+    },
+    {
+      "id": "kar98",
+      "name": "Kar98",
+      "files": {
+        "spec": "~~-gweapon_kar98_s-rgb&~-rwea~126f233f.iwi",
+        "color": "~-gweapon_kar98_mp_c.iwi",
+        "env": "~weapon_kar98_env-rgb&weapon_~84729ae0.iwi",
+        "normal": "weapon_kar98_n.iwi"
+      }
+    },
+    {
+      "id": "l96a1",
+      "name": "L96A1",
+      "files": {
+        "spec": "~~-gt5_weapon_l96a1_s-rgb&~-r~18da6a03.iwi",
+        "color": "~-gt5_weapon_l96a1_c.iwi",
+        "env": "~t5_weapon_l96a1_e-rgb&t5_wea~0653635b.iwi",
+        "normal": "t5_weapon_l96a1_n.iwi"
+      }
+    },
+    {
+      "id": "m1a1_carbine",
+      "name": "M1A1 Carbine",
+      "files": {
+        "spec": "~~-gweapon_carbine_mp_s-rgb&~~a9f81e6c.iwi",
+        "color": "~-gweapon_carbine_mp_c.iwi",
+        "env": "~weapon_carbine_env-rgb&weapo~9a6c452a.iwi",
+        "normal": "weapon_carbine_n.iwi"
+      }
+    },
+    {
+      "id": "m14",
+      "name": "M14",
+      "files": {
+        "spec": "~~-gmtl_t5_weapon_c_1024_col_~b9328699.iwi",
+        "color": "~-gmtl_t5_weapon_m14_c_1024.iwi",
+        "env": "~mtl_t5_weapon_m14_env_1024-r~516dd0ed.iwi",
+        "normal": "mtl_t5_weapon_m14_n_1024.iwi"
+      }
+    },
+    {
+      "id": "m16",
+      "name": "M16",
+      "files": {
+        "spec": "~~-gt5_weapon_m16a1_sc-rgb&~-~ffb1fb09.iwi",
+        "color": "~-gt5_weapon_m16a1_c.iwi",
+        "env": "~t5_weapon_m16a1_e-rgb&t5_wea~ee1be266.iwi",
+        "normal": "t5_weapon_m16a1_n.iwi"
+      }
+    },
+    {
+      "id": "m1911",
+      "name": "M1911",
+      "files": {
+        "spec": "~~-gmtl_t5_weapon_m1911_mp_s-~bffff598.iwi",
+        "color": "~-gmtl_t5_weapon_m1911_mp_c.iwi",
+        "env": "~$white-rgbl.iwi",
+        "normal": "mtl_t5_weapon_m1911_n.iwi"
+      }
+    },
+    {
+      "id": "mp5k",
+      "name": "MP5K",
+      "files": {
+        "spec": "~~-gt5_weapon_mp5_sc-rgb&~-rt~9ee4f0ac.iwi",
+        "color": "~-gt5_weapon_mp5_c.iwi",
+        "env": "~t5_weapon_mp5_e-rgb&mtl_t5_w~6a2db65c.iwi",
+        "env_1": "~t5_weapon_mp5_sc-r&$white-r&~36fd7f28.iwi",
+        "normal": "t5_weapon_mp5_n.iwi"
+      }
+    },
+    {
+      "id": "mp40",
+      "name": "MP-40",
+      "files": {
+        "spec": "~~-gweapon_mp40_mp_s-rgb&~-rw~07a8a6a2.iwi",
+        "color": "~-gweapon_mp40_mp_c.iwi",
+        "env": "~$white-rgbl.iwi"
+      }
+    },
+    {
+      "id": "mpl",
+      "name": "MPL",
+      "files": {
+        "spec": "~~-gt5_weapon_mpl_sc-rgb&~-rt~5046c03b.iwi",
+        "color": "~-gt5_weapon_mpl_c.iwi",
+        "env": "~t5_weapon_mpl_env-rgb&t5_wea~5357ee75.iwi",
+        "normal": "t5_weapon_mpl_n.iwi"
+      }
+    },
+    {
+      "id": "olympia",
+      "name": "Olympia",
+      "files": {
+        "spec": "~~-gt5_weapon_beretta682_sc-r~6644fdaa.iwi",
+        "color": "~-gt5_weapon_beretta682_c.iwi",
+        "env": "~t5_weapon_beretta682_env-rgb~94b01f9d.iwi",
+        "normal": "t5_weapon_beretta682_n.iwi"
+      }
+    },
+    {
+      "id": "pm-63",
+      "name": "PM-63",
+      "files": {
+        "spec": "~~-gt5_weapon_pm63_sc-rgb&~-r~fb6b1a7b.iwi",
+        "color": "~-gt5_weapon_pm63_c.iwi",
+        "env": "~t5_weapon_pm63_env-rgb&t5_we~248bb456.iwi",
+        "normal": "t5_weapon_pm63_n.iwi"
+      }
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "files": {
+        "spec": "~~-gt5_weapon_coltpython_sc-r~b84aeb2b.iwi",
+        "color": "~-gt5_weapon_coltpython_c.iwi",
+        "env": "~t5_weapon_coltpython_env-rgb~a03166b0.iwi",
+        "normal": "t5_weapon_coltpython_n.iwi"
+      }
+    },
+    {
+      "id": "rpk",
+      "name": "RPK",
+      "files": {
+        "spec": "~~-gt5_weapon_rpk_sc-rgb&~-rt~bc11aad5.iwi",
+        "color": "~-gt5_weapon_rpk_c.iwi",
+        "env": "~t5_weapon_rpk_env-rgb&t5_wea~35affe4f.iwi",
+        "normal": "t5_weapon_rpk_n.iwi"
+      }
+    },
+    {
+      "id": "spas-12",
+      "name": "Spas-12",
+      "files": {
+        "spec": "~~-gt5_weapon_spas_sc-rgb&~-r~b54421b1.iwi",
+        "color": "~-gt5_weapon_spas_c.iwi",
+        "env": "~t5_weapon_spas_env-rgb&t5_we~398297a7.iwi",
+        "normal": "t5_weapon_spas_n.iwi"
+      }
+    },
+    {
+      "id": "spectre",
+      "name": "Spectre",
+      "files": {
+        "spec": "~~-gt5_weapon_spectre_spec_co~9172c706.iwi",
+        "color": "~-gt5_weapon_spectre_c.iwi",
+        "env": "~t5_weapon_spectre_reflection~4ca84cca.iwi",
+        "normal": "t5_weapon_spectre_n.iwi"
+      }
+    },
+    {
+      "id": "stakeout",
+      "name": "Stakeout",
+      "files": {
+        "spec": "~~-gt5_weapon_ithaca_spec_col~aaae5496.iwi",
+        "color": "~-gt5_weapon_ithaca_c.iwi",
+        "env": "~t5_weapon_ithaca_env-rgb&t5_~b9cdb6fb.iwi",
+        "normal": "t5_weapon_ithaca_n.iwi"
+      }
+    },
+    {
+      "id": "stg-44",
+      "name": "STG-44",
+      "files": {
+        "spec": "~~-gweapon_stg44_mp_s-rgb&~-r~481824e3.iwi",
+        "color": "~-gweapon_stg44_mp_c.iwi",
+        "env": "~weapon_stg44_mp_env-rgb&weap~7b88fd0e.iwi",
+        "normal": "weapon_stg44_n.iwi"
+      }
+    },
+    {
+      "id": "thompson",
+      "name": "Thompson",
+      "files": {
+        "spec": "~~-gw_tommy_s-rgb&~-rw_tommy_~19539fe0.iwi",
+        "color": "~-gw_tommy_c.iwi",
+        "env": "~w_tommy_env-rgb&w_tommy_ao-l.iwi",
+        "normal": "w_tommy_n.iwi"
+      }
+    },
+    {
+      "id": "trench_gun",
+      "name": "Trench Gun",
+      "files": {
+        "spec": "~~-gw_shotgun_mp_s-rgb&~-rw_s~17347e00.iwi",
+        "color": "~-gw_shotgun_mp_c.iwi",
+        "env": "~w_shotgun_env-rgb&w_shotgun_ao-l.iwi",
+        "normal": "w_shotgun_n.iwi"
+      }
+    },
+    {
+      "id": "type_100",
+      "name": "Type 100",
+      "files": {
+        "spec": "~~-gw_type100_s-rgb&~-rw_type~658ffbf3.iwi",
+        "color": "~-gw_type100_c_new.iwi",
+        "env": "~w_type100_env-rgb&w_type100_ao-l.iwi",
+        "normal": "w_type100_n.iwi"
+      }
+    }
+  ]
+}

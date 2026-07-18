@@ -84,7 +84,7 @@ static HRESULT drawImagePart(HRESULT hr, struct drawState *s)
 		return hr;
 	// TODO rewrite this condition to make more sense; possibly swap the if and else blocks too
 	// TODO proper cleanup
-	if (ImageList_GetImageCount(s->t->imagelist) > 1) {
+	if (ImageList_GetImageCount(s->t->imagelist) > 0) {
 		if (ImageList_Replace(s->t->imagelist, 0, b, NULL) == 0) {
 			logLastError(L"ImageList_Replace()");
 			return E_FAIL;

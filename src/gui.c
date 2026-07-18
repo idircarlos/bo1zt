@@ -17,6 +17,7 @@
 #include "gui/graphics.h"
 #include "gui/game.h"
 #include "gui/about.h"
+#include "gui/camo.h"
 
 #define WINDOW_WIDTH 100
 #define WINDOW_HEIGHT 540
@@ -223,6 +224,7 @@ void guiRun(void) {
 }
 
 void guiCleanup(void) {
+    uiCamoCleanup();
     uiUninit();
 }
 

@@ -10,7 +10,7 @@ EXE_CFLAGS  := -std=c++20 -Wall -Wextra -pedantic $(ARCH) \
                -Iexternal/miniz -Iexternal/argparse -Ires -Ishared
 EXE_LDFLAGS := -Llib $(ARCH) -static -static-libgcc -static-libstdc++ \
                -lui -liniparser -lole32 -luuid -lcomctl32 -lgdi32 \
-               -lmsimg32 -loleaut32 -ld2d1 -ldwrite -luxtheme -lopengl32 -lgdiplus -lshlwapi -lws2_32
+               -lmsimg32 -loleaut32 -ld2d1 -ldwrite -luxtheme -lopengl32 -lgdiplus -lshlwapi -lshell32 -lws2_32 -lwinhttp
 
 # DLL
 DLL_CFLAGS  := -Wall -O2 $(ARCH) -Ishared -Iexternal/cdl86 -Iexternal/miniz -Idll -Idll/gsc
@@ -111,7 +111,7 @@ build/gsc.zip: gsc/*
 	@mkdir -p build
 	@powershell -Command "Compress-Archive -Path 'gsc/*' -DestinationPath 'build/gsc.zip' -Force"
 
-build/resources.o: res/resources.rc res/example.static.manifest res/resource_ids.h res/fonts/*.ttf $(DLL_TARGET) build/gsc.zip
+build/resources.o: res/resources.rc res/example.static.manifest res/resource_ids.h res/fonts/*.ttf $(DLL_TARGET) build/gsc.zip res/camo/weapons.json res/camo/$$black.iwi
 	@mkdir -p build
 	$(WINDRES) -I res --target=pe-i386 $< -O coff -o $@
 

@@ -2,6 +2,7 @@
 #include "gui.h"
 #include "gui/widgets.h"
 #include "gui/binds.h"
+#include "gui/camo.h"
 #include "client/cheats.h"
 #include "client/game.h"
 #include "client/round.h"
@@ -25,7 +26,6 @@
 #define CLOSING_TEXT "Closing"
 
 #define CACHE_GAME_ATTACHED "GAME_ATTACHED"
-#define CACHE_RESETS "RESETS"
 #define CACHE_OPENING_GAME "OPENING_GAME"
 #define CACHE_CLOSING_GAME "CLOSING_GAME"
 
@@ -51,8 +51,6 @@ static uiAttributedString *statusOpeningText = NULL;
 static uiAttributedString *statusClosingText = NULL;
 
 static uiLabel *statusLabel = NULL;
-static uiLabel *resetsLabel = NULL;
-static uiLabel *resetsNumLabel = NULL;
 static uiCheckbox *patchMovementCheckbox = NULL;
 static uiCheckbox *showFpsCheckbox = NULL;
 static uiLabel *hostnameLabel = NULL;
@@ -61,6 +59,8 @@ static uiButton *changeRoundButton = NULL;
 static uiSpinbox *changeRoundSpin = NULL;
 static uiButton *bindsButton = NULL;
 static uiButton *widgetsButton = NULL;
+static uiButton *camoButton = NULL;
+static uiButton *twitchButton = NULL;
 static uiButton *launchButton = NULL;
 static uiButton *closeButton = NULL;
 
@@ -291,6 +291,18 @@ static void onWidgetsButtonClick(uiButton *button, void *data) {
     uiControlShow(uiControl(widgetsWindow));
 }
 
+static void onCamoButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    uiCamoShow(parent);
+}
+
+static void onTwitchButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    // TODO: open Twitch Integration window
+}
+
 static void onCloseButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
@@ -340,7 +352,6 @@ static void buildBinds() {
 static void init() {
     cache = mapCreate();
     mapPutBool(cache, CACHE_GAME_ATTACHED, false);
-    mapPutInt(cache, CACHE_RESETS, 0);
     mapPutBool(cache, CACHE_OPENING_GAME, false);
     mapPutBool(cache, CACHE_CLOSING_GAME, false);
     GameConfigInfo config;
@@ -374,8 +385,6 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
     uiGridSetPadded(grid, 1);
     statusLabel = uiNewLabel("Status");
     statusArea = uiNewArea(&statusHandler);
-    resetsLabel = uiNewLabel("Resets");
-    resetsNumLabel = uiNewLabel("0");
     hostnameLabel = uiNewLabel("Hostname");
     hostnameEntry = uiNewEntry();
     changeRoundButton = uiNewButton("Change Round");
@@ -384,6 +393,8 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
     showFpsCheckbox = uiNewCheckbox(" Show FPS");
     bindsButton = uiNewButton("Bind Keys");
     widgetsButton = uiNewButton("Add Widgets");
+    camoButton = uiNewButton("Camo Manager");
+    twitchButton = uiNewButton("Twitch Integration");
     launchButton = uiNewButton("Launch Game");
     closeButton = uiNewButton("Close Game");
     locationEntry = uiNewEntry();
@@ -405,21 +416,23 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
     uiButtonOnClicked(changeRoundButton, onChangeRoundButtonClick, NULL);
     uiButtonOnClicked(bindsButton, onBindsButtonClick, NULL);
     uiButtonOnClicked(widgetsButton, onWidgetsButtonClick, NULL);
+    uiButtonOnClicked(camoButton, onCamoButtonClick, NULL);
+    uiButtonOnClicked(twitchButton, onTwitchButtonClick, NULL);
     uiButtonOnClicked(launchButton, onLaunchButtonClick, NULL);
     uiButtonOnClicked(closeButton, onCloseButtonClick, NULL);
 
     uiGridAppend(grid, uiControl(statusLabel),              0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
     uiGridAppend(grid, uiControl(statusArea),               1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(resetsLabel),              0, 1, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(resetsNumLabel),           1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(hostnameLabel),            0, 2, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
-    uiGridAppend(grid, uiControl(hostnameEntry),            1, 2, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(patchMovementCheckbox),    0, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(showFpsCheckbox),          1, 3, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(changeRoundButton),        0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(changeRoundSpin),          1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(bindsButton),              0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(widgetsButton),            1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(hostnameLabel),            0, 1, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(grid, uiControl(hostnameEntry),            1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(patchMovementCheckbox),    0, 2, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(showFpsCheckbox),          1, 2, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(changeRoundButton),        0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(changeRoundSpin),          1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(bindsButton),              0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(widgetsButton),            1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(camoButton),               0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(twitchButton),             1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(launchButton),             0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(closeButton),              1, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
@@ -478,15 +491,6 @@ static void update() {
     } else if (mapGetBool(cache, CACHE_CLOSING_GAME)) {
         statusCurrentText = statusClosingText;
         uiAreaQueueRedrawAll(statusArea);
-    }
-    if (s->stateValid) {
-        int resets = s->state.gameResets;
-        if (resets != mapGetInt(cache, CACHE_RESETS)) {
-            char resetsStr[16];
-            sprintf(resetsStr, "%d", resets);
-            uiLabelSetText(resetsNumLabel, resetsStr);
-            mapPutInt(cache, CACHE_RESETS, resets);
-        }
     }
     uiWidgetsUpdate();
     uiBindsUpdate();

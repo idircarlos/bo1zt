@@ -25,3 +25,7 @@ IDR_PNG_MINI      RCDATA "images/powerups/mini.png"
 
 // App icon PNG
 IDR_PNG_ICON      RCDATA "icon.png"
+
+// Camo manager resources
+IDR_CAMO_WEAPONS   RCDATA "camo/weapons.json"
+IDR_CAMO_BLACK_IWI RCDATA "camo/$black.iwi"

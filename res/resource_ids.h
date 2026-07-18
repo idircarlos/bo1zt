@@ -25,4 +25,8 @@
 // App icon PNG
 #define IDR_PNG_ICON      600
 
+// Camo manager resources
+#define IDR_CAMO_WEAPONS   700
+#define IDR_CAMO_BLACK_IWI 701
+
 #endif // RESOURCE_IDS_H_

@@ -133,7 +133,6 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
 
     giveAmmoBtn = uiNewButton("Give Ammo");
     uiButtonOnClicked(giveAmmoBtn, onGiveAmmoButtonClicked, NULL);
-    
 
     uiBox *weaponsButtonsHBox = uiNewHorizontalBox();
     uiBoxSetPadded(weaponsButtonsHBox, 1);
