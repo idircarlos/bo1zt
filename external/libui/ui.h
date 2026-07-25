@@ -4540,6 +4540,40 @@ typedef struct uiGLArea uiGLArea;
  */
 _UI_EXTERN uiGLArea *uiNewGLArea(int minWidth, int minHeight);
 
+/**
+ * A read-only control that renders markdown text.
+ *
+ * Supported markdown: `#` to `####` headings, `- ` bullet lists,
+ * `**bold**`, `*italic*`, `__underline__` and `` `code` `` inline styles.
+ * Consecutive text lines are joined into a single wrapped paragraph,
+ * blank lines separate paragraphs.
+ *
+ * @struct uiMarkdownViewer
+ * @extends uiControl
+ * @ingroup static
+ */
+typedef struct uiMarkdownViewer uiMarkdownViewer;
+#define uiMarkdownViewer(this) ((uiMarkdownViewer *) (this))
+
+/**
+ * Creates a new markdown viewer.
+ *
+ * @returns A new uiMarkdownViewer instance.
+ * @memberof uiMarkdownViewer @static
+ */
+_UI_EXTERN uiMarkdownViewer *uiNewMarkdownViewer(void);
+
+/**
+ * Sets the markdown source rendered by the viewer.
+ *
+ * @param mv uiMarkdownViewer instance.
+ * @param markdown Markdown text.\n
+ *                 A valid, `NUL` terminated UTF-8 string.\n
+ *                 Data is copied internally. Ownership is not transferred.
+ * @memberof uiMarkdownViewer
+ */
+_UI_EXTERN void uiMarkdownViewerSetText(uiMarkdownViewer *mv, const char *markdown);
+
 #ifdef __cplusplus
 }
 #endif

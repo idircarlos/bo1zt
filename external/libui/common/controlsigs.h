@@ -30,3 +30,4 @@
 #define uiImageViewSignature 0x496D5677
 #define uiLinkSignature 0x4C696E6B
 #define uiGLAreaSignature 0x474C4172
+#define uiMarkdownViewerSignature 0x4D6B6456

@@ -33,4 +33,7 @@
 #define IDR_SHADER_CAMO_VIEWER_VERT 800
 #define IDR_SHADER_CAMO_VIEWER_FRAG 801
 
+// Markdown documents
+#define IDR_MARKDOWN_CAMO_MANAGER 900
+
 #endif // RESOURCE_IDS_H_

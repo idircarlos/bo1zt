@@ -45,6 +45,8 @@ libui_sources += [
 	'windows/label.cpp',
 	'windows/link.cpp',
 	'windows/main.cpp',
+	'windows/markdown.cpp',
+	'windows/markdownviewer.cpp',
 	'windows/menu.cpp',
 	'windows/multilineentry.cpp',
 	'windows/opentype.cpp',
