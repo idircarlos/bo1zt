@@ -35,6 +35,7 @@ libui_sources += [
 	'windows/fontdialog.cpp',
 	'windows/fontmatch.cpp',
 	'windows/form.cpp',
+	'windows/glarea.cpp',
 	'windows/graphemes.cpp',
 	'windows/grid.cpp',
 	'windows/group.cpp',

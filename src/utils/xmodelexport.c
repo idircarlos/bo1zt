@@ -1,5 +1,5 @@
 // Parses the Mod Tools source model (model_export\...\*.XMODEL_EXPORT, ASCII
-// "VERSION 6") into XModelSurf mesh data for the camo preview. One XSSurface is
+// "VERSION 6") into XModelSurf mesh data for the camo viewer. One XSSurface is
 // emitted per OBJECT block, which keeps each attachment mesh (scope, suppressor,
 // mount) on its own surface.
 #include "utils/xmodelexport.h"

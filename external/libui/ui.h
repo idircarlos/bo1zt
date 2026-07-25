@@ -4520,6 +4520,26 @@ _UI_EXTERN char *uiEntryPlaceholder(uiEntry *e);
  */
 _UI_EXTERN void uiEntrySetPlaceholder(uiEntry *e, const char *placeholder);
 
+/**
+ * A control that hosts an OpenGL rendering surface.
+ *
+ * @struct uiGLArea
+ * @extends uiControl
+ * @ingroup container
+ */
+typedef struct uiGLArea uiGLArea;
+#define uiGLArea(this) ((uiGLArea *) (this))
+
+/**
+ * Creates a new OpenGL area.
+ *
+ * @param minWidth Minimum width in pixels.
+ * @param minHeight Minimum height in pixels.
+ * @returns A new uiGLArea instance.
+ * @memberof uiGLArea @static
+ */
+_UI_EXTERN uiGLArea *uiNewGLArea(int minWidth, int minHeight);
+
 #ifdef __cplusplus
 }
 #endif

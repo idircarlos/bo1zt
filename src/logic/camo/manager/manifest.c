@@ -24,6 +24,7 @@ void camoManifestFreeWeapons(CamoWeapon *weapons, size_t weaponCount) {
     for (size_t i = 0; i < weaponCount; ++i) {
         free(weapons[i].id);
         free(weapons[i].name);
+        free(weapons[i].model);
         for (size_t j = 0; j < weapons[i].fileCount; ++j) {
             free(weapons[i].files[j].fileName);
         }
@@ -126,6 +127,7 @@ static bool parseWeapons(const JsonValue *root, CamoWeapon **outWeapons,
 
         const char *id = jsonObjectGetString(entry, "id", NULL);
         const char *name = jsonObjectGetString(entry, "name", NULL);
+        const char *model = jsonObjectGetString(entry, "model", NULL);
         if (!camoPersistenceValidId(id)) {
             LOG_ERROR("Weapon entry %d has an invalid id", i);
             goto fail;
@@ -148,9 +150,10 @@ static bool parseWeapons(const JsonValue *root, CamoWeapon **outWeapons,
         CamoWeapon *weapon = &weapons[n++];
         weapon->id = _strdup(id);
         weapon->name = _strdup(name);
+        weapon->model = model ? _strdup(model) : NULL;
         weapon->files = files;
         weapon->fileCount = fileCount;
-        if (!weapon->id || !weapon->name) goto fail;
+        if (!weapon->id || !weapon->name || (model && !weapon->model)) goto fail;
     }
 
     *outWeapons = weapons;

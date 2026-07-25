@@ -43,6 +43,7 @@ typedef struct {
 typedef struct {
     char *id;
     char *name;
+    char *model;
     CamoFile *files;
     size_t fileCount;
 } CamoWeapon;
@@ -76,5 +77,6 @@ const char *camoManagerGetActiveBundleId(const CamoManager *manager);
 const char *camoManagerGetInstalledBundleFile(const CamoManager *manager);
 
 bool camoManagerCamoFilePath(const CamoManager *manager, const char *camoId, CamoFileType type, unsigned int number, char *out, size_t size);
+bool camoManagerWeaponModelPath(const CamoManager *manager, const char *weaponId, char *out, size_t size);
 
 #endif // CAMO_MANAGER_H_

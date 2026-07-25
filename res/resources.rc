@@ -29,3 +29,7 @@ IDR_PNG_ICON      RCDATA "icon.png"
 // Camo manager resources
 IDR_CAMO_WEAPONS   RCDATA "camo/weapons.json"
 IDR_CAMO_BLACK_IWI RCDATA "camo/$black.iwi"
+
+// Camo viewer shaders
+IDR_SHADER_CAMO_VIEWER_VERT RCDATA "shaders/camo_viewer.vert"
+IDR_SHADER_CAMO_VIEWER_FRAG RCDATA "shaders/camo_viewer.frag"

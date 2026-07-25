@@ -2,8 +2,14 @@
   "version": 1,
   "weapons": [
     {
+      "id": "ak47",
+      "name": "AK47",
+      "model": "t5_weapon_ak47_viewmodel_lod0.xmodel_export"
+    },
+    {
       "id": "ak74u",
       "name": "Ak74u",
+      "model": "t5_weapon_ak74u_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_ak74u_sc-rgb&~-~d53dcd03.iwi",
         "color": "~-gt5_weapon_ak74u_c.iwi",
@@ -14,6 +20,7 @@
     {
       "id": "arisaka",
       "name": "Arisaka",
+      "model": "viewmodel_zombie_type99_rifle_lod0.xmodel_export",
       "files": {
         "spec": "~~-gweapon_arisaka_type99_mp_~7eb76f2c.iwi",
         "spec_1": "~~-gweapon_arisaka_type99_mp_~cf0d9ea1.iwi",
@@ -25,6 +32,7 @@
     {
       "id": "aug",
       "name": "AUG",
+      "model": "t5_weapon_aug_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gw_aug_sc-rgb&~-rw_aug_sr&w_aug_n-l.iwi",
         "color": "~-gw_aug_c.iwi",
@@ -33,8 +41,14 @@
       }
     },
     {
+      "id": "ballistic_knife",
+      "name": "Ballistic Knife",
+      "model": "t5_weapon_ballistic_knife_viewmodel_lod0.xmodel_export"
+    },
+    {
       "id": "bar",
       "name": "BAR",
+      "model": "viewmodel_zombie_bar_lmg_lod0.xmodel_export",
       "files": {
         "spec": "~~-gw_bar_mp_s-rgb&~-rw_bar_m~9e8badd3.iwi",
         "color": "~-gw_bar_mp_c.iwi",
@@ -45,6 +59,7 @@
     {
       "id": "china_lake",
       "name": "China Lake",
+      "model": "t5_weapon_ex41_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_ex41_sc-rgb&~-r~0dec4f2d.iwi",
         "color": "~-gt5_weapon_ex41_c.iwi",
@@ -55,6 +70,7 @@
     {
       "id": "commando",
       "name": "Commando",
+      "model": "t5_weapon_commando_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gcommando_spec_color-rgb&~~6d003480.iwi",
         "env": "~commando_reflection-rgb&commando_ao-l.iwi",
@@ -63,8 +79,14 @@
       }
     },
     {
+      "id": "crossbow",
+      "name": "Crossbow",
+      "model": "t5_weapon_mp_crossbow_viewmodel_lod0.xmodel_export"
+    },
+    {
       "id": "cz-75",
       "name": "Cz-75",
+      "model": "t5_weapon_viewmodel_cz75_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_cz_75_corr-rgb&~a0bb5868.iwi",
         "color": "~-gt5_weapon_cz_75_c.iwi",
@@ -75,6 +97,7 @@
     {
       "id": "double_barrel",
       "name": "Double Barrel",
+      "model": "viewmodel_zombie_db_shotgun_lod0.xmodel_export",
       "files": {
         "spec": "~~-gdouble_barrel_mp_s-rgb&~-~f84c5f10.iwi",
         "color": "~-gdouble_barrel_mp_c.iwi",
@@ -85,6 +108,7 @@
     {
       "id": "dragunov",
       "name": "Dragunov",
+      "model": "t5_weapon_dragunov_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_dragunov_sc-rgb&~-rt5_~83b8d338.iwi",
         "color": "~-gt5_dragunov_c.iwi",
@@ -95,6 +119,7 @@
     {
       "id": "fal",
       "name": "FAL",
+      "model": "t5_weapon_fal_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_fal_col_spec-rg~7bedabb5.iwi",
         "color": "~-gt5_weapon_fal_c.iwi",
@@ -105,6 +130,7 @@
     {
       "id": "famas",
       "name": "Famas",
+      "model": "t5_weapon_famas_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gw_famas_sc-rgb&~-rw_famas~a0192da0.iwi",
         "color": "~-gw_famas_c.iwi",
@@ -115,6 +141,7 @@
     {
       "id": "fg-42",
       "name": "FG-42",
+      "model": "viewmodel_zombie_fg42_lmg_lod0.xmodel_export",
       "files": {
         "spec": "~~-gw_fg42_mp_s-rgb&~-rw_fg42~d1c67469.iwi",
         "color": "~-gw_fg42_mp_c.iwi",
@@ -125,6 +152,7 @@
     {
       "id": "g11",
       "name": "G11",
+      "model": "t5_weapon_g11_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_g11_sc-rgb&~-rt~e0039a03.iwi",
         "color": "~-gt5_weapon_g11_c.iwi",
@@ -136,6 +164,7 @@
     {
       "id": "galil",
       "name": "Galil",
+      "model": "t5_weapon_galil_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_galil_sc-rgb&~-~e2bd12c5.iwi",
         "color": "~-gt5_weapon_galil_c.iwi",
@@ -146,6 +175,7 @@
     {
       "id": "garand",
       "name": "Garand",
+      "model": "viewmodel_zombie_m1garand_rifle_lod0.xmodel_export",
       "files": {
         "spec": "~~-gw_m1garand_mp_s-rgb&~-rw_~ecc41aa6.iwi",
         "color": "~-gw_m1garand_mp_c.iwi",
@@ -156,6 +186,7 @@
     {
       "id": "gewehr",
       "name": "Gewehr",
+      "model": "viewmodel_zombie_g43_rifle_lod0.xmodel_export",
       "files": {
         "spec": "~~-gw_ge43_mp_s-rgb&~-rw_ge43~1baf1916.iwi",
         "color": "~-gw_ge43_mp_c.iwi",
@@ -166,6 +197,7 @@
     {
       "id": "hk21",
       "name": "HK21",
+      "model": "t5_weapon_hk21_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_hk21_sc-rgb&~-r~5ec1b84d.iwi",
         "color": "~-gt5_weapon_hk21_c.iwi",
@@ -176,6 +208,7 @@
     {
       "id": "hs10",
       "name": "HS10",
+      "model": "t5_weapon_hs10_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_hs10_sc-rgb&~-r~9b1a3687.iwi",
         "color": "~-gt5_weapon_hs10_c.iwi",
@@ -186,6 +219,7 @@
     {
       "id": "kar98",
       "name": "Kar98",
+      "model": "viewmodel_zombie_kar98k_rifle_lod0.xmodel_export",
       "files": {
         "spec": "~~-gweapon_kar98_s-rgb&~-rwea~126f233f.iwi",
         "color": "~-gweapon_kar98_mp_c.iwi",
@@ -194,8 +228,19 @@
       }
     },
     {
+      "id": "kar98_scoped",
+      "name": "Kar98k Scoped",
+      "model": "viewmodel_zombie_kar98_scoped_rifle_lod0.xmodel_export"
+    },
+    {
+      "id": "law",
+      "name": "M72 LAW",
+      "model": "t5_weapon_law_viewmodel_lod0.xmodel_export"
+    },
+    {
       "id": "l96a1",
       "name": "L96A1",
+      "model": "t5_weapon_l96a1_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_l96a1_s-rgb&~-r~18da6a03.iwi",
         "color": "~-gt5_weapon_l96a1_c.iwi",
@@ -206,6 +251,7 @@
     {
       "id": "m1a1_carbine",
       "name": "M1A1 Carbine",
+      "model": "viewmodel_zombie_m1carbine_rifle_lod0.xmodel_export",
       "files": {
         "spec": "~~-gweapon_carbine_mp_s-rgb&~~a9f81e6c.iwi",
         "color": "~-gweapon_carbine_mp_c.iwi",
@@ -216,6 +262,7 @@
     {
       "id": "m14",
       "name": "M14",
+      "model": "t5_weapon_m14_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gmtl_t5_weapon_c_1024_col_~b9328699.iwi",
         "color": "~-gmtl_t5_weapon_m14_c_1024.iwi",
@@ -226,6 +273,7 @@
     {
       "id": "m16",
       "name": "M16",
+      "model": "t5_weapon_viewmodel_m16a1_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_m16a1_sc-rgb&~-~ffb1fb09.iwi",
         "color": "~-gt5_weapon_m16a1_c.iwi",
@@ -236,6 +284,7 @@
     {
       "id": "m1911",
       "name": "M1911",
+      "model": "t5_weapon_1911_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gmtl_t5_weapon_m1911_mp_s-~bffff598.iwi",
         "color": "~-gmtl_t5_weapon_m1911_mp_c.iwi",
@@ -244,8 +293,14 @@
       }
     },
     {
+      "id": "monkey_bomb",
+      "name": "Monkey Bomb",
+      "model": "viewmodel_zombie_cymbal_monkey_lod0.xmodel_export"
+    },
+    {
       "id": "mp5k",
       "name": "MP5K",
+      "model": "t5_weapon_mp5_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_mp5_sc-rgb&~-rt~9ee4f0ac.iwi",
         "color": "~-gt5_weapon_mp5_c.iwi",
@@ -257,6 +312,7 @@
     {
       "id": "mp40",
       "name": "MP-40",
+      "model": "viewmodel_mp_mp40_lod0.xmodel_export",
       "files": {
         "spec": "~~-gweapon_mp40_mp_s-rgb&~-rw~07a8a6a2.iwi",
         "color": "~-gweapon_mp40_mp_c.iwi",
@@ -266,6 +322,7 @@
     {
       "id": "mpl",
       "name": "MPL",
+      "model": "t5_weapon_mpl_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_mpl_sc-rgb&~-rt~5046c03b.iwi",
         "color": "~-gt5_weapon_mpl_c.iwi",
@@ -276,6 +333,7 @@
     {
       "id": "olympia",
       "name": "Olympia",
+      "model": "t5_weapon_beretta682_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_beretta682_sc-r~6644fdaa.iwi",
         "color": "~-gt5_weapon_beretta682_c.iwi",
@@ -286,6 +344,7 @@
     {
       "id": "pm-63",
       "name": "PM-63",
+      "model": "t5_weapon_pm63_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_pm63_sc-rgb&~-r~fb6b1a7b.iwi",
         "color": "~-gt5_weapon_pm63_c.iwi",
@@ -296,6 +355,7 @@
     {
       "id": "python",
       "name": "Python",
+      "model": "t5_weapon_coltpython_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_coltpython_sc-r~b84aeb2b.iwi",
         "color": "~-gt5_weapon_coltpython_c.iwi",
@@ -304,8 +364,14 @@
       }
     },
     {
+      "id": "ray_gun",
+      "name": "Ray Gun",
+      "model": "viewmodel_usa_ray_gun_lod0.xmodel_export"
+    },
+    {
       "id": "rpk",
       "name": "RPK",
+      "model": "t5_weapon_rpk_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_rpk_sc-rgb&~-rt~bc11aad5.iwi",
         "color": "~-gt5_weapon_rpk_c.iwi",
@@ -316,6 +382,7 @@
     {
       "id": "spas-12",
       "name": "Spas-12",
+      "model": "t5_weapon_spas_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_spas_sc-rgb&~-r~b54421b1.iwi",
         "color": "~-gt5_weapon_spas_c.iwi",
@@ -326,6 +393,7 @@
     {
       "id": "spectre",
       "name": "Spectre",
+      "model": "t5_weapon_spectre_world_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_spectre_spec_co~9172c706.iwi",
         "color": "~-gt5_weapon_spectre_c.iwi",
@@ -336,6 +404,7 @@
     {
       "id": "stakeout",
       "name": "Stakeout",
+      "model": "t5_weapon_ithaca_viewmodel_lod0.xmodel_export",
       "files": {
         "spec": "~~-gt5_weapon_ithaca_spec_col~aaae5496.iwi",
         "color": "~-gt5_weapon_ithaca_c.iwi",
@@ -346,6 +415,7 @@
     {
       "id": "stg-44",
       "name": "STG-44",
+      "model": "viewmodel_zombie_mp44_lmg_lod0.xmodel_export",
       "files": {
         "spec": "~~-gweapon_stg44_mp_s-rgb&~-r~481824e3.iwi",
         "color": "~-gweapon_stg44_mp_c.iwi",
@@ -356,6 +426,7 @@
     {
       "id": "thompson",
       "name": "Thompson",
+      "model": "viewmodel_zombie_thompson_smg_lod0.xmodel_export",
       "files": {
         "spec": "~~-gw_tommy_s-rgb&~-rw_tommy_~19539fe0.iwi",
         "color": "~-gw_tommy_c.iwi",
@@ -364,8 +435,14 @@
       }
     },
     {
+      "id": "thundergun",
+      "name": "Thundergun",
+      "model": "t5_weapon_thundergun_viewmodel_lod0.xmodel_export"
+    },
+    {
       "id": "trench_gun",
       "name": "Trench Gun",
+      "model": "viewmodel_zombie_trenchgun_rifle_lod0.xmodel_export",
       "files": {
         "spec": "~~-gw_shotgun_mp_s-rgb&~-rw_s~17347e00.iwi",
         "color": "~-gw_shotgun_mp_c.iwi",
@@ -376,12 +453,23 @@
     {
       "id": "type_100",
       "name": "Type 100",
+      "model": "viewmodel_zombie_type100_smg_lod0.xmodel_export",
       "files": {
         "spec": "~~-gw_type100_s-rgb&~-rw_type~658ffbf3.iwi",
         "color": "~-gw_type100_c_new.iwi",
         "env": "~w_type100_env-rgb&w_type100_ao-l.iwi",
         "normal": "w_type100_n.iwi"
       }
+    },
+    {
+      "id": "winters_howl",
+      "name": "Winter's Howl",
+      "model": "t5_weapon_freeze_gun_v2_viewmodel_lod0.xmodel_export"
+    },
+    {
+      "id": "wunderwaffe",
+      "name": "Wunderwaffe DG-2",
+      "model": "viewmodel_usa_tesla_gun_lod0.xmodel_export"
     }
   ]
 }

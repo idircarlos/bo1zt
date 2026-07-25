@@ -29,4 +29,8 @@
 #define IDR_CAMO_WEAPONS   700
 #define IDR_CAMO_BLACK_IWI 701
 
+// Camo viewer shaders
+#define IDR_SHADER_CAMO_VIEWER_VERT 800
+#define IDR_SHADER_CAMO_VIEWER_FRAG 801
+
 #endif // RESOURCE_IDS_H_

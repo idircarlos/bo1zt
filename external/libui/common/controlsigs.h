@@ -29,3 +29,4 @@
 #define uiWindowSignature 0x57696E64
 #define uiImageViewSignature 0x496D5677
 #define uiLinkSignature 0x4C696E6B
+#define uiGLAreaSignature 0x474C4172

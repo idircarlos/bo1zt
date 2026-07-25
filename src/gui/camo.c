@@ -1,4 +1,5 @@
 #include "gui/camo.h"
+#include "gui/camo/viewer.h"
 #include "gui.h"
 #include "logic/camo/manager.h"
 #include "utils/iwi.h"
@@ -6,6 +7,7 @@
 #include "resource_ids.h"
 #include <ui.h>
 #include <windows.h>
+#include <ui_windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,11 +17,16 @@
 #define CAMO_WINDOW_WIDTH 1180
 #define CAMO_WINDOW_HEIGHT 720
 
+static uiWindow *parent = NULL;
 static uiWindow *camoWindow = NULL;
 
-static CamoManager *manager = NULL;
+static uiGLArea *viewerArea = NULL;
+static uiCombobox *viewerWeaponCombo = NULL;
 
-static uiWindow *parent = NULL;
+static CamoManager *manager = NULL;
+static CamoViewer *viewer = NULL;
+
+static void refreshViewer(void);
 
 static const char *slotLabels[CAMO_FILE_TYPE_COUNT] = {
     "Spec",
@@ -112,7 +119,7 @@ static unsigned char *decodeThumb(const char *path, int size) {
     return thumb;
 }
 
-static uiImage *previewImageFromIwi(const char *path, int size) {
+static uiImage *thumbImageFromIwi(const char *path, int size) {
     unsigned char *thumb = decodeThumb(path, size);
     if (!thumb) return NULL;
     for (int i = 0; i < size * size; i++) {
@@ -128,7 +135,7 @@ static uiImage *previewImageFromIwi(const char *path, int size) {
     return image;
 }
 
-static bool previewSetImageViewRGBA(uiImageView *view, const unsigned char *rgba,
+static bool thumbSetImageViewRGBA(uiImageView *view, const unsigned char *rgba,
                                     int size) {
     size_t pngLen = 0;
     void *png = tdefl_write_image_to_png_file_in_memory(rgba, size, size, 4, &pngLen);
@@ -138,15 +145,15 @@ static bool previewSetImageViewRGBA(uiImageView *view, const unsigned char *rgba
     return ok != 0;
 }
 
-static bool previewSetImageView(uiImageView *view, const char *path, int size) {
+static bool thumbSetImageView(uiImageView *view, const char *path, int size) {
     unsigned char *thumb = decodeThumb(path, size);
     if (!thumb) return false;
-    bool ok = previewSetImageViewRGBA(view, thumb, size);
+    bool ok = thumbSetImageViewRGBA(view, thumb, size);
     free(thumb);
     return ok;
 }
 
-static void previewSetPlaceholder(uiImageView *view, int size) {
+static void thumbSetPlaceholder(uiImageView *view, int size) {
     unsigned char *px = (unsigned char *)malloc((size_t)size * size * 4);
     if (!px) return;
     for (int y = 0; y < size; ++y) {
@@ -157,7 +164,7 @@ static void previewSetPlaceholder(uiImageView *view, int size) {
             p[0] = v; p[1] = v; p[2] = v; p[3] = 255;
         }
     }
-    previewSetImageViewRGBA(view, px, size);
+    thumbSetImageViewRGBA(view, px, size);
     free(px);
 }
 
@@ -539,7 +546,7 @@ static bool applyCamoFiles(void) {
     return true;
 }
 
-static bool camoPreviewPath(char *out, size_t size, const Camo *camo) {
+static bool camoThumbPath(char *out, size_t size, const Camo *camo) {
     if (!camo || camo->fileCount == 0) return false;
     for (size_t i = 0; i < camo->fileCount; ++i) {
         if (camo->files[i].type == CAMO_FILE_COLOR && camo->files[i].number == 0) {
@@ -587,8 +594,8 @@ static void buildCamoThumbs(void) {
     camoThumbCount = total;
     for (size_t i = 0; i < total; ++i) {
         char path[MAX_PATH];
-        if (camoPreviewPath(path, sizeof(path), &camos[i])) {
-            camoThumbs[i] = previewImageFromIwi(path, CAMO_THUMB_SIZE);
+        if (camoThumbPath(path, sizeof(path), &camos[i])) {
+            camoThumbs[i] = thumbImageFromIwi(path, CAMO_THUMB_SIZE);
         }
     }
 }
@@ -698,9 +705,9 @@ static void appendFileRow(uiGrid *grid, int rowIndex, CamoFileType type,
                           FileRowKey *key) {
     uiImageView *thumb = uiNewImageView(CAMO_EXTRA_SIZE, CAMO_EXTRA_SIZE);
     if (source) {
-        previewSetImageView(thumb, source, CAMO_EXTRA_SIZE);
+        thumbSetImageView(thumb, source, CAMO_EXTRA_SIZE);
     } else {
-        previewSetPlaceholder(thumb, CAMO_EXTRA_SIZE);
+        thumbSetPlaceholder(thumb, CAMO_EXTRA_SIZE);
     }
     uiGridAppend(grid, uiControl(thumb), 0, rowIndex, 1, 1, 0, uiAlignStart, 0, uiAlignCenter);
 
@@ -801,6 +808,7 @@ static void onCamoListSelectionChanged(uiTable *table, void *data) {
 
     editorLoadFromCamo(selectedCamo());
     refreshCamoDetails();
+    refreshViewer();
 }
 
 static void onAddCamoClicked(uiButton *button, void *data) {
@@ -1402,13 +1410,6 @@ static void onDeleteBundleClicked(uiButton *button, void *data) {
     refreshActiveStatus();
 }
 
-static uiControl *makePlaceholderBox(const char *text) {
-    uiMultilineEntry *box = uiNewNonWrappingMultilineEntry();
-    uiMultilineEntrySetText(box, text);
-    uiMultilineEntrySetReadOnly(box, 1);
-    return uiControl(box);
-}
-
 static void buildDetailsInto(uiGrid *grid);
 static void buildAssignmentInto(uiGrid *grid);
 
@@ -1532,30 +1533,90 @@ static void buildDetailsInto(uiGrid *grid) {
     refreshCamoDetails();
 }
 
-static uiControl *buildPreview3DPanel(void) {
-    uiGroup *group = uiNewGroup("3D Weapon Preview");
+static bool camoHasBaseFile(const Camo *camo, CamoFileType type) {
+    if (!camo) return false;
+    for (size_t i = 0; i < camo->fileCount; ++i) {
+        if (camo->files[i].type == type && camo->files[i].number == 0) return true;
+    }
+    return false;
+}
+
+static void refreshViewer(void) {
+    if (!viewer) return;
+
+    CamoViewerRequest request;
+    memset(&request, 0, sizeof(request));
+
+    char modelPath[MAX_PATH];
+    if (viewerWeaponCombo) {
+        int selected = uiComboboxSelected(viewerWeaponCombo);
+        size_t total = 0;
+        const CamoWeapon *weapons = camoManagerGetWeapons(manager, &total);
+        if (selected >= 0 && (size_t)selected < total &&
+            camoManagerWeaponModelPath(manager, weapons[selected].id, modelPath, sizeof(modelPath))) {
+            request.modelPath = modelPath;
+        }
+    }
+
+    const Camo *camo = selectedCamo();
+    char specPath[MAX_PATH], colorPath[MAX_PATH], envPath[MAX_PATH], normalPath[MAX_PATH];
+    if (camo) {
+        if (camoHasBaseFile(camo, CAMO_FILE_SPEC) &&
+            camoManagerCamoFilePath(manager, camo->id, CAMO_FILE_SPEC, 0, specPath, sizeof(specPath))) {
+            request.specPath = specPath;
+        }
+        if (camoHasBaseFile(camo, CAMO_FILE_COLOR) &&
+            camoManagerCamoFilePath(manager, camo->id, CAMO_FILE_COLOR, 0, colorPath, sizeof(colorPath))) {
+            request.colorPath = colorPath;
+        }
+        if (camoHasBaseFile(camo, CAMO_FILE_ENV) &&
+            camoManagerCamoFilePath(manager, camo->id, CAMO_FILE_ENV, 0, envPath, sizeof(envPath))) {
+            request.envPath = envPath;
+        }
+        if (camoHasBaseFile(camo, CAMO_FILE_NORMAL) &&
+            camoManagerCamoFilePath(manager, camo->id, CAMO_FILE_NORMAL, 0, normalPath, sizeof(normalPath))) {
+            request.normalPath = normalPath;
+        }
+    }
+
+    camoViewerSetCamo(viewer, &request);
+}
+
+static void onViewerAutoRotateToggled(uiCheckbox *checkbox, void *data) {
+    (void)data;
+    if (viewer) camoViewerSetAutoRotate(viewer, uiCheckboxChecked(checkbox) != 0);
+}
+
+static void onViewerWeaponSelected(uiCombobox *combobox, void *data) {
+    (void)combobox; (void)data;
+    refreshViewer();
+}
+
+static uiControl *buildViewer3DPanel(void) {
+    uiGroup *group = uiNewGroup("Camo Viewer");
     uiGroupSetMargined(group, 1);
 
     uiBox *box = uiNewVerticalBox();
     uiBoxSetPadded(box, 1);
 
-    uiBoxAppend(box, makePlaceholderBox(
-        "Not ready yet"), 1);
+    viewerArea = uiNewGLArea(360, 320);
+    uiBoxAppend(box, uiControl(viewerArea), 1);
 
     uiBox *controls = uiNewHorizontalBox();
     uiBoxSetPadded(controls, 1);
-    uiCombobox *weaponCombo = uiNewCombobox();
+
+    viewerWeaponCombo = uiNewCombobox();
     size_t total = 0;
     const CamoWeapon *weapons = camoManagerGetWeapons(manager, &total);
     for (size_t i = 0; i < total; ++i) {
-        uiComboboxAppend(weaponCombo, weapons[i].name ? weapons[i].name : weapons[i].id);
+        uiComboboxAppend(viewerWeaponCombo, weapons[i].name ? weapons[i].name : weapons[i].id);
     }
-    if (total > 0) uiComboboxSetSelected(weaponCombo, 0);
-    uiControlDisable(uiControl(weaponCombo));
-    uiBoxAppend(controls, uiControl(weaponCombo), 1);
+    if (total > 0) uiComboboxSetSelected(viewerWeaponCombo, 0);
+    uiComboboxOnSelected(viewerWeaponCombo, onViewerWeaponSelected, NULL);
+    uiBoxAppend(controls, uiControl(viewerWeaponCombo), 1);
 
     uiCheckbox *autoRotate = uiNewCheckbox("Auto Rotate");
-    uiControlDisable(uiControl(autoRotate));
+    uiCheckboxOnToggled(autoRotate, onViewerAutoRotateToggled, NULL);
     uiBoxAppend(controls, uiControl(autoRotate), 0);
     uiBoxAppend(box, uiControl(controls), 0);
 
@@ -1622,7 +1683,7 @@ static uiControl *buildContent(void) {
     uiGroupSetChild(setup, uiControl(setupBox));
 
     uiGridAppend(grid, uiControl(setup),      0, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, buildPreview3DPanel(), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, buildViewer3DPanel(), 1, 0, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     return uiControl(grid);
 }
@@ -1658,9 +1719,18 @@ void uiCamoShow(uiWindow *parentInstance) {
 
     uiControlShow(uiControl(camoWindow));
     SetForegroundWindow((HWND)uiControlHandle(uiControl(camoWindow)));
+
+    if (viewer == NULL && viewerArea != NULL) {
+        viewer = camoViewerCreate((void *)uiControlHandle(uiControl(viewerArea)));
+        refreshViewer();
+    }
 }
 
 void uiCamoCleanup(void) {
+    if (viewer) {
+        camoViewerDestroy(viewer);
+        viewer = NULL;
+    }
     if (manager) {
         camoManagerDestroy(manager);
         manager = NULL;

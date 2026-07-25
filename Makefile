@@ -161,7 +161,7 @@ build/gsc.zip: gsc/*
 	@mkdir -p build
 	@powershell -Command "Compress-Archive -Path 'gsc/*' -DestinationPath 'build/gsc.zip' -Force"
 
-build/resources.o: res/resources.rc res/example.static.manifest res/resource_ids.h res/fonts/*.ttf $(DLL_TARGET) build/gsc.zip res/camo/weapons.json res/camo/$$black.iwi
+build/resources.o: res/resources.rc res/example.static.manifest res/resource_ids.h res/fonts/*.ttf $(DLL_TARGET) build/gsc.zip res/camo/weapons.json res/camo/$$black.iwi res/shaders/*.vert res/shaders/*.frag
 	@mkdir -p build
 	$(WINDRES) -I res --target=pe-i386 $< -O coff -o $@
 

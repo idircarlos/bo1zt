@@ -3,6 +3,8 @@
 #include "logic/camo/manager/persistence.h"
 #include "logic/camo/manager/manifest.h"
 #include "logic/camo/manager/iwd.h"
+#include "logic/assets.h"
+#include "win/file.h"
 #include "logger.h"
 
 #include <windows.h>
@@ -69,49 +71,13 @@ static const char *fileBaseName(const char *path) {
     return base;
 }
 
-static void removeManagedTree(const char *path) {
-    char pattern[MAX_PATH];
-    int n = snprintf(pattern, sizeof(pattern), "%s\\*", path);
-    if (n < 0 || (size_t)n >= sizeof(pattern)) {
-        RemoveDirectoryA(path);
-        return;
-    }
-
-    WIN32_FIND_DATAA fd;
-    HANDLE h = FindFirstFileA(pattern, &fd);
-    if (h != INVALID_HANDLE_VALUE) {
-        do {
-            if (strcmp(fd.cFileName, ".") == 0 || strcmp(fd.cFileName, "..") == 0) {
-                continue;
-            }
-            char child[MAX_PATH];
-            int cn = snprintf(child, sizeof(child), "%s\\%s", path, fd.cFileName);
-            if (cn < 0 || (size_t)cn >= sizeof(child)) continue;
-            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-                removeManagedTree(child);
-            } else {
-                DeleteFileA(child);
-            }
-        } while (FindNextFileA(h, &fd));
-        FindClose(h);
-    }
-
-    if (!RemoveDirectoryA(path)) {
-        DWORD err = GetLastError();
-        if (err != ERROR_FILE_NOT_FOUND && err != ERROR_PATH_NOT_FOUND) {
-            LOG_ERROR("Failed to remove managed directory '%s' (error %lu)", path,
-                      (unsigned long)err);
-        }
-    }
-}
-
 static void deleteManagedCamoDir(const char *camoId) {
     char dir[MAX_PATH];
     if (!camoPersistenceCamoDir(dir, sizeof(dir), camoId)) {
         LOG_ERROR("Could not resolve managed directory for camo '%s'", camoId);
         return;
     }
-    removeManagedTree(dir);
+    fileDelete(dir);
 }
 
 static Camo *findCamo(CamoManager *manager, const char *id) {
@@ -307,6 +273,20 @@ bool camoManagerCamoFilePath(const CamoManager *manager, const char *camoId,
                              char *out, size_t size) {
     if (!manager || !camoId) return false;
     return camoPersistenceCamoFilePath(out, size, camoId, type, number);
+}
+
+bool camoManagerWeaponModelPath(const CamoManager *manager, const char *weaponId,
+                                char *out, size_t size) {
+    if (!manager || !weaponId || !out || size == 0) return false;
+
+    const CamoWeapon *weapon = findWeapon(manager, weaponId);
+    if (!weapon || !weapon->model || weapon->model[0] == '\0') return false;
+
+    char modelExport[MAX_PATH];
+    if (!assetsModelExportDir(modelExport, sizeof(modelExport))) return false;
+
+    int n = snprintf(out, size, "%s\\%s", modelExport, weapon->model);
+    return n > 0 && (size_t)n < size;
 }
 
 CamoResult camoManagerCamoCreate(CamoManager *manager, const char *name,
@@ -727,8 +707,7 @@ static CamoResult installBundleToMain(CamoManager *manager, CamoBundle *bundle,
         LOG_ERROR("Game main path too long for '%s'", gameLocation);
         return CAMO_RESULT_INVALID;
     }
-    DWORD attrs = GetFileAttributesA(mainDir);
-    if (attrs == INVALID_FILE_ATTRIBUTES || !(attrs & FILE_ATTRIBUTE_DIRECTORY)) {
+    if (!fileExists(mainDir)) {
         LOG_ERROR("Game main directory not found: '%s'", mainDir);
         return CAMO_RESULT_INVALID;
     }
