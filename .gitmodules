@@ -1,0 +1,3 @@
+[submodule "external/oat"]
+	path = external/oat
+	url = https://github.com/idircarlos/OpenAssetTools.git
