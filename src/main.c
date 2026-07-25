@@ -2,6 +2,7 @@
 #include <sys/stat.h>
 #include "gui.h"
 #include "gui/game.h"
+#include "gui/assets.h"
 #include "ipc/event.h"
 #include "logger.h"
 #include "win/process.h"
@@ -138,6 +139,11 @@ static void promptGameLocationAware() {
     }
 }
 
+static void extractGameAssetsAware() {
+    GameConfig gameConfig = controllerGetGameConfig(controller);
+    uiAssetsInstall(gameConfig.location);
+}
+
 
 int main(int argc, char **argv) {
     if (argc > 1) {
@@ -164,6 +170,7 @@ int main(int argc, char **argv) {
     guiInit(client, port);
 
     promptGameLocationAware();
+    extractGameAssetsAware();
 
     threadCreate(processRunningThread, NULL);
     threadCreate(updateGameThread, NULL);
