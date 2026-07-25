@@ -35,19 +35,11 @@
 
 #define degToRad(deg) ((deg) * VIEWER_PI / 180.0f)
 
-typedef enum {
-    VIEWER_LAYER_COLOR = 0,
-    VIEWER_LAYER_NORMAL,
-    VIEWER_LAYER_SPEC,
-    VIEWER_LAYER_ENV,
-    VIEWER_LAYER_COUNT
-} ViewerLayer;
-
-static const char *LAYER_SAMPLER_UNIFORM[VIEWER_LAYER_COUNT] = {
+static const char *LAYER_SAMPLER_UNIFORM[CAMO_VIEWER_LAYER_COUNT] = {
     "colorMap", "normalMap", "specMap", "envMap"
 };
 
-static const char *LAYER_ENABLED_UNIFORM[VIEWER_LAYER_COUNT] = {
+static const char *LAYER_ENABLED_UNIFORM[CAMO_VIEWER_LAYER_COUNT] = {
     "hasColor", "hasNormal", "hasSpec", "hasEnv"
 };
 
@@ -150,13 +142,14 @@ struct CamoViewer {
     int lastMouseX;
     int lastMouseY;
 
-    GLuint layerTexture[VIEWER_LAYER_COUNT];
-    char *layerPath[VIEWER_LAYER_COUNT];
+    GLuint layerTexture[CAMO_VIEWER_LAYER_COUNT];
+    char *layerPath[CAMO_VIEWER_LAYER_COUNT];
+    bool layerEnabled[CAMO_VIEWER_LAYER_COUNT];
 
     bool useShader;
     GLuint program;
-    GLint layerSamplerLocation[VIEWER_LAYER_COUNT];
-    GLint layerEnabledLocation[VIEWER_LAYER_COUNT];
+    GLint layerSamplerLocation[CAMO_VIEWER_LAYER_COUNT];
+    GLint layerEnabledLocation[CAMO_VIEWER_LAYER_COUNT];
 
     bool autoRotate;
     bool needsRedraw;
@@ -264,7 +257,7 @@ static GLuint compileShaderResource(GLenum type, int resourceId) {
 }
 
 static void initShaderUniforms(CamoViewer *viewer) {
-    for (int layer = 0; layer < VIEWER_LAYER_COUNT; layer++) {
+    for (int layer = 0; layer < CAMO_VIEWER_LAYER_COUNT; layer++) {
         viewer->layerSamplerLocation[layer] =
             gl.getUniformLocation(viewer->program, LAYER_SAMPLER_UNIFORM[layer]);
         viewer->layerEnabledLocation[layer] =
@@ -272,7 +265,7 @@ static void initShaderUniforms(CamoViewer *viewer) {
     }
 
     gl.useProgram(viewer->program);
-    for (int layer = 0; layer < VIEWER_LAYER_COUNT; layer++) {
+    for (int layer = 0; layer < CAMO_VIEWER_LAYER_COUNT; layer++) {
         gl.uniform1i(viewer->layerSamplerLocation[layer], layer);
     }
     gl.uniform3f(gl.getUniformLocation(viewer->program, "lightDir"), 0.4f, 0.6f, 1.0f);
@@ -320,7 +313,7 @@ static void initGLState(void) {
     glClearColor(0.13f, 0.13f, 0.15f, 1.0f);
 }
 
-static GLuint uploadTexture(ViewerLayer layer, const char *iwiPath) {
+static GLuint uploadTexture(CamoViewerLayer layer, const char *iwiPath) {
     IwiImage image;
     char error[128] = {0};
     if (!iwiLoad(iwiPath, &image, error, sizeof(error))) {
@@ -334,7 +327,7 @@ static GLuint uploadTexture(ViewerLayer layer, const char *iwiPath) {
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    GLint wrap = (layer == VIEWER_LAYER_ENV) ? GL_CLAMP_TO_EDGE : GL_REPEAT;
+    GLint wrap = (layer == CAMO_VIEWER_LAYER_ENV) ? GL_CLAMP_TO_EDGE : GL_REPEAT;
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
@@ -344,7 +337,7 @@ static GLuint uploadTexture(ViewerLayer layer, const char *iwiPath) {
     return texture;
 }
 
-static void releaseLayer(CamoViewer *viewer, ViewerLayer layer) {
+static void releaseLayer(CamoViewer *viewer, CamoViewerLayer layer) {
     if (viewer->layerTexture[layer]) {
         glDeleteTextures(1, &viewer->layerTexture[layer]);
         viewer->layerTexture[layer] = 0;
@@ -354,12 +347,12 @@ static void releaseLayer(CamoViewer *viewer, ViewerLayer layer) {
 }
 
 static void releaseAllLayers(CamoViewer *viewer) {
-    for (int layer = 0; layer < VIEWER_LAYER_COUNT; layer++) {
-        releaseLayer(viewer, (ViewerLayer)layer);
+    for (int layer = 0; layer < CAMO_VIEWER_LAYER_COUNT; layer++) {
+        releaseLayer(viewer, (CamoViewerLayer)layer);
     }
 }
 
-static void syncLayer(CamoViewer *viewer, ViewerLayer layer, const char *path) {
+static void syncLayer(CamoViewer *viewer, CamoViewerLayer layer, const char *path) {
     if (viewer->layerPath[layer] && path && strcmp(viewer->layerPath[layer], path) == 0) return;
 
     releaseLayer(viewer, layer);
@@ -412,10 +405,11 @@ static void drawModel(CamoViewer *viewer, bool withUV) {
 
 static void drawShaded(CamoViewer *viewer) {
     gl.useProgram(viewer->program);
-    for (int layer = 0; layer < VIEWER_LAYER_COUNT; layer++) {
+    for (int layer = 0; layer < CAMO_VIEWER_LAYER_COUNT; layer++) {
         gl.activeTexture(GL_TEXTURE0 + layer);
         glBindTexture(GL_TEXTURE_2D, viewer->layerTexture[layer]);
-        gl.uniform1i(viewer->layerEnabledLocation[layer], viewer->layerTexture[layer] ? 1 : 0);
+        bool active = viewer->layerTexture[layer] && viewer->layerEnabled[layer];
+        gl.uniform1i(viewer->layerEnabledLocation[layer], active ? 1 : 0);
     }
     gl.activeTexture(GL_TEXTURE0);
     drawModel(viewer, true);
@@ -431,7 +425,9 @@ static void drawFixedFunction(CamoViewer *viewer) {
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, materialDiffuse);
 
-    GLuint colorTexture = viewer->layerTexture[VIEWER_LAYER_COLOR];
+    GLuint colorTexture = viewer->layerEnabled[CAMO_VIEWER_LAYER_COLOR]
+                              ? viewer->layerTexture[CAMO_VIEWER_LAYER_COLOR]
+                              : 0;
     if (colorTexture) {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, colorTexture);
@@ -640,6 +636,9 @@ CamoViewer *camoViewerCreate(void *hostHwnd) {
 
     viewer->pitch = VIEWER_INITIAL_PITCH_DEG;
     viewer->yaw = VIEWER_INITIAL_YAW_DEG;
+    for (int layer = 0; layer < CAMO_VIEWER_LAYER_COUNT; layer++) {
+        viewer->layerEnabled[layer] = true;
+    }
     viewer->modelRadius = 1.0f;
     viewer->distance = fitDistance(viewer->modelRadius);
     viewer->frameIntervalMs = frameIntervalFromDisplay(viewer->hdc);
@@ -719,10 +718,10 @@ void camoViewerSetCamo(CamoViewer *viewer, const CamoViewerRequest *request) {
     makeCurrent(viewer);
 
     loadModel(viewer, request ? request->modelPath : NULL);
-    syncLayer(viewer, VIEWER_LAYER_COLOR, request ? request->colorPath : NULL);
-    syncLayer(viewer, VIEWER_LAYER_NORMAL, request ? request->normalPath : NULL);
-    syncLayer(viewer, VIEWER_LAYER_SPEC, request ? request->specPath : NULL);
-    syncLayer(viewer, VIEWER_LAYER_ENV, request ? request->envPath : NULL);
+    syncLayer(viewer, CAMO_VIEWER_LAYER_COLOR, request ? request->colorPath : NULL);
+    syncLayer(viewer, CAMO_VIEWER_LAYER_NORMAL, request ? request->normalPath : NULL);
+    syncLayer(viewer, CAMO_VIEWER_LAYER_SPEC, request ? request->specPath : NULL);
+    syncLayer(viewer, CAMO_VIEWER_LAYER_ENV, request ? request->envPath : NULL);
 
     requestRedraw(viewer);
 }
@@ -731,4 +730,21 @@ void camoViewerSetAutoRotate(CamoViewer *viewer, bool enabled) {
     if (!viewer || viewer->autoRotate == enabled) return;
     viewer->autoRotate = enabled;
     if (enabled) startFrameTimer(viewer);
+}
+
+void camoViewerSetLayerEnabled(CamoViewer *viewer, CamoViewerLayer layer, bool enabled) {
+    if (!viewer || layer < 0 || layer >= CAMO_VIEWER_LAYER_COUNT) return;
+    if (viewer->layerEnabled[layer] == enabled) return;
+    viewer->layerEnabled[layer] = enabled;
+    requestRedraw(viewer);
+}
+
+void camoViewerResetView(CamoViewer *viewer) {
+    if (!viewer) return;
+    viewer->pitch = VIEWER_INITIAL_PITCH_DEG;
+    viewer->yaw = VIEWER_INITIAL_YAW_DEG;
+    viewer->distance = fitDistance(viewer->modelRadius);
+    makeCurrent(viewer);
+    setProjection(viewer, viewer->clientWidth, viewer->clientHeight);
+    requestRedraw(viewer);
 }

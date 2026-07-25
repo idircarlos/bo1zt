@@ -30,7 +30,7 @@ static HRESULT drawBackgrounds(HRESULT hr, struct drawState *s)
 	if (hr != S_OK)
 		return hr;
 	if (s->m->hasImage)
-		if (FillRect(s->dc, &(s->m->subitemIcon), GetSysColorBrush(COLOR_WINDOW)) == 0) {
+		if (FillRect(s->dc, &(s->m->subitemIcon), s->bgBrush) == 0) {
 			logLastError(L"FillRect() icon");
 			return E_FAIL;
 		}
@@ -76,6 +76,8 @@ static HRESULT drawImagePart(HRESULT hr, struct drawState *s)
 		return S_OK;
 
 	value = uiprivTableModelCellValue(s->model, s->iItem, s->p->imageModelColumn);
+	if (value == NULL)
+		return S_OK;
 	wb = uiprivImageAppropriateForDC(uiTableValueImage(value), s->dc);
 	uiFreeTableValue(value);
 
@@ -581,39 +583,6 @@ fail:
 	return hr;
 }
 
-static HRESULT updateAndDrawFocusRects(HRESULT hr, uiTable *t, HDC dc, int iItem, RECT *realTextBackground, RECT *focus, bool *first)
-{
-	LRESULT state;
-
-	if (hr != S_OK)
-		return hr;
-	if (GetFocus() != t->hwnd)
-		return S_OK;
-	// uItemState CDIS_FOCUS doesn't quite work right because of bugs in the Windows list view that causes spurious redraws without the flag while we hover over the focused item
-	// TODO only call this once
-	state = SendMessageW(t->hwnd, LVM_GETITEMSTATE, (WPARAM) iItem, (LRESULT) (LVIS_FOCUSED));
-	if ((state & LVIS_FOCUSED) == 0)
-		return S_OK;
-
-	if (realTextBackground != NULL) {
-		if (*first) {
-			*focus = *realTextBackground;
-			*first = false;
-			return S_OK;
-		} else if (focus->right == realTextBackground->left) {
-			focus->right = realTextBackground->right;
-			return S_OK;
-		}
-	}
-	if (DrawFocusRect(dc, focus) == 0) {
-		logLastError(L"DrawFocusRect()");
-		return E_FAIL;
-	}
-	if (realTextBackground != NULL)
-		*focus = *realTextBackground;
-	return S_OK;
-}
-
 // normally we would only draw stuff in subitem stages
 // this broke when we tried drawing focus rects in postpaint; the drawing either kept getting wiped or overdrawn, mouse hovering had something to do with it, and none of the "solutions" to this or similar problems on the internet worked
 // so now we do everything in the item prepaint stage
@@ -625,8 +594,6 @@ HRESULT uiprivTableHandleNM_CUSTOMDRAW(uiTable *t, NMLVCUSTOMDRAW *nm, LRESULT *
 	uiprivTableColumnParams *p;
 	NMLVCUSTOMDRAW b;
 	size_t i, n;
-	RECT focus;
-	bool focusFirst;
 	HRESULT hr;
 
 	switch (nm->nmcd.dwDrawStage) {
@@ -642,7 +609,6 @@ HRESULT uiprivTableHandleNM_CUSTOMDRAW(uiTable *t, NMLVCUSTOMDRAW *nm, LRESULT *
 
 	n = t->columns->size();
 	b = *nm;
-	focusFirst = true;
 	for (i = 0; i < n; i++) {
 		b.iSubItem = i;
 		p = (*(t->columns))[i];
@@ -655,17 +621,12 @@ HRESULT uiprivTableHandleNM_CUSTOMDRAW(uiTable *t, NMLVCUSTOMDRAW *nm, LRESULT *
 		hr = drawTextPart(hr, &s);
 		hr = drawProgressBarPart(hr, &s);
 		hr = drawButtonPart(hr, &s);
-		hr = updateAndDrawFocusRects(hr, s.t, s.dc, nm->nmcd.dwItemSpec, &(s.m->realTextBackground), &focus, &focusFirst);
 		if (hr != S_OK)
 			goto fail;
 		hr = freeDrawState(&s);
 		if (hr != S_OK)		// TODO really error out here?
 			return hr;
 	}
-	// and draw the last focus rect
-	hr = updateAndDrawFocusRects(hr, t, nm->nmcd.hdc, nm->nmcd.dwItemSpec, NULL, &focus, &focusFirst);
-	if (hr != S_OK)
-		return hr;
 	*lResult = CDRF_SKIPDEFAULT;
 	return S_OK;
 fail:

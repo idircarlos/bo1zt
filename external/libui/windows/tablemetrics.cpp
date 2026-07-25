@@ -83,17 +83,9 @@ HRESULT uiprivTableGetMetrics(uiTable *t, int iItem, int iSubItem, uiprivTableMe
 	m->realTextBackground = r;
 
 	m->realTextRect = r;
-	// TODO confirm whether this really happens on column 0 as well
-	if (m->hasImage && iSubItem != 0)
-		// Normally there's this many hard-coded logical units
-		// of blank space, followed by the background, followed
-		// by a bitmap margin's worth of space. This looks bad,
-		// so we overrule that to start the background immediately
-		// and the text after the hard-coded amount.
-		m->realTextRect.left += 2;
-	else if (iSubItem != 0)
-		// In the case of subitem text without an image, we draw
-		// text one bitmap margin away from the left edge.
+	if (m->hasImage || iSubItem != 0)
+		// The text is drawn one bitmap margin away from the icon
+		// (or from the left edge when there is no icon).
 		m->realTextRect.left += m->bitmapMargin;
 
 	*mout = m;

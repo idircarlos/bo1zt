@@ -1,4 +1,5 @@
 #include "gui/camo.h"
+#include "gui/camo/help.h"
 #include "gui/camo/viewer.h"
 #include "gui.h"
 #include "logic/camo/manager.h"
@@ -20,8 +21,8 @@
 static uiWindow *parent = NULL;
 static uiWindow *camoWindow = NULL;
 
+static uiGroup *viewerGroup = NULL;
 static uiGLArea *viewerArea = NULL;
-static uiCombobox *viewerWeaponCombo = NULL;
 
 static CamoManager *manager = NULL;
 static CamoViewer *viewer = NULL;
@@ -173,7 +174,7 @@ static void rebuildBundleList(void);
 static void rebuildWeaponAssignment(void);
 static void refreshCamoDetails(void);
 static void refreshActiveStatus(void);
-static void refreshAssignCombo(void);
+static void refreshAssignButton(void);
 static void onFileReplaceClicked(uiButton *button, void *data);
 static void onFileRemoveClicked(uiButton *button, void *data);
 
@@ -697,7 +698,7 @@ static void rebuildCamoList(void) {
     }
     camoRowCount = total;
     if (selectedCamoRow >= (int)total) selectedCamoRow = -1;
-    refreshAssignCombo();
+    rebuildWeaponAssignment();
 }
 
 static void appendFileRow(uiGrid *grid, int rowIndex, CamoFileType type,
@@ -808,6 +809,7 @@ static void onCamoListSelectionChanged(uiTable *table, void *data) {
 
     editorLoadFromCamo(selectedCamo());
     refreshCamoDetails();
+    refreshAssignButton();
     refreshViewer();
 }
 
@@ -1003,8 +1005,7 @@ static uiTableModelHandler weaponHandler;
 static size_t weaponRowCount = 0;
 static int selectedWeaponRow = -1;
 
-static uiCombobox *assignCombo = NULL;
-static bool assignComboGuard = false;
+static uiButton *assignBtn = NULL;
 
 static int tableSelectedRow(uiTable *table) {
     if (!table) return -1;
@@ -1023,11 +1024,11 @@ static const CamoBundle *selectedBundle(void) {
     return &bundles[selectedBundleRow];
 }
 
-static const CamoWeapon *selectedWeapon(void) {
-    if (selectedWeaponRow < 0) return NULL;
+static const CamoWeapon *previewWeapon(void) {
     size_t total = 0;
     const CamoWeapon *weapons = camoManagerGetWeapons(manager, &total);
-    if ((size_t)selectedWeaponRow >= total) return NULL;
+    if (total == 0) return NULL;
+    if (selectedWeaponRow < 0 || (size_t)selectedWeaponRow >= total) return &weapons[0];
     return &weapons[selectedWeaponRow];
 }
 
@@ -1052,6 +1053,19 @@ static const char *camoNameById(const char *camoId) {
         }
     }
     return "";
+}
+
+static uiImage *camoThumbById(const char *camoId) {
+    if (!camoId) return NULL;
+    size_t total = 0;
+    const Camo *camos = camoManagerGetCamos(manager, &total);
+    for (size_t i = 0; i < total; ++i) {
+        if (camos[i].id && strcmp(camos[i].id, camoId) == 0) {
+            if (i < camoThumbCount && camoThumbs[i]) return camoThumbs[i];
+            break;
+        }
+    }
+    return getPlaceholderThumb();
 }
 
 static int bundleListNumColumns(uiTableModelHandler *mh, uiTableModel *m) {
@@ -1095,13 +1109,13 @@ static void bundleListSetCellValue(uiTableModelHandler *mh, uiTableModel *m, int
 
 static int weaponNumColumns(uiTableModelHandler *mh, uiTableModel *m) {
     (void)mh; (void)m;
-    return 2;
+    return 3;
 }
 
 static uiTableValueType weaponColumnType(uiTableModelHandler *mh, uiTableModel *m,
                                          int column) {
-    (void)mh; (void)m; (void)column;
-    return uiTableValueTypeString;
+    (void)mh; (void)m;
+    return column == 1 ? uiTableValueTypeImage : uiTableValueTypeString;
 }
 
 static int weaponNumRows(uiTableModelHandler *mh, uiTableModel *m) {
@@ -1121,6 +1135,10 @@ static uiTableValue *weaponCellValue(uiTableModelHandler *mh, uiTableModel *m,
     }
     const CamoBundle *bundle = selectedBundle();
     const char *camoId = assignedCamoId(bundle, weapon->id);
+    if (column == 1) {
+        uiImage *img = camoThumbById(camoId);
+        return img ? uiNewTableValueImage(img) : NULL;
+    }
     return uiNewTableValueString(camoId ? camoNameById(camoId) : "-");
 }
 
@@ -1136,38 +1154,33 @@ static void refreshSelectedBundleRow(void) {
     }
 }
 
-static void refreshAssignCombo(void) {
-    if (!assignCombo) return;
-    assignComboGuard = true;
-
-    uiComboboxClear(assignCombo);
-    uiComboboxAppend(assignCombo, "(None)");
-    size_t total = 0;
-    const Camo *camos = camoManagerGetCamos(manager, &total);
-    for (size_t i = 0; i < total; ++i) {
-        uiComboboxAppend(assignCombo, camos[i].name ? camos[i].name : "(unnamed)");
-    }
+static void refreshAssignButton(void) {
+    if (!assignBtn) return;
 
     const CamoBundle *bundle = selectedBundle();
-    const CamoWeapon *weapon = selectedWeapon();
-    int sel = 0;
-    if (bundle && weapon) {
-        const char *camoId = assignedCamoId(bundle, weapon->id);
-        if (camoId) {
-            for (size_t i = 0; i < total; ++i) {
-                if (camos[i].id && strcmp(camos[i].id, camoId) == 0) {
-                    sel = (int)i + 1;
-                    break;
-                }
-            }
-        }
+    const CamoWeapon *weapon = previewWeapon();
+    const Camo *camo = selectedCamo();
+
+    const char *blocked = NULL;
+    if (!weapon) blocked = "No weapons available";
+    else if (!camo) blocked = "Select a camo to assign";
+    else if (!bundle) blocked = "Select a bundle to assign";
+    if (blocked) {
+        uiButtonSetText(assignBtn, blocked);
+        uiControlDisable(uiControl(assignBtn));
+        return;
     }
-    uiComboboxSetSelected(assignCombo, sel);
 
-    if (bundle && weapon) uiControlEnable(uiControl(assignCombo));
-    else uiControlDisable(uiControl(assignCombo));
+    const char *weaponName = weapon->name ? weapon->name : weapon->id;
+    const char *camoName = camo->name ? camo->name : "";
+    const char *assigned = assignedCamoId(bundle, weapon->id);
+    bool remove = assigned && camo->id && strcmp(assigned, camo->id) == 0;
 
-    assignComboGuard = false;
+    char label[192];
+    snprintf(label, sizeof(label), remove ? "Remove \"%s\" from %s" : "Assign %s to %s",
+             camoName, weaponName);
+    uiButtonSetText(assignBtn, label);
+    uiControlEnable(uiControl(assignBtn));
 }
 
 static void refreshActiveStatus(void) {
@@ -1197,7 +1210,7 @@ static void rebuildWeaponAssignment(void) {
         }
         uiLabelSetText(assignmentTitle, title);
     }
-    refreshAssignCombo();
+    refreshAssignButton();
 }
 
 static void rebuildBundleList(void) {
@@ -1227,57 +1240,41 @@ static void onBundleSelectionChanged(uiTable *table, void *data) {
 static void onWeaponSelectionChanged(uiTable *table, void *data) {
     (void)data;
     selectedWeaponRow = tableSelectedRow(table);
-    refreshAssignCombo();
+    refreshAssignButton();
+    refreshViewer();
 }
 
-static void onAssignComboSelected(uiCombobox *combo, void *data) {
-    (void)data;
-    if (assignComboGuard) return;
+static void onAssignClicked(uiButton *button, void *data) {
+    (void)button; (void)data;
 
     const CamoBundle *bundle = selectedBundle();
-    const CamoWeapon *weapon = selectedWeapon();
-    if (!bundle || !weapon) return;
+    const CamoWeapon *weapon = previewWeapon();
+    const Camo *camo = selectedCamo();
+    if (!bundle || !weapon || !camo) return;
 
-    int sel = uiComboboxSelected(combo);
+    const char *assigned = assignedCamoId(bundle, weapon->id);
+    bool remove = assigned && camo->id && strcmp(assigned, camo->id) == 0;
+
     char *bundleId = _strdup(bundle->id);
     char *weaponId = _strdup(weapon->id);
-    if (!bundleId || !weaponId) {
+    char *camoId = _strdup(camo->id);
+    if (!bundleId || !weaponId || !camoId) {
         free(bundleId);
         free(weaponId);
+        free(camoId);
         return;
     }
 
-    CamoResult result;
-    if (sel <= 0) {
-        if (!assignedCamoId(bundle, weapon->id)) {
-            free(bundleId);
-            free(weaponId);
-            return;
-        }
-        result = camoManagerBundleRemoveCamo(manager, bundleId, weaponId);
-    } else {
-        size_t total = 0;
-        const Camo *camos = camoManagerGetCamos(manager, &total);
-        if ((size_t)(sel - 1) >= total) {
-            free(bundleId);
-            free(weaponId);
-            return;
-        }
-        char *camoId = _strdup(camos[sel - 1].id);
-        if (!camoId) {
-            free(bundleId);
-            free(weaponId);
-            return;
-        }
-        result = camoManagerBundleAddCamo(manager, bundleId, weaponId, camoId);
-        free(camoId);
-    }
+    CamoResult result = remove
+                            ? camoManagerBundleRemoveCamo(manager, bundleId, weaponId)
+                            : camoManagerBundleAddCamo(manager, bundleId, weaponId, camoId);
+    free(camoId);
 
     if (result != CAMO_RESULT_OK) {
         uiMsgBoxError(parent, "Assign camo", "Could not update the assignment.");
         free(bundleId);
         free(weaponId);
-        refreshAssignCombo();
+        refreshAssignButton();
         return;
     }
 
@@ -1485,12 +1482,11 @@ static uiControl *buildCamosPanel(void) {
     params.RowBackgroundColorModelColumn = -1;
     camoListTable = uiNewTable(&params);
     uiTableSetSelectionMode(camoListTable, uiTableSelectionModeOne);
-    uiTableAppendImageColumn(camoListTable, "", 0);
-    uiTableAppendTextColumn(camoListTable, "Name", 1, uiTableModelColumnNeverEditable, NULL);
+    uiTableAppendImageTextColumn(camoListTable, "Name", 0, 1,
+                                 uiTableModelColumnNeverEditable, NULL);
     uiTableAppendTextColumn(camoListTable, "Files", 2, uiTableModelColumnNeverEditable, NULL);
-    uiTableColumnSetWidth(camoListTable, 0, 25);
-    uiTableColumnSetWidth(camoListTable, 1, 90);
-    uiTableColumnSetWidth(camoListTable, 2, 140);
+    uiTableColumnSetWidth(camoListTable, 0, 115);
+    uiTableColumnSetWidth(camoListTable, 1, 140);
     uiTableOnSelectionChanged(camoListTable, onCamoListSelectionChanged, NULL);
     uiGridAppend(grid, uiControl(camoListTable),
                  0, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
@@ -1541,21 +1537,35 @@ static bool camoHasBaseFile(const Camo *camo, CamoFileType type) {
     return false;
 }
 
+static void refreshViewerTitle(void) {
+    if (!viewerGroup) return;
+    const CamoWeapon *weapon = previewWeapon();
+    const Camo *camo = selectedCamo();
+    char title[160];
+    if (weapon && camo) {
+        snprintf(title, sizeof(title), "Camo Viewer: %s - %s",
+                 weapon->name ? weapon->name : weapon->id, camo->name ? camo->name : "");
+    } else if (weapon) {
+        snprintf(title, sizeof(title), "Camo Viewer: %s",
+                 weapon->name ? weapon->name : weapon->id);
+    } else {
+        snprintf(title, sizeof(title), "Camo Viewer");
+    }
+    uiGroupSetTitle(viewerGroup, title);
+}
+
 static void refreshViewer(void) {
+    refreshViewerTitle();
     if (!viewer) return;
 
     CamoViewerRequest request;
     memset(&request, 0, sizeof(request));
 
     char modelPath[MAX_PATH];
-    if (viewerWeaponCombo) {
-        int selected = uiComboboxSelected(viewerWeaponCombo);
-        size_t total = 0;
-        const CamoWeapon *weapons = camoManagerGetWeapons(manager, &total);
-        if (selected >= 0 && (size_t)selected < total &&
-            camoManagerWeaponModelPath(manager, weapons[selected].id, modelPath, sizeof(modelPath))) {
-            request.modelPath = modelPath;
-        }
+    const CamoWeapon *weapon = previewWeapon();
+    if (weapon &&
+        camoManagerWeaponModelPath(manager, weapon->id, modelPath, sizeof(modelPath))) {
+        request.modelPath = modelPath;
     }
 
     const Camo *camo = selectedCamo();
@@ -1587,14 +1597,39 @@ static void onViewerAutoRotateToggled(uiCheckbox *checkbox, void *data) {
     if (viewer) camoViewerSetAutoRotate(viewer, uiCheckboxChecked(checkbox) != 0);
 }
 
-static void onViewerWeaponSelected(uiCombobox *combobox, void *data) {
-    (void)combobox; (void)data;
-    refreshViewer();
+static const CamoViewerLayer VIEWER_LAYER_ORDER[CAMO_VIEWER_LAYER_COUNT] = {
+    CAMO_VIEWER_LAYER_COLOR,
+    CAMO_VIEWER_LAYER_NORMAL,
+    CAMO_VIEWER_LAYER_SPEC,
+    CAMO_VIEWER_LAYER_ENV,
+};
+
+static const char *VIEWER_LAYER_LABELS[CAMO_VIEWER_LAYER_COUNT] = {
+    "Color",
+    "Normal",
+    "Spec",
+    "Env",
+};
+
+static void onViewerLayerToggled(uiCheckbox *checkbox, void *data) {
+    if (!viewer || !data) return;
+    camoViewerSetLayerEnabled(viewer, *(const CamoViewerLayer *)data,
+                              uiCheckboxChecked(checkbox) != 0);
+}
+
+static void onViewerResetClicked(uiButton *button, void *data) {
+    (void)button; (void)data;
+    camoViewerResetView(viewer);
+}
+
+static void onHelpClicked(uiButton *button, void *data) {
+    (void)button; (void)data;
+    uiCamoHelpShow(camoWindow);
 }
 
 static uiControl *buildViewer3DPanel(void) {
-    uiGroup *group = uiNewGroup("Camo Viewer");
-    uiGroupSetMargined(group, 1);
+    viewerGroup = uiNewGroup("Camo Viewer");
+    uiGroupSetMargined(viewerGroup, 1);
 
     uiBox *box = uiNewVerticalBox();
     uiBoxSetPadded(box, 1);
@@ -1604,24 +1639,25 @@ static uiControl *buildViewer3DPanel(void) {
 
     uiBox *controls = uiNewHorizontalBox();
     uiBoxSetPadded(controls, 1);
-
-    viewerWeaponCombo = uiNewCombobox();
-    size_t total = 0;
-    const CamoWeapon *weapons = camoManagerGetWeapons(manager, &total);
-    for (size_t i = 0; i < total; ++i) {
-        uiComboboxAppend(viewerWeaponCombo, weapons[i].name ? weapons[i].name : weapons[i].id);
+    for (int i = 0; i < CAMO_VIEWER_LAYER_COUNT; ++i) {
+        uiCheckbox *toggle = uiNewCheckbox(VIEWER_LAYER_LABELS[i]);
+        uiCheckboxSetChecked(toggle, 1);
+        uiCheckboxOnToggled(toggle, onViewerLayerToggled, (void *)&VIEWER_LAYER_ORDER[i]);
+        uiBoxAppend(controls, uiControl(toggle), 0);
     }
-    if (total > 0) uiComboboxSetSelected(viewerWeaponCombo, 0);
-    uiComboboxOnSelected(viewerWeaponCombo, onViewerWeaponSelected, NULL);
-    uiBoxAppend(controls, uiControl(viewerWeaponCombo), 1);
-
     uiCheckbox *autoRotate = uiNewCheckbox("Auto Rotate");
     uiCheckboxOnToggled(autoRotate, onViewerAutoRotateToggled, NULL);
     uiBoxAppend(controls, uiControl(autoRotate), 0);
+    uiButton *resetBtn = uiNewButton("Reset View");
+    uiButtonOnClicked(resetBtn, onViewerResetClicked, NULL);
+    uiBoxAppend(controls, uiControl(resetBtn), 1);
+    uiButton *helpBtn = uiNewButton("Help");
+    uiButtonOnClicked(helpBtn, onHelpClicked, NULL);
+    uiBoxAppend(controls, uiControl(helpBtn), 1);
     uiBoxAppend(box, uiControl(controls), 0);
 
-    uiGroupSetChild(group, uiControl(box));
-    return uiControl(group);
+    uiGroupSetChild(viewerGroup, uiControl(box));
+    return uiControl(viewerGroup);
 }
 
 static void buildAssignmentInto(uiGrid *grid) {
@@ -1642,21 +1678,18 @@ static void buildAssignmentInto(uiGrid *grid) {
     weaponTable = uiNewTable(&params);
     uiTableSetSelectionMode(weaponTable, uiTableSelectionModeOne);
     uiTableAppendTextColumn(weaponTable, "Weapon", 0, uiTableModelColumnNeverEditable, NULL);
-    uiTableAppendTextColumn(weaponTable, "Assigned Camo", 1, uiTableModelColumnNeverEditable, NULL);
+    uiTableAppendImageTextColumn(weaponTable, "Camo", 1, 2,
+                                 uiTableModelColumnNeverEditable, NULL);
     uiTableColumnSetWidth(weaponTable, 0, 120);
-    uiTableColumnSetWidth(weaponTable, 1, 120);
+    uiTableColumnSetWidth(weaponTable, 1, 145);
     uiTableOnSelectionChanged(weaponTable, onWeaponSelectionChanged, NULL);
     uiGridAppend(grid, uiControl(weaponTable),
                  1, 1, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
-    uiGrid *assignRow = uiNewGrid();
-    uiGridSetPadded(assignRow, 1);
-    uiGridAppend(assignRow, uiControl(uiNewLabel("Assign camo:")), 0, 0, 1, 1, 0, uiAlignStart, 0, uiAlignCenter);
-    assignCombo = uiNewCombobox();
-    uiComboboxOnSelected(assignCombo, onAssignComboSelected, NULL);
-    uiControlDisable(uiControl(assignCombo));
-    uiGridAppend(assignRow, uiControl(assignCombo), 1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
-    uiGridAppend(grid, uiControl(assignRow),
+    assignBtn = uiNewButton("Select a camo to assign");
+    uiButtonOnClicked(assignBtn, onAssignClicked, NULL);
+    uiControlDisable(uiControl(assignBtn));
+    uiGridAppend(grid, uiControl(assignBtn),
                  1, 2, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
 
     size_t total = 0;
@@ -1666,6 +1699,13 @@ static void buildAssignmentInto(uiGrid *grid) {
         uiTableModelRowInserted(weaponModel, (int)i);
     }
     weaponRowCount = total;
+
+    if (total > 0) {
+        int row = 0;
+        uiTableSelection selection = { 1, &row };
+        uiTableSetSelection(weaponTable, &selection);
+        selectedWeaponRow = 0;
+    }
 
     rebuildWeaponAssignment();
 }
