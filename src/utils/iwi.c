@@ -1,4 +1,5 @@
 #include "utils/iwi.h"
+#include "win/file.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -222,34 +223,19 @@ bool iwiLoad(const char *path, IwiImage *out, char *errMsg, int errSize) {
     }
     memset(out, 0, sizeof(*out));
 
-    FILE *f = fopen(path, "rb");
-    if (!f) {
+    size_t size = 0;
+    unsigned char *buf = (unsigned char *)fileReadAll(path, &size);
+    if (!buf) {
         setErr(errMsg, errSize, "Could not open file");
         return false;
     }
 
-    fseek(f, 0, SEEK_END);
-    long fileSize = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    long fileSize = (long)size;
     if (fileSize < 0x10) {
         setErr(errMsg, errSize, "File too small to be a valid IWI");
-        fclose(f);
-        return false;
-    }
-
-    unsigned char *buf = (unsigned char *)malloc((size_t)fileSize);
-    if (!buf) {
-        setErr(errMsg, errSize, "Out of memory");
-        fclose(f);
-        return false;
-    }
-    if (fread(buf, 1, (size_t)fileSize, f) != (size_t)fileSize) {
-        setErr(errMsg, errSize, "Failed to read file");
         free(buf);
-        fclose(f);
         return false;
     }
-    fclose(f);
 
     if (!(buf[0] == 'I' && buf[1] == 'W' && buf[2] == 'i')) {
         setErr(errMsg, errSize, "Not an IWI file (bad magic)");

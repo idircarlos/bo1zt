@@ -1,6 +1,7 @@
 #include "win/process.h"
 #include "win/process_internal.h"
 #include "logger.h"
+#include "win/file.h"
 #include "win/resources.h"
 #include "win/thread.h"
 #include "resource_ids.h"
@@ -341,7 +342,7 @@ bool processInjectDll(Process *process, const char *dllName, const char *executa
         snprintf(bo1ztFolder, MAX_PATH, "%s\\bo1zt", executablePath);
         
         // Create the folder if it doesn't exist
-        CreateDirectoryA(bo1ztFolder, NULL);
+        fileCreateFolder(bo1ztFolder);
         
         // Build full DLL path
         snprintf(fullDllPath, MAX_PATH, "%s\\%s", bo1ztFolder, dllName);

@@ -1,6 +1,7 @@
 #include "gui/teleport.h"
 #include "client/player.h"
 #include "logic/cheat.h"
+#include "win/file.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -33,15 +34,11 @@ static void onTeleportSaveButtonClick(uiButton *button, void *data) {
     char *filePath = uiSaveFile(parent);
     if (filePath == NULL) return;
 
-    FILE *fp = fopen(filePath, "w");
-    if (fp == NULL) {
+    char buf[64];
+    int n = snprintf(buf, sizeof(buf), "%d %d %d", (int)coords.x, (int)coords.y, (int)coords.z);
+    if (n < 0 || !fileWriteAll(filePath, buf, (size_t)n)) {
         uiMsgBoxError(parent, "Unexpected error", "Error saving the coords");
-        uiFreeText(filePath);
-        return;
     }
-
-    fprintf(fp, "%d %d %d", (int)coords.x, (int)coords.y, (int)coords.z);
-    fclose(fp);
     uiFreeText(filePath);
 }
 
@@ -51,13 +48,15 @@ static void onTeleportLoadButtonClick(uiButton *button, void *data) {
     char *filePath = uiOpenFile(parent);
     if (!filePath) return;
     
+    char *text = fileReadAll(filePath, NULL);
     int x, y, z;
-    FILE *fp = fopen(filePath, "r");
-    if (fp == NULL || fscanf(fp, "%d %d %d", &x, &y, &z) != 3) {
+    if (!text || sscanf(text, "%d %d %d", &x, &y, &z) != 3) {
         uiMsgBoxError(parent, "Unexpected error", "Error loading the coords");
+        free(text);
         uiFreeText(filePath);
         return;
     }
+    free(text);
 
     uiSpinboxSetValue(xSpin, x);
     uiSpinboxSetValue(ySpin, y);

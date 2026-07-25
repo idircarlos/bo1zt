@@ -1,6 +1,6 @@
 #include "win/resources.h"
+#include "win/file.h"
 #include <stdio.h>
-#include <direct.h>
 #include <string.h>
 #include "miniz.h"
 
@@ -74,29 +74,7 @@ bool resourcesExtractToFile(int resourceId, const char* outputPath) {
         return false;
     }
 
-    FILE* outputFile = fopen(outputPath, "wb");
-    if (!outputFile) {
-        return false;
-    }
-
-    size_t written = fwrite(pResourceData, 1, resourceSize, outputFile);
-    fclose(outputFile);
-
-    return (written == resourceSize);
-}
-
-static void mkdirRecursive(const char* path) {
-    char tmp[MAX_PATH];
-    strncpy(tmp, path, MAX_PATH - 1);
-    tmp[MAX_PATH - 1] = '\0';
-    
-    for (char* p = tmp + 1; *p; p++) {
-        if (*p == '/' || *p == '\\') {
-            *p = '\0';
-            _mkdir(tmp);
-            *p = '/';
-        }
-    }
+    return fileWriteAll(outputPath, pResourceData, resourceSize);
 }
 
 bool resourcesExtractZip(int resourceId, const char* outputDir) {
@@ -113,7 +91,7 @@ bool resourcesExtractZip(int resourceId, const char* outputDir) {
         return false;
     }
 
-    _mkdir(outputDir);
+    fileCreateFolder(outputDir);
 
     int numFiles = (int)mz_zip_reader_get_num_files(&zip);
     for (int i = 0; i < numFiles; i++) {
@@ -124,9 +102,16 @@ bool resourcesExtractZip(int resourceId, const char* outputDir) {
         snprintf(fullPath, MAX_PATH, "%s/%s", outputDir, fileStat.m_filename);
 
         if (mz_zip_reader_is_file_a_directory(&zip, i)) {
-            _mkdir(fullPath);
+            fileCreateFolder(fullPath);
         } else {
-            mkdirRecursive(fullPath);
+            char* slash = strrchr(fullPath, '/');
+            char* backslash = strrchr(fullPath, '\\');
+            char* sep = slash > backslash ? slash : backslash;
+            if (sep) {
+                *sep = '\0';
+                fileCreateFolder(fullPath);
+                *sep = '/';
+            }
             mz_zip_reader_extract_to_file(&zip, i, fullPath, 0);
         }
     }

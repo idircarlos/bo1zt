@@ -1,6 +1,7 @@
 #include "logic/camo/manager/iwd.h"
 #include "logic/camo/manager/manager_internal.h"
 #include "logic/camo/manager/persistence.h"
+#include "win/file.h"
 #include "win/resources.h"
 #include "resource_ids.h"
 #include "logger.h"
@@ -230,7 +231,7 @@ bool camoIwdBuild(const CamoManager *manager, const CamoBundle *bundle,
     free(sel);
 
     if (!ok) {
-        DeleteFileA(outPath);
+        fileDelete(outPath);
     }
     return ok;
 }

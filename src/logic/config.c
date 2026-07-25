@@ -2,6 +2,7 @@
 #include "logger.h"
 #include "logic/widget/manager.h"
 #include "logic/cheat.h"
+#include "win/file.h"
 #include <iniparser.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -41,10 +42,7 @@ static Rect rectFromString(const char *rectString) {
 }
 
 static bool iniFileExists() {
-    FILE *ini = fopen(INI_FILE_NAME, "r");
-    if (!ini) return false;
-    fclose(ini);
-    return true;
+    return fileExists(INI_FILE_NAME);
 }
 
 // Normalize path: collapse multiple backslashes into single ones

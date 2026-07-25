@@ -1,10 +1,10 @@
 #include "logic/camo/manager/persistence.h"
 #include "logic/camo/manager/manager_internal.h"
 #include "utils/json.h"
+#include "win/file.h"
 #include "logger.h"
 
 #include <windows.h>
-#include <shlobj.h>
 
 #include <limits.h>
 #include <stdio.h>
@@ -19,44 +19,6 @@
 
 #define CAMO_STAGE_SUFFIX  ".stage"
 #define CAMO_BACKUP_SUFFIX ".old"
-
-static bool ensureDir(const char *path) {
-    if (CreateDirectoryA(path, NULL)) return true;
-    DWORD err = GetLastError();
-    if (err == ERROR_ALREADY_EXISTS) return true;
-    LOG_ERROR("Failed to create directory '%s' (error %lu)", path, (unsigned long)err);
-    return false;
-}
-
-static void removeDirTree(const char *path) {
-    char pattern[MAX_PATH];
-    int n = snprintf(pattern, sizeof(pattern), "%s\\*", path);
-    if (n < 0 || (size_t)n >= sizeof(pattern)) {
-        RemoveDirectoryA(path);
-        return;
-    }
-
-    WIN32_FIND_DATAA fd;
-    HANDLE h = FindFirstFileA(pattern, &fd);
-    if (h != INVALID_HANDLE_VALUE) {
-        do {
-            if (strcmp(fd.cFileName, ".") == 0 || strcmp(fd.cFileName, "..") == 0) {
-                continue;
-            }
-            char child[MAX_PATH];
-            int cn = snprintf(child, sizeof(child), "%s\\%s", path, fd.cFileName);
-            if (cn < 0 || (size_t)cn >= sizeof(child)) continue;
-            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-                removeDirTree(child);
-            } else {
-                DeleteFileA(child);
-            }
-        } while (FindNextFileA(h, &fd));
-        FindClose(h);
-    }
-
-    RemoveDirectoryA(path);
-}
 
 static const char *fileTypeName(CamoFileType type) {
     switch (type) {
@@ -96,28 +58,18 @@ bool camoPersistenceValidId(const char *id) {
 static bool camoPersistenceBaseDir(char *out, size_t bufSize) {
     if (!out || bufSize == 0) return false;
 
-    char appData[MAX_PATH];
-    HRESULT hr = SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL,
-                                  SHGFP_TYPE_CURRENT, appData);
-    if (FAILED(hr)) {
-        LOG_ERROR("Failed to resolve %%APPDATA%% (hr 0x%08lx)", (unsigned long)hr);
-        return false;
-    }
-
-    char appFolder[MAX_PATH];
-    int n = snprintf(appFolder, sizeof(appFolder), "%s\\%s", appData, CAMO_APP_FOLDER);
-    if (n < 0 || (size_t)n >= sizeof(appFolder)) {
-        LOG_ERROR("APPDATA path too long");
-        return false;
-    }
-    if (!ensureDir(appFolder)) return false;
-
-    n = snprintf(out, bufSize, "%s\\%s", appFolder, CAMO_ROOT_FOLDER);
-    if (n < 0 || (size_t)n >= bufSize) {
+    char sub[MAX_PATH];
+    int n = snprintf(sub, sizeof(sub), "%s\\%s", CAMO_APP_FOLDER, CAMO_ROOT_FOLDER);
+    if (n < 0 || (size_t)n >= sizeof(sub)) {
         LOG_ERROR("Camo manager base path too long");
         return false;
     }
-    return ensureDir(out);
+
+    if (!fileAppDataPath(out, bufSize, sub)) {
+        LOG_ERROR("Failed to resolve %%APPDATA%%");
+        return false;
+    }
+    return fileCreateFolder(out);
 }
 
 static bool camoPersistenceJsonPath(char *out, size_t bufSize) {
@@ -151,14 +103,14 @@ static bool composeOwnerDir(char *out, size_t bufSize, const char *category,
         LOG_ERROR("Managed category path too long");
         return false;
     }
-    if (!ensureDir(categoryDir)) return false;
+    if (!fileCreateFolder(categoryDir)) return false;
 
     n = snprintf(out, bufSize, "%s\\%s", categoryDir, id);
     if (n < 0 || (size_t)n >= bufSize) {
         LOG_ERROR("Managed owner path too long");
         return false;
     }
-    return ensureDir(out);
+    return fileCreateFolder(out);
 }
 
 bool camoPersistenceCamoDir(char *out, size_t bufSize, const char *camoId) {
@@ -216,7 +168,7 @@ bool camoPersistenceCopy(const char *src, const char *dst, bool replace) {
         return false;
     }
 
-    if (!CopyFileA(src, dst, replace ? FALSE : TRUE)) {
+    if (!fileCopy(src, dst, replace)) {
         LOG_ERROR("Failed to copy '%s' -> '%s' (error %lu)", src, dst,
                   (unsigned long)GetLastError());
         return false;
@@ -230,13 +182,9 @@ bool camoPersistenceDelete(const char *path) {
         return false;
     }
 
-    if (DeleteFileA(path)) return true;
+    if (fileDelete(path)) return true;
 
-    DWORD err = GetLastError();
-    if (err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND) {
-        return true;
-    }
-    LOG_ERROR("Failed to delete '%s' (error %lu)", path, (unsigned long)err);
+    LOG_ERROR("Failed to delete '%s' (error %lu)", path, (unsigned long)GetLastError());
     return false;
 }
 
@@ -260,20 +208,20 @@ bool camoPersistenceImportCamoFiles(const char *camoId, const CamoFile *files,
         return false;
     }
 
-    removeDirTree(stageDir);
-    if (!ensureDir(stageDir)) return false;
+    fileDelete(stageDir);
+    if (!fileCreateFolder(stageDir)) return false;
 
     for (size_t i = 0; i < fileCount; ++i) {
         const CamoFile *f = &files[i];
         if (!f->fileName || f->fileName[0] == '\0') {
             LOG_ERROR("Camo file %zu has no source path", i);
-            removeDirTree(stageDir);
+            fileDelete(stageDir);
             return false;
         }
 
         char leaf[64];
         if (!camoPersistenceFileLeaf(leaf, sizeof(leaf), f->type, f->number)) {
-            removeDirTree(stageDir);
+            fileDelete(stageDir);
             return false;
         }
 
@@ -281,34 +229,34 @@ bool camoPersistenceImportCamoFiles(const char *camoId, const CamoFile *files,
         int n = snprintf(stagePath, sizeof(stagePath), "%s\\%s", stageDir, leaf);
         if (n < 0 || (size_t)n >= sizeof(stagePath)) {
             LOG_ERROR("Staged file path too long");
-            removeDirTree(stageDir);
+            fileDelete(stageDir);
             return false;
         }
 
         if (!camoPersistenceCopy(f->fileName, stagePath, true)) {
-            removeDirTree(stageDir);
+            fileDelete(stageDir);
             return false;
         }
     }
 
-    removeDirTree(backupDir);
+    fileDelete(backupDir);
 
-    if (!MoveFileExA(camoDir, backupDir, 0)) {
+    if (!fileMove(camoDir, backupDir, false)) {
         LOG_ERROR("Failed to set aside camo directory '%s' (error %lu)", camoDir,
                   (unsigned long)GetLastError());
-        removeDirTree(stageDir);
+        fileDelete(stageDir);
         return false;
     }
 
-    if (!MoveFileExA(stageDir, camoDir, 0)) {
+    if (!fileMove(stageDir, camoDir, false)) {
         LOG_ERROR("Failed to swap in staged camo directory '%s' (error %lu)",
                   camoDir, (unsigned long)GetLastError());
-        MoveFileExA(backupDir, camoDir, 0);
-        removeDirTree(stageDir);
+        fileMove(backupDir, camoDir, false);
+        fileDelete(stageDir);
         return false;
     }
 
-    removeDirTree(backupDir);
+    fileDelete(backupDir);
     return true;
 }
 
@@ -382,29 +330,6 @@ static bool isBareFileName(const char *name) {
         if (*p == '/' || *p == '\\' || *p == ':') return false;
     }
     return true;
-}
-
-static char *readEntireFile(const char *path, bool *notFound) {
-    if (notFound) *notFound = false;
-
-    FILE *f = fopen(path, "rb");
-    if (!f) {
-        if (notFound) *notFound = true;
-        return NULL;
-    }
-
-    if (fseek(f, 0, SEEK_END) != 0) { fclose(f); return NULL; }
-    long size = ftell(f);
-    if (size < 0) { fclose(f); return NULL; }
-    if (fseek(f, 0, SEEK_SET) != 0) { fclose(f); return NULL; }
-
-    char *buf = (char *)malloc((size_t)size + 1);
-    if (!buf) { fclose(f); return NULL; }
-
-    size_t read = fread(buf, 1, (size_t)size, f);
-    fclose(f);
-    buf[read] = '\0';
-    return buf;
 }
 
 static void freeCamoArray(Camo *camos, size_t count) {
@@ -735,10 +660,10 @@ bool camoPersistenceLoad(CamoManager *manager) {
     char path[MAX_PATH];
     if (!camoPersistenceJsonPath(path, sizeof(path))) return false;
 
-    bool notFound = false;
-    char *text = readEntireFile(path, &notFound);
+    if (!fileExists(path)) return true;
+
+    char *text = fileReadAll(path, NULL);
     if (!text) {
-        if (notFound) return true;
         LOG_ERROR("Failed to read '%s'", path);
         return false;
     }
@@ -896,7 +821,6 @@ bool camoPersistenceSave(const CamoManager *manager) {
     } else {
         jsonObjectSetNull(root, "installedCamoBundleFile");
     }
-
     char *serialized = jsonSerializePretty(root, 2);
     jsonFree(root);
     if (!serialized) {
@@ -912,27 +836,19 @@ bool camoPersistenceSave(const CamoManager *manager) {
         return false;
     }
 
-    FILE *f = fopen(tmpPath, "wb");
-    if (!f) {
-        LOG_ERROR("Failed to open '%s' for writing", tmpPath);
-        free(serialized);
-        return false;
-    }
-    size_t len = strlen(serialized);
-    size_t written = fwrite(serialized, 1, len, f);
-    int closeErr = fclose(f);
+    bool wrote = fileWriteAll(tmpPath, serialized, strlen(serialized));
     free(serialized);
 
-    if (written != len || closeErr != 0) {
+    if (!wrote) {
         LOG_ERROR("Failed to write camo-manager.json");
-        DeleteFileA(tmpPath);
+        fileDelete(tmpPath);
         return false;
     }
 
-    if (!MoveFileExA(tmpPath, path, MOVEFILE_REPLACE_EXISTING)) {
+    if (!fileMove(tmpPath, path, true)) {
         LOG_ERROR("Failed to replace '%s' (error %lu)", path,
                   (unsigned long)GetLastError());
-        DeleteFileA(tmpPath);
+        fileDelete(tmpPath);
         return false;
     }
     return true;
