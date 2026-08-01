@@ -3,7 +3,9 @@
 
 #include <ui.h>
 
-void uiCamoShow(uiWindow *parent);
+#include "client.h"
+
+void uiCamoShow(Client *client, uiWindow *parent);
 void uiCamoCleanup(void);
 
 #endif // UI_CAMO_H_

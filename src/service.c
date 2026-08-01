@@ -8,6 +8,7 @@
 #include "service/customizer.h"
 #include "service/widgets.h"
 #include "service/binds.h"
+#include "service/camo.h"
 #include "service/actions.h"
 #include "service/commands.h"
 #include "service/stats.h"
@@ -100,6 +101,10 @@ static void respondServiceError(HttpResponse *response, ServiceResult result) {
             respondError(response, 400, "INVALID_PARAM", "Invalid parameters"); break;
         case SERVICE_GAME_NOT_ATTACHED:
             respondError(response, 409, "GAME_NOT_ATTACHED", "Game is not attached"); break;
+        case SERVICE_IN_USE:
+            respondError(response, 409, "IN_USE", "Resource is in use"); break;
+        case SERVICE_NOT_INSTALLED:
+            respondError(response, 409, "NOT_INSTALLED", "Bundle is not installed"); break;
         case SERVICE_ENGINE_FAILED:
             respondError(response, 500, "ENGINE_FAILED", "Engine call failed"); break;
         default:
@@ -1181,11 +1186,351 @@ static void handleBindsReset(Service *service, HttpResponse *response) {
 }
 
 // ---------------------------------------------------------------------------
+// Handlers: camo manager
+// ---------------------------------------------------------------------------
+
+#define CAMO_MAX_FILES 32
+#define CAMO_PATH_SEGMENT_SIZE 64
+
+static JsonValue *camoFilesJson(const CamoFile *files, size_t fileCount) {
+    JsonValue *arr = jsonNewArray();
+    for (size_t i = 0; i < fileCount; i++) {
+        JsonValue *obj = jsonNewObject();
+        jsonObjectSetString(obj, "type", serviceCamoFileTypeName(files[i].type));
+        jsonObjectSetInt(obj, "number", files[i].number);
+        jsonArrayAppend(arr, obj);
+    }
+    return arr;
+}
+
+static JsonValue *camoJson(const Camo *camo) {
+    JsonValue *obj = jsonNewObject();
+    jsonObjectSetString(obj, "id", camo->id);
+    jsonObjectSetString(obj, "name", camo->name);
+    jsonObjectSet(obj, "files", camoFilesJson(camo->files, camo->fileCount));
+    return obj;
+}
+
+static JsonValue *camoWeaponJson(const CamoWeapon *weapon) {
+    JsonValue *obj = jsonNewObject();
+    jsonObjectSetString(obj, "id", weapon->id);
+    jsonObjectSetString(obj, "name", weapon->name);
+    jsonObjectSetString(obj, "model", weapon->model);
+    jsonObjectSet(obj, "files", camoFilesJson(weapon->files, weapon->fileCount));
+    return obj;
+}
+
+static JsonValue *camoBundleJson(Service *service, const CamoBundle *bundle) {
+    JsonValue *obj = jsonNewObject();
+    jsonObjectSetString(obj, "id", bundle->id);
+    jsonObjectSetString(obj, "name", bundle->name);
+    jsonObjectSetBool(obj, "installed", serviceCamoBundleIsInstalled(service, bundle->id));
+    JsonValue *arr = jsonNewArray();
+    for (size_t i = 0; i < bundle->entryCount; i++) {
+        JsonValue *entry = jsonNewObject();
+        jsonObjectSetString(entry, "weapon-id", bundle->entries[i].weaponId);
+        jsonObjectSetString(entry, "camo-id", bundle->entries[i].camoId);
+        jsonArrayAppend(arr, entry);
+    }
+    jsonObjectSet(obj, "entries", arr);
+    return obj;
+}
+
+static void handleCamoManagerOverview(Service *service, HttpResponse *response) {
+    ServiceCamoOverview overview;
+    ServiceResult r = serviceCamoOverview(service, &overview);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    JsonValue *obj = jsonNewObject();
+    jsonObjectSetInt(obj, "camo-count", (long long)overview.camoCount);
+    jsonObjectSetInt(obj, "bundle-count", (long long)overview.bundleCount);
+    jsonObjectSetInt(obj, "weapon-count", (long long)overview.weaponCount);
+    if (overview.activeBundleId) jsonObjectSetString(obj, "active-bundle-id", overview.activeBundleId);
+    else jsonObjectSetNull(obj, "active-bundle-id");
+    respondJson(response, 200, obj);
+}
+
+static void handleCamoWeaponList(Service *service, HttpResponse *response) {
+    size_t count = 0;
+    const CamoWeapon *weapons = serviceCamoWeaponList(service, &count);
+    JsonValue *arr = jsonNewArray();
+    for (size_t i = 0; i < count; i++) jsonArrayAppend(arr, camoWeaponJson(&weapons[i]));
+    respondJson(response, 200, arr);
+}
+
+static void handleCamoWeaponGet(Service *service, HttpResponse *response, const char *weaponId) {
+    const CamoWeapon *weapon = serviceCamoWeaponFind(service, weaponId);
+    if (!weapon) { respondNotFound(response); return; }
+    respondJson(response, 200, camoWeaponJson(weapon));
+}
+
+static void handleCamoWeaponFileList(Service *service, HttpResponse *response, const char *weaponId) {
+    const CamoWeapon *weapon = serviceCamoWeaponFind(service, weaponId);
+    if (!weapon) { respondNotFound(response); return; }
+
+    JsonValue *arr = jsonNewArray();
+    for (size_t i = 0; i < weapon->fileCount; i++) {
+        JsonValue *obj = jsonNewObject();
+        jsonObjectSetString(obj, "type", serviceCamoFileTypeName(weapon->files[i].type));
+        jsonObjectSetInt(obj, "number", weapon->files[i].number);
+        jsonObjectSetString(obj, "name", weapon->files[i].fileName);
+        jsonArrayAppend(arr, obj);
+    }
+    respondJson(response, 200, arr);
+}
+
+static void handleCamoList(Service *service, HttpResponse *response) {
+    size_t count = 0;
+    const Camo *camos = serviceCamoList(service, &count);
+    JsonValue *arr = jsonNewArray();
+    for (size_t i = 0; i < count; i++) jsonArrayAppend(arr, camoJson(&camos[i]));
+    respondJson(response, 200, arr);
+}
+
+static void handleCamoGet(Service *service, HttpResponse *response, const char *camoId) {
+    const Camo *camo = serviceCamoFind(service, camoId);
+    if (!camo) { respondNotFound(response); return; }
+    respondJson(response, 200, camoJson(camo));
+}
+
+// Reads a write-side `files` array into `out`. The `source` pointers alias the
+// parsed JSON tree, so it must outlive the service call.
+static bool parseCamoFiles(JsonValue *arr, ServiceCamoFile *out, size_t *countOut,
+                           const char **errorOut) {
+    if (jsonTypeOf(arr) != JSON_ARRAY) {
+        *errorOut = "Expected 'files' array";
+        return false;
+    }
+    int count = jsonArrayCount(arr);
+    if (count > CAMO_MAX_FILES) {
+        *errorOut = "Too many files";
+        return false;
+    }
+    for (int i = 0; i < count; i++) {
+        JsonValue *item = jsonArrayAt(arr, i);
+        if (jsonTypeOf(item) != JSON_OBJECT) {
+            *errorOut = "Each file must be an object";
+            return false;
+        }
+        const char *type = jsonObjectGetString(item, "type", NULL);
+        if (!serviceCamoFileTypeFromName(type, &out[i].type)) {
+            *errorOut = "Each file needs a valid 'type'";
+            return false;
+        }
+        JsonValue *number = jsonObjectGet(item, "number");
+        if (number && jsonTypeOf(number) != JSON_NUMBER) {
+            *errorOut = "Expected number for 'number'";
+            return false;
+        }
+        int slot = number ? jsonGetInt(number, 0) : 0;
+        if (slot < 0) {
+            *errorOut = "Expected a non-negative 'number'";
+            return false;
+        }
+        out[i].number = (unsigned int)slot;
+        out[i].source = jsonObjectGetString(item, "source", NULL);
+        if (!out[i].source || out[i].source[0] == '\0') {
+            *errorOut = "Each file needs a 'source' path";
+            return false;
+        }
+    }
+    *countOut = (size_t)count;
+    return true;
+}
+
+static void handleCamoPost(Service *service, HttpResponse *response, const char *body) {
+    static const char *KEYS[] = { "name", "files" };
+    JsonValue *parsed = jsonParse(body);
+    if (jsonTypeOf(parsed) != JSON_OBJECT ||
+        !hasOnlyKnownKeys(parsed, KEYS, (int)(sizeof(KEYS) / sizeof(KEYS[0])))) {
+        jsonFree(parsed);
+        respondError(response, 400, "INVALID_PARAM", "Expected a JSON object with 'name' and optional 'files'");
+        return;
+    }
+    const char *name = jsonObjectGetString(parsed, "name", NULL);
+    if (!name || name[0] == '\0') {
+        jsonFree(parsed);
+        respondError(response, 400, "INVALID_PARAM", "Missing 'name' string");
+        return;
+    }
+
+    ServiceCamoFile files[CAMO_MAX_FILES];
+    size_t fileCount = 0;
+    JsonValue *filesField = jsonObjectGet(parsed, "files");
+    if (filesField) {
+        const char *error = NULL;
+        if (!parseCamoFiles(filesField, files, &fileCount, &error)) {
+            jsonFree(parsed);
+            respondError(response, 400, "INVALID_PARAM", error);
+            return;
+        }
+    }
+
+    const char *id = NULL;
+    ServiceResult r = serviceCamoCreate(service, name, files, fileCount, &id);
+    jsonFree(parsed);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    handleCamoGet(service, response, id);
+}
+
+static void handleCamoPatch(Service *service, HttpResponse *response, const char *camoId, const char *body) {
+    static const char *KEYS[] = { "name", "files" };
+    JsonValue *parsed = jsonParse(body);
+    if (jsonTypeOf(parsed) != JSON_OBJECT ||
+        !hasOnlyKnownKeys(parsed, KEYS, (int)(sizeof(KEYS) / sizeof(KEYS[0])))) {
+        jsonFree(parsed);
+        respondError(response, 400, "INVALID_PARAM", "Expected a JSON object");
+        return;
+    }
+
+    ServiceCamoPatch patch = {};
+    JsonValue *nameField = jsonObjectGet(parsed, "name");
+    if (nameField) {
+        if (jsonTypeOf(nameField) != JSON_STRING) {
+            jsonFree(parsed);
+            respondError(response, 400, "INVALID_PARAM", "Expected string for name");
+            return;
+        }
+        patch.name = jsonGetString(nameField, "");
+        patch.hasName = true;
+    }
+
+    ServiceCamoFile files[CAMO_MAX_FILES];
+    JsonValue *filesField = jsonObjectGet(parsed, "files");
+    if (filesField) {
+        const char *error = NULL;
+        if (!parseCamoFiles(filesField, files, &patch.fileCount, &error)) {
+            jsonFree(parsed);
+            respondError(response, 400, "INVALID_PARAM", error);
+            return;
+        }
+        patch.files = files;
+        patch.hasFiles = true;
+    }
+
+    ServiceResult r = serviceCamoUpdate(service, camoId, &patch);
+    jsonFree(parsed);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    handleCamoGet(service, response, camoId);
+}
+
+static void handleCamoDelete(Service *service, HttpResponse *response, const char *camoId, const char *query) {
+    bool removeReferences = query && strstr(query, "remove-references=true") != NULL;
+    ServiceResult r = serviceCamoRemove(service, camoId, removeReferences);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    httpResponseStatus(response, 204);
+}
+
+static void handleCamoBundleList(Service *service, HttpResponse *response) {
+    size_t count = 0;
+    const CamoBundle *bundles = serviceCamoBundleList(service, &count);
+    JsonValue *arr = jsonNewArray();
+    for (size_t i = 0; i < count; i++) jsonArrayAppend(arr, camoBundleJson(service, &bundles[i]));
+    respondJson(response, 200, arr);
+}
+
+static void handleCamoBundleGet(Service *service, HttpResponse *response, const char *bundleId) {
+    const CamoBundle *bundle = serviceCamoBundleFind(service, bundleId);
+    if (!bundle) { respondNotFound(response); return; }
+    respondJson(response, 200, camoBundleJson(service, bundle));
+}
+
+static void handleCamoBundlePost(Service *service, HttpResponse *response, const char *body) {
+    JsonValue *parsed = jsonParse(body);
+    const char *name = jsonObjectGetString(parsed, "name", NULL);
+    if (!name || name[0] == '\0') {
+        jsonFree(parsed);
+        respondError(response, 400, "INVALID_PARAM", "Missing 'name' string");
+        return;
+    }
+    const char *id = NULL;
+    ServiceResult r = serviceCamoBundleCreate(service, name, &id);
+    jsonFree(parsed);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    handleCamoBundleGet(service, response, id);
+}
+
+static void handleCamoBundlePatch(Service *service, HttpResponse *response, const char *bundleId, const char *body) {
+    static const char *KEYS[] = { "name" };
+    JsonValue *parsed = jsonParse(body);
+    if (jsonTypeOf(parsed) != JSON_OBJECT ||
+        !hasOnlyKnownKeys(parsed, KEYS, (int)(sizeof(KEYS) / sizeof(KEYS[0])))) {
+        jsonFree(parsed);
+        respondError(response, 400, "INVALID_PARAM", "Expected a JSON object with 'name'");
+        return;
+    }
+    const char *name = jsonObjectGetString(parsed, "name", NULL);
+    if (!name || name[0] == '\0') {
+        jsonFree(parsed);
+        respondError(response, 400, "INVALID_PARAM", "Missing 'name' string");
+        return;
+    }
+    ServiceResult r = serviceCamoBundleRename(service, bundleId, name);
+    jsonFree(parsed);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    handleCamoBundleGet(service, response, bundleId);
+}
+
+static void handleCamoBundleDelete(Service *service, HttpResponse *response, const char *bundleId) {
+    ServiceResult r = serviceCamoBundleRemove(service, bundleId);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    httpResponseStatus(response, 204);
+}
+
+static void handleCamoBundleWeaponPut(Service *service, HttpResponse *response,
+                                      const char *bundleId, const char *weaponId,
+                                      const char *body) {
+    JsonValue *parsed = jsonParse(body);
+    const char *camoId = jsonObjectGetString(parsed, "camo-id", NULL);
+    if (!camoId || camoId[0] == '\0') {
+        jsonFree(parsed);
+        respondError(response, 400, "INVALID_PARAM", "Missing 'camo-id' string");
+        return;
+    }
+    ServiceResult r = serviceCamoBundleAssign(service, bundleId, weaponId, camoId);
+    if (r != SERVICE_OK) { jsonFree(parsed); respondServiceError(response, r); return; }
+    JsonValue *obj = jsonNewObject();
+    jsonObjectSetString(obj, "weapon-id", weaponId);
+    jsonObjectSetString(obj, "camo-id", camoId);
+    jsonFree(parsed);
+    respondJson(response, 200, obj);
+}
+
+static void handleCamoBundleWeaponDelete(Service *service, HttpResponse *response,
+                                         const char *bundleId, const char *weaponId) {
+    ServiceResult r = serviceCamoBundleUnassign(service, bundleId, weaponId);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    httpResponseStatus(response, 204);
+}
+
+static void handleCamoBundleInstall(Service *service, HttpResponse *response, const char *bundleId) {
+    ServiceResult r = serviceCamoBundleInstall(service, bundleId);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    httpResponseStatus(response, 204);
+}
+
+static void handleCamoBundleUninstall(Service *service, HttpResponse *response, const char *bundleId) {
+    ServiceResult r = serviceCamoBundleUninstall(service, bundleId);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    httpResponseStatus(response, 204);
+}
+
+// ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
 static bool isExact(const char *sub, const char *seg) {
     return strcmp(sub, seg) == 0;
+}
+
+// Copies the leading path segment of `rest` into `out` and returns the tail,
+// which starts at '/' or is empty when the segment was the last one.
+static const char *takeSegment(const char *rest, char *out, size_t size) {
+    const char *slash = strchr(rest, '/');
+    size_t n = slash ? (size_t)(slash - rest) : strlen(rest);
+    if (n == 0 || n >= size) return NULL;
+    memcpy(out, rest, n);
+    out[n] = '\0';
+    return slash ? slash : rest + n;
 }
 
 static void route(Service *service, const HttpRequest *request, HttpResponse *response) {
@@ -1382,6 +1727,81 @@ static void route(Service *service, const HttpRequest *request, HttpResponse *re
     if (isExact(sub, "/binds/reset")) {
         if (strcmp(method, "POST") != 0) { respondNotFound(response); return; }
         handleBindsReset(service, response);
+        return;
+    }
+
+    // --- camo manager ---
+    if (isExact(sub, "/camo-manager")) {
+        if (strcmp(method, "GET") != 0) { respondNotFound(response); return; }
+        handleCamoManagerOverview(service, response);
+        return;
+    }
+    if (isExact(sub, "/camo-manager/weapons")) {
+        if (strcmp(method, "GET") != 0) { respondNotFound(response); return; }
+        handleCamoWeaponList(service, response);
+        return;
+    }
+    if (strncmp(sub, "/camo-manager/weapons/", 22) == 0) {
+        char weaponId[CAMO_PATH_SEGMENT_SIZE];
+        const char *tail = takeSegment(sub + 22, weaponId, sizeof(weaponId));
+        if (!tail) { respondNotFound(response); return; }
+        if (strcmp(method, "GET") != 0) { respondNotFound(response); return; }
+        if (*tail == '\0') handleCamoWeaponGet(service, response, weaponId);
+        else if (strcmp(tail, "/files") == 0) handleCamoWeaponFileList(service, response, weaponId);
+        else respondNotFound(response);
+        return;
+    }
+    if (isExact(sub, "/camo-manager/camos")) {
+        if (strcmp(method, "GET") == 0) handleCamoList(service, response);
+        else if (strcmp(method, "POST") == 0) handleCamoPost(service, response, body);
+        else respondNotFound(response);
+        return;
+    }
+    if (strncmp(sub, "/camo-manager/camos/", 20) == 0) {
+        const char *camoId = sub + 20;
+        if (*camoId == '\0' || strchr(camoId, '/')) { respondNotFound(response); return; }
+        if (strcmp(method, "GET") == 0) handleCamoGet(service, response, camoId);
+        else if (strcmp(method, "PATCH") == 0) handleCamoPatch(service, response, camoId, body);
+        else if (strcmp(method, "DELETE") == 0) handleCamoDelete(service, response, camoId, request->query);
+        else respondNotFound(response);
+        return;
+    }
+    if (isExact(sub, "/camo-manager/bundles")) {
+        if (strcmp(method, "GET") == 0) handleCamoBundleList(service, response);
+        else if (strcmp(method, "POST") == 0) handleCamoBundlePost(service, response, body);
+        else respondNotFound(response);
+        return;
+    }
+    if (strncmp(sub, "/camo-manager/bundles/", 22) == 0) {
+        char bundleId[CAMO_PATH_SEGMENT_SIZE];
+        const char *tail = takeSegment(sub + 22, bundleId, sizeof(bundleId));
+        if (!tail) { respondNotFound(response); return; }
+        if (*tail == '\0') {
+            if (strcmp(method, "GET") == 0) handleCamoBundleGet(service, response, bundleId);
+            else if (strcmp(method, "PATCH") == 0) handleCamoBundlePatch(service, response, bundleId, body);
+            else if (strcmp(method, "DELETE") == 0) handleCamoBundleDelete(service, response, bundleId);
+            else respondNotFound(response);
+            return;
+        }
+        if (strcmp(tail, "/install") == 0) {
+            if (strcmp(method, "POST") != 0) { respondNotFound(response); return; }
+            handleCamoBundleInstall(service, response, bundleId);
+            return;
+        }
+        if (strcmp(tail, "/uninstall") == 0) {
+            if (strcmp(method, "POST") != 0) { respondNotFound(response); return; }
+            handleCamoBundleUninstall(service, response, bundleId);
+            return;
+        }
+        if (strncmp(tail, "/weapons/", 9) == 0) {
+            const char *weaponId = tail + 9;
+            if (*weaponId == '\0' || strchr(weaponId, '/')) { respondNotFound(response); return; }
+            if (strcmp(method, "PUT") == 0) handleCamoBundleWeaponPut(service, response, bundleId, weaponId, body);
+            else if (strcmp(method, "DELETE") == 0) handleCamoBundleWeaponDelete(service, response, bundleId, weaponId);
+            else respondNotFound(response);
+            return;
+        }
+        respondNotFound(response);
         return;
     }
 

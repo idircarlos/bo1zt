@@ -14,6 +14,8 @@ typedef enum {
     SERVICE_INVALID_PARAM,      // malformed/missing parameter
     SERVICE_GAME_NOT_ATTACHED,  // game process is not attached
     SERVICE_ENGINE_FAILED,      // underlying engine/api call failed
+    SERVICE_IN_USE,             // resource is referenced by another one
+    SERVICE_NOT_INSTALLED,      // resource is not the installed one
 } ServiceResult;
 
 Service *serviceCreate(Controller *controller);

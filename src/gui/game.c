@@ -294,7 +294,7 @@ static void onWidgetsButtonClick(uiButton *button, void *data) {
 static void onCamoButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    uiCamoShow(parent);
+    uiCamoShow(client, parent);
 }
 
 static void onTwitchButtonClick(uiButton *button, void *data) {

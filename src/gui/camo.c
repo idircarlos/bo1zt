@@ -1,8 +1,9 @@
 #include "gui/camo.h"
 #include "gui/camo/help.h"
 #include "gui/camo/viewer.h"
-#include "gui.h"
-#include "logic/camo/manager.h"
+#include "client/camo.h"
+#include "logic/assets.h"
+#include "logic/camo/manager/persistence.h"
 #include "utils/iwi.h"
 #include "logger.h"
 #include "resource_ids.h"
@@ -24,10 +25,87 @@ static uiWindow *camoWindow = NULL;
 static uiGroup *viewerGroup = NULL;
 static uiGLArea *viewerArea = NULL;
 
-static CamoManager *manager = NULL;
+static Client *client = NULL;
 static CamoViewer *viewer = NULL;
 
+static ClientCamo *camos = NULL;
+static size_t camoCount = 0;
+static ClientCamoBundle *bundles = NULL;
+static size_t bundleCount = 0;
+static ClientCamoWeapon *weapons = NULL;
+static size_t weaponCount = 0;
+static char activeBundleId[CLIENT_CAMO_ID_SIZE] = "";
+
 static void refreshViewer(void);
+
+static void reloadCamos(void) {
+    clientFreeCamos(camos, camoCount);
+    camos = NULL;
+    camoCount = 0;
+    if (clientGetCamos(client, &camos, &camoCount) != CLIENT_OK) {
+        camos = NULL;
+        camoCount = 0;
+    }
+}
+
+static void reloadBundles(void) {
+    clientFreeCamoBundles(bundles, bundleCount);
+    bundles = NULL;
+    bundleCount = 0;
+    activeBundleId[0] = '\0';
+    if (clientGetCamoBundles(client, &bundles, &bundleCount) != CLIENT_OK) {
+        bundles = NULL;
+        bundleCount = 0;
+        return;
+    }
+    for (size_t i = 0; i < bundleCount; ++i) {
+        if (!bundles[i].installed) continue;
+        snprintf(activeBundleId, sizeof(activeBundleId), "%s", bundles[i].id);
+        break;
+    }
+}
+
+static void reloadWeapons(void) {
+    clientFreeCamoWeapons(weapons, weaponCount);
+    weapons = NULL;
+    weaponCount = 0;
+    if (clientGetCamoWeapons(client, &weapons, &weaponCount) != CLIENT_OK) {
+        weapons = NULL;
+        weaponCount = 0;
+    }
+}
+
+static const ClientCamo *findCamo(const char *camoId) {
+    if (!camoId) return NULL;
+    for (size_t i = 0; i < camoCount; ++i) {
+        if (strcmp(camos[i].id, camoId) == 0) return &camos[i];
+    }
+    return NULL;
+}
+
+static bool weaponModelPath(const ClientCamoWeapon *weapon, char *out, size_t size) {
+    if (!weapon || weapon->model[0] == '\0') return false;
+    char modelExport[MAX_PATH];
+    if (!assetsModelExportDir(modelExport, sizeof(modelExport))) return false;
+    int n = snprintf(out, size, "%s\\%s", modelExport, weapon->model);
+    return n > 0 && (size_t)n < size;
+}
+
+static bool weaponDefaultFilePath(const ClientCamoWeaponFile *files, size_t fileCount,
+                                  CamoFileType type, char *out, size_t size) {
+    const char *fileName = NULL;
+    for (size_t i = 0; i < fileCount; ++i) {
+        if (files[i].type != type || files[i].number != 0) continue;
+        fileName = files[i].fileName;
+        break;
+    }
+    if (!fileName || fileName[0] == '\0') return false;
+
+    char imageDir[MAX_PATH];
+    if (!assetsImageDir(imageDir, sizeof(imageDir))) return false;
+    int n = snprintf(out, size, "%s\\%s", imageDir, fileName);
+    return n > 0 && (size_t)n < size;
+}
 
 static const char *slotLabels[CAMO_FILE_TYPE_COUNT] = {
     "Spec",
@@ -309,31 +387,17 @@ static int promptPick(const char *title, const char *label, const char **items,
     return p.result;
 }
 
-static bool camoGameLocation(char *out, size_t size) {
-    const GuiSnapshot *snapshot = guiGetSnapshot();
-    if (!snapshot || !snapshot->gameConfigValid) return false;
-    if (snapshot->gameConfig.location[0] == '\0') return false;
-    int n = snprintf(out, size, "%s", snapshot->gameConfig.location);
-    return n > 0 && (size_t)n < size;
-}
-
 static bool isActiveBundle(const char *bundleId) {
-    const char *active = camoManagerGetActiveBundleId(manager);
-    return active && bundleId && strcmp(active, bundleId) == 0;
+    return activeBundleId[0] != '\0' && bundleId &&
+           strcmp(activeBundleId, bundleId) == 0;
 }
 
 static bool activeBundleUsesCamo(const char *camoId) {
-    const char *activeId = camoManagerGetActiveBundleId(manager);
-    if (!activeId || activeId[0] == '\0' || !camoId) return false;
-    size_t total = 0;
-    const CamoBundle *bundles = camoManagerGetBundles(manager, &total);
-    for (size_t i = 0; i < total; ++i) {
-        if (!bundles[i].id || strcmp(bundles[i].id, activeId) != 0) continue;
+    if (activeBundleId[0] == '\0' || !camoId) return false;
+    for (size_t i = 0; i < bundleCount; ++i) {
+        if (strcmp(bundles[i].id, activeBundleId) != 0) continue;
         for (size_t j = 0; j < bundles[i].entryCount; ++j) {
-            if (bundles[i].entries[j].camoId &&
-                strcmp(bundles[i].entries[j].camoId, camoId) == 0) {
-                return true;
-            }
+            if (strcmp(bundles[i].entries[j].camoId, camoId) == 0) return true;
         }
     }
     return false;
@@ -342,16 +406,7 @@ static bool activeBundleUsesCamo(const char *camoId) {
 static void reconcileActiveBundleRebuild(const char *bundleId) {
     if (!isActiveBundle(bundleId)) return;
 
-    char location[MAX_PATH];
-    if (!camoGameLocation(location, sizeof(location))) {
-        uiMsgBox(parent, "Active bundle changed",
-                 "This bundle is installed, but the game location is not set, so the "
-                 "installed files were not refreshed. Reinstall it after setting the "
-                 "game location.");
-        return;
-    }
-
-    if (camoManagerBundleInstall(manager, bundleId, location) != CAMO_RESULT_OK) {
+    if (clientInstallCamoBundle(client, bundleId) != CLIENT_OK) {
         uiMsgBoxError(parent, "Active bundle changed",
                       "This bundle is installed, but refreshing the installed files "
                       "failed. Reinstall it from the Camo Bundles panel.");
@@ -379,7 +434,7 @@ typedef struct {
 
 static EditorFile *editorFiles = NULL;
 static size_t editorFileCount = 0;
-static char *editingCamoId = NULL;
+static char editingCamoId[CLIENT_CAMO_ID_SIZE] = "";
 
 static uiBox *filesContainer = NULL;
 static uiGrid *fileRowsGrid = NULL;
@@ -452,111 +507,80 @@ static unsigned int editorNextExtraNumber(CamoFileType type) {
     return n;
 }
 
-static const Camo *selectedCamo(void) {
-    if (selectedCamoRow < 0) return NULL;
-    size_t total = 0;
-    const Camo *camos = camoManagerGetCamos(manager, &total);
-    if ((size_t)selectedCamoRow >= total) return NULL;
+static const ClientCamo *selectedCamo(void) {
+    if (selectedCamoRow < 0 || (size_t)selectedCamoRow >= camoCount) return NULL;
     return &camos[selectedCamoRow];
 }
 
-static void editorLoadFromCamo(const Camo *camo) {
+static void editorLoadFromCamo(const ClientCamo *camo) {
     editorClearFiles();
-    free(editingCamoId);
-    editingCamoId = NULL;
+    editingCamoId[0] = '\0';
     if (!camo) return;
 
-    editingCamoId = _strdup(camo->id);
+    snprintf(editingCamoId, sizeof(editingCamoId), "%s", camo->id);
     for (size_t i = 0; i < camo->fileCount; ++i) {
         char managed[MAX_PATH];
-        if (camoManagerCamoFilePath(manager, camo->id, camo->files[i].type,
-                                    camo->files[i].number, managed, sizeof(managed))) {
+        if (camoPersistenceCamoFilePath(managed, sizeof(managed), camo->id,
+                                        camo->files[i].type, camo->files[i].number)) {
             editorSetFile(camo->files[i].type, camo->files[i].number, managed);
         }
     }
 }
 
 static bool applyCamoFiles(void) {
-    if (!editingCamoId) return false;
+    if (editingCamoId[0] == '\0') return false;
 
-    const char *name = NULL;
-    size_t total = 0;
-    const Camo *camos = camoManagerGetCamos(manager, &total);
-    for (size_t i = 0; i < total; ++i) {
-        if (camos[i].id && strcmp(camos[i].id, editingCamoId) == 0) {
-            name = camos[i].name;
-            break;
-        }
-    }
-    char *nameCopy = _strdup(name ? name : "");
-    char *idCopy = _strdup(editingCamoId);
-    if (!nameCopy || !idCopy) {
-        free(nameCopy);
-        free(idCopy);
-        return false;
-    }
-
-    CamoFile *files = NULL;
+    ClientCamoFileSource *sources = NULL;
     if (editorFileCount > 0) {
-        files = (CamoFile *)calloc(editorFileCount, sizeof(CamoFile));
-        if (!files) {
-            free(nameCopy);
-            free(idCopy);
+        sources = (ClientCamoFileSource *)calloc(editorFileCount, sizeof(*sources));
+        if (!sources) {
             uiMsgBoxError(parent, "Camo files", "Out of memory.");
             return false;
         }
         for (size_t i = 0; i < editorFileCount; ++i) {
-            files[i].type = editorFiles[i].type;
-            files[i].number = editorFiles[i].number;
-            files[i].fileName = editorFiles[i].source;
+            sources[i].type = editorFiles[i].type;
+            sources[i].number = editorFiles[i].number;
+            sources[i].source = editorFiles[i].source;
         }
     }
 
-    CamoResult result = camoManagerCamoUpdate(manager, idCopy, nameCopy, files,
-                                              editorFileCount);
-    free(files);
-    free(nameCopy);
+    char camoId[CLIENT_CAMO_ID_SIZE];
+    snprintf(camoId, sizeof(camoId), "%s", editingCamoId);
 
-    if (result != CAMO_RESULT_OK) {
+    ClientCamoPatch patch;
+    memset(&patch, 0, sizeof(patch));
+    patch.hasFiles = true;
+    patch.files = sources;
+    patch.fileCount = editorFileCount;
+
+    ClientResult result = clientUpdateCamo(client, camoId, &patch, NULL);
+    free(sources);
+
+    if (result != CLIENT_OK) {
         uiMsgBoxError(parent, "Camo files",
                       "Could not save the camo files. Verify the selected .iwi files "
                       "still exist and try again.");
-        free(idCopy);
         return false;
     }
 
-    bool rebuild = activeBundleUsesCamo(idCopy);
-    const Camo *updated = NULL;
-    camos = camoManagerGetCamos(manager, &total);
-    for (size_t i = 0; i < total; ++i) {
-        if (camos[i].id && strcmp(camos[i].id, idCopy) == 0) {
-            updated = &camos[i];
-            break;
-        }
-    }
-    editorLoadFromCamo(updated);
-
-    if (rebuild) {
-        const char *activeId = camoManagerGetActiveBundleId(manager);
-        if (activeId) reconcileActiveBundleRebuild(activeId);
-    }
-
-    free(idCopy);
+    bool rebuild = activeBundleUsesCamo(camoId);
     rebuildCamoList();
+    editorLoadFromCamo(findCamo(camoId));
+    if (rebuild) reconcileActiveBundleRebuild(activeBundleId);
     refreshCamoDetails();
     return true;
 }
 
-static bool camoThumbPath(char *out, size_t size, const Camo *camo) {
+static bool camoThumbPath(char *out, size_t size, const ClientCamo *camo) {
     if (!camo || camo->fileCount == 0) return false;
     for (size_t i = 0; i < camo->fileCount; ++i) {
         if (camo->files[i].type == CAMO_FILE_COLOR && camo->files[i].number == 0) {
-            return camoManagerCamoFilePath(manager, camo->id, camo->files[i].type,
-                                           camo->files[i].number, out, size);
+            return camoPersistenceCamoFilePath(out, size, camo->id, camo->files[i].type,
+                                               camo->files[i].number);
         }
     }
-    return camoManagerCamoFilePath(manager, camo->id, camo->files[0].type,
-                                   camo->files[0].number, out, size);
+    return camoPersistenceCamoFilePath(out, size, camo->id, camo->files[0].type,
+                                       camo->files[0].number);
 }
 
 static uiImage *getPlaceholderThumb(void) {
@@ -587,8 +611,7 @@ static void freeCamoThumbs(void) {
 
 static void buildCamoThumbs(void) {
     freeCamoThumbs();
-    size_t total = 0;
-    const Camo *camos = camoManagerGetCamos(manager, &total);
+    size_t total = camoCount;
     if (total == 0) return;
     camoThumbs = (uiImage **)calloc(total, sizeof(uiImage *));
     if (!camoThumbs) return;
@@ -612,7 +635,7 @@ static uiTableValueType camoListColumnType(uiTableModelHandler *mh, uiTableModel
     return column == 0 ? uiTableValueTypeImage : uiTableValueTypeString;
 }
 
-static void camoFilesSummary(char *out, size_t size, const Camo *camo) {
+static void camoFilesSummary(char *out, size_t size, const ClientCamo *camo) {
     if (!out || size == 0) return;
     out[0] = '\0';
     if (!camo || camo->fileCount == 0) {
@@ -657,9 +680,7 @@ static int camoListNumRows(uiTableModelHandler *mh, uiTableModel *m) {
 static uiTableValue *camoListCellValue(uiTableModelHandler *mh, uiTableModel *m,
                                        int row, int column) {
     (void)mh; (void)m;
-    size_t total = 0;
-    const Camo *camos = camoManagerGetCamos(manager, &total);
-    if (row < 0 || (size_t)row >= total) {
+    if (row < 0 || (size_t)row >= camoCount) {
         return column == 0 ? NULL : uiNewTableValueString("");
     }
     if (column == 0) {
@@ -669,7 +690,7 @@ static uiTableValue *camoListCellValue(uiTableModelHandler *mh, uiTableModel *m,
         return img ? uiNewTableValueImage(img) : NULL;
     }
     if (column == 1) {
-        return uiNewTableValueString(camos[row].name ? camos[row].name : "");
+        return uiNewTableValueString(camos[row].name);
     }
     char summary[64];
     camoFilesSummary(summary, sizeof(summary), &camos[row]);
@@ -683,8 +704,8 @@ static void camoListSetCellValue(uiTableModelHandler *mh, uiTableModel *m, int r
 
 static void rebuildCamoList(void) {
     if (!camoListModel) return;
-    size_t total = 0;
-    camoManagerGetCamos(manager, &total);
+    reloadCamos();
+    size_t total = camoCount;
 
     buildCamoThumbs();
 
@@ -742,7 +763,7 @@ static void rebuildFileRows(void) {
     fileRowsGrid = uiNewGrid();
     uiGridSetPadded(fileRowsGrid, 1);
 
-    bool enabled = (editingCamoId != NULL);
+    bool enabled = editingCamoId[0] != '\0';
 
     size_t extras = 0;
     for (size_t i = 0; i < editorFileCount; ++i) {
@@ -787,9 +808,9 @@ static void rebuildFileRows(void) {
 static void refreshCamoDetails(void) {
     if (!detailsTitle) return;
 
-    const Camo *camo = selectedCamo();
+    const ClientCamo *camo = selectedCamo();
     char title[128];
-    if (camo && camo->name) {
+    if (camo) {
         snprintf(title, sizeof(title), "Camo Details: %s", camo->name);
     } else {
         snprintf(title, sizeof(title), "Camo Details");
@@ -822,9 +843,9 @@ static void onAddCamoClicked(uiButton *button, void *data) {
         free(name);
         return;
     }
-    CamoResult result = camoManagerCamoCreate(manager, name, NULL, 0);
+    ClientResult result = clientCreateCamo(client, name, NULL, 0, NULL);
     free(name);
-    if (result != CAMO_RESULT_OK) {
+    if (result != CLIENT_OK) {
         uiMsgBoxError(parent, "Add camo", "Could not create the camo.");
         return;
     }
@@ -833,110 +854,80 @@ static void onAddCamoClicked(uiButton *button, void *data) {
 
 static void onRenameCamoClicked(uiButton *button, void *data) {
     (void)button; (void)data;
-    const Camo *camo = selectedCamo();
+    const ClientCamo *camo = selectedCamo();
     if (!camo) {
         uiMsgBoxError(parent, "Rename camo", "Select a camo to rename.");
         return;
     }
-    char *id = _strdup(camo->id);
+    char id[CLIENT_CAMO_ID_SIZE];
+    snprintf(id, sizeof(id), "%s", camo->id);
+
     char *name = promptText("Rename Camo", "Camo name:", camo->name);
-    if (!name) {
-        free(id);
-        return;
-    }
+    if (!name) return;
     if (name[0] == '\0') {
         uiMsgBoxError(parent, "Rename camo", "Enter a name for the camo.");
         free(name);
-        free(id);
         return;
     }
-    CamoFile *files = NULL;
-    size_t fileCount = camo->fileCount;
-    char (*sources)[MAX_PATH] = NULL;
-    if (fileCount > 0) {
-        files = (CamoFile *)calloc(fileCount, sizeof(CamoFile));
-        sources = (char (*)[MAX_PATH])calloc(fileCount, sizeof(*sources));
-        if (!files || !sources) {
-            free(files);
-            free(sources);
-            free(name);
-            free(id);
-            uiMsgBoxError(parent, "Rename camo", "Out of memory.");
-            return;
-        }
-        for (size_t i = 0; i < fileCount; ++i) {
-            files[i].type = camo->files[i].type;
-            files[i].number = camo->files[i].number;
-            camoManagerCamoFilePath(manager, id, camo->files[i].type,
-                                    camo->files[i].number, sources[i], MAX_PATH);
-            files[i].fileName = sources[i];
-        }
-    }
-    CamoResult result = camoManagerCamoUpdate(manager, id, name, files, fileCount);
-    free(files);
-    free(sources);
+
+    ClientCamoPatch patch;
+    memset(&patch, 0, sizeof(patch));
+    patch.hasName = true;
+    patch.name = name;
+
+    ClientResult result = clientUpdateCamo(client, id, &patch, NULL);
     free(name);
-    if (result != CAMO_RESULT_OK) {
+    if (result != CLIENT_OK) {
         uiMsgBoxError(parent, "Rename camo", "Could not rename the camo.");
-        free(id);
         return;
     }
-    reconcileActiveBundleRebuild(camoManagerGetActiveBundleId(manager));
-    free(id);
+    reconcileActiveBundleRebuild(activeBundleId);
     rebuildCamoList();
-    rebuildWeaponAssignment();
     refreshCamoDetails();
 }
 
 static void onDeleteCamoClicked(uiButton *button, void *data) {
     (void)button; (void)data;
-    const Camo *camo = selectedCamo();
+    const ClientCamo *camo = selectedCamo();
     if (!camo) {
         uiMsgBoxError(parent, "Delete camo", "Select a camo to delete.");
         return;
     }
-    char *id = _strdup(camo->id);
-    if (!id) return;
+    char id[CLIENT_CAMO_ID_SIZE];
+    snprintf(id, sizeof(id), "%s", camo->id);
 
     char msg[256];
-    snprintf(msg, sizeof(msg), "Delete camo \"%s\"?", camo->name ? camo->name : "");
-    if (uiMsgBoxOkCancel(parent, "Delete camo", msg) != 1) {
-        free(id);
-        return;
-    }
+    snprintf(msg, sizeof(msg), "Delete camo \"%s\"?", camo->name);
+    if (uiMsgBoxOkCancel(parent, "Delete camo", msg) != 1) return;
 
-    CamoResult result = camoManagerCamoRemove(manager, id, false);
-    if (result == CAMO_RESULT_IN_USE) {
+    ClientResult result = clientDeleteCamo(client, id, false);
+    if (result == CLIENT_ERR_CONFLICT) {
         if (uiMsgBoxOkCancel(parent, "Camo in use",
                              "This camo is assigned in one or more bundles. Delete it "
                              "and clear those assignments?") != 1) {
-            free(id);
             return;
         }
-        result = camoManagerCamoRemove(manager, id, true);
+        result = clientDeleteCamo(client, id, true);
     }
-    if (result != CAMO_RESULT_OK) {
+    if (result != CLIENT_OK) {
         uiMsgBoxError(parent, "Delete camo", "Could not delete the camo.");
-        free(id);
         return;
     }
 
-    if (editingCamoId && strcmp(editingCamoId, id) == 0) {
+    if (strcmp(editingCamoId, id) == 0) {
         editorClearFiles();
-        free(editingCamoId);
-        editingCamoId = NULL;
+        editingCamoId[0] = '\0';
     }
-    reconcileActiveBundleRebuild(camoManagerGetActiveBundleId(manager));
-    free(id);
+    refreshActiveStatus();
+    reconcileActiveBundleRebuild(activeBundleId);
     selectedCamoRow = -1;
     rebuildCamoList();
-    rebuildWeaponAssignment();
     refreshCamoDetails();
 }
 
 static void onFileReplaceClicked(uiButton *button, void *data) {
     (void)button;
-    if (!editingCamoId || !data) return;
+    if (editingCamoId[0] == '\0' || !data) return;
     const FileRowKey *key = (const FileRowKey *)data;
     CamoFileType type = key->type;
     unsigned int number = key->number;
@@ -955,7 +946,7 @@ static void onFileReplaceClicked(uiButton *button, void *data) {
 
 static void onFileRemoveClicked(uiButton *button, void *data) {
     (void)button;
-    if (!editingCamoId || !data) return;
+    if (editingCamoId[0] == '\0' || !data) return;
     const FileRowKey *key = (const FileRowKey *)data;
     editorRemoveFile(key->type, key->number);
     applyCamoFiles();
@@ -963,7 +954,7 @@ static void onFileRemoveClicked(uiButton *button, void *data) {
 
 static void onAddExtraClicked(uiButton *button, void *data) {
     (void)button; (void)data;
-    if (!editingCamoId) {
+    if (editingCamoId[0] == '\0') {
         uiMsgBoxError(parent, "Add extra file", "Select a camo first.");
         return;
     }
@@ -1016,27 +1007,23 @@ static int tableSelectedRow(uiTable *table) {
     return row;
 }
 
-static const CamoBundle *selectedBundle(void) {
-    if (selectedBundleRow < 0) return NULL;
-    size_t total = 0;
-    const CamoBundle *bundles = camoManagerGetBundles(manager, &total);
-    if ((size_t)selectedBundleRow >= total) return NULL;
+static const ClientCamoBundle *selectedBundle(void) {
+    if (selectedBundleRow < 0 || (size_t)selectedBundleRow >= bundleCount) return NULL;
     return &bundles[selectedBundleRow];
 }
 
-static const CamoWeapon *previewWeapon(void) {
-    size_t total = 0;
-    const CamoWeapon *weapons = camoManagerGetWeapons(manager, &total);
-    if (total == 0) return NULL;
-    if (selectedWeaponRow < 0 || (size_t)selectedWeaponRow >= total) return &weapons[0];
+static const ClientCamoWeapon *previewWeapon(void) {
+    if (weaponCount == 0) return NULL;
+    if (selectedWeaponRow < 0 || (size_t)selectedWeaponRow >= weaponCount) {
+        return &weapons[0];
+    }
     return &weapons[selectedWeaponRow];
 }
 
-static const char *assignedCamoId(const CamoBundle *bundle, const char *weaponId) {
+static const char *assignedCamoId(const ClientCamoBundle *bundle, const char *weaponId) {
     if (!bundle || !weaponId) return NULL;
     for (size_t i = 0; i < bundle->entryCount; ++i) {
-        if (bundle->entries[i].weaponId &&
-            strcmp(bundle->entries[i].weaponId, weaponId) == 0) {
+        if (strcmp(bundle->entries[i].weaponId, weaponId) == 0) {
             return bundle->entries[i].camoId;
         }
     }
@@ -1044,26 +1031,16 @@ static const char *assignedCamoId(const CamoBundle *bundle, const char *weaponId
 }
 
 static const char *camoNameById(const char *camoId) {
-    if (!camoId) return "";
-    size_t total = 0;
-    const Camo *camos = camoManagerGetCamos(manager, &total);
-    for (size_t i = 0; i < total; ++i) {
-        if (camos[i].id && strcmp(camos[i].id, camoId) == 0) {
-            return camos[i].name ? camos[i].name : "";
-        }
-    }
-    return "";
+    const ClientCamo *camo = findCamo(camoId);
+    return camo ? camo->name : "";
 }
 
 static uiImage *camoThumbById(const char *camoId) {
     if (!camoId) return NULL;
-    size_t total = 0;
-    const Camo *camos = camoManagerGetCamos(manager, &total);
-    for (size_t i = 0; i < total; ++i) {
-        if (camos[i].id && strcmp(camos[i].id, camoId) == 0) {
-            if (i < camoThumbCount && camoThumbs[i]) return camoThumbs[i];
-            break;
-        }
+    for (size_t i = 0; i < camoCount; ++i) {
+        if (strcmp(camos[i].id, camoId) != 0) continue;
+        if (i < camoThumbCount && camoThumbs[i]) return camoThumbs[i];
+        break;
     }
     return getPlaceholderThumb();
 }
@@ -1087,19 +1064,16 @@ static int bundleListNumRows(uiTableModelHandler *mh, uiTableModel *m) {
 static uiTableValue *bundleListCellValue(uiTableModelHandler *mh, uiTableModel *m,
                                          int row, int column) {
     (void)mh; (void)m;
-    size_t total = 0;
-    const CamoBundle *bundles = camoManagerGetBundles(manager, &total);
-    if (row < 0 || (size_t)row >= total) return uiNewTableValueString("");
+    if (row < 0 || (size_t)row >= bundleCount) return uiNewTableValueString("");
     if (column == 0) {
-        return uiNewTableValueString(bundles[row].name ? bundles[row].name : "");
+        return uiNewTableValueString(bundles[row].name);
     }
     if (column == 1) {
         char count[16];
         snprintf(count, sizeof(count), "%zu", bundles[row].entryCount);
         return uiNewTableValueString(count);
     }
-    return uiNewTableValueString(isActiveBundle(bundles[row].id) ? "Installed"
-                                                                 : "Not Installed");
+    return uiNewTableValueString(bundles[row].installed ? "Installed" : "Not Installed");
 }
 
 static void bundleListSetCellValue(uiTableModelHandler *mh, uiTableModel *m, int row,
@@ -1126,14 +1100,12 @@ static int weaponNumRows(uiTableModelHandler *mh, uiTableModel *m) {
 static uiTableValue *weaponCellValue(uiTableModelHandler *mh, uiTableModel *m,
                                      int row, int column) {
     (void)mh; (void)m;
-    size_t total = 0;
-    const CamoWeapon *weapons = camoManagerGetWeapons(manager, &total);
-    if (row < 0 || (size_t)row >= total) return uiNewTableValueString("");
-    const CamoWeapon *weapon = &weapons[row];
+    if (row < 0 || (size_t)row >= weaponCount) return uiNewTableValueString("");
+    const ClientCamoWeapon *weapon = &weapons[row];
     if (column == 0) {
-        return uiNewTableValueString(weapon->name ? weapon->name : weapon->id);
+        return uiNewTableValueString(weapon->name[0] ? weapon->name : weapon->id);
     }
-    const CamoBundle *bundle = selectedBundle();
+    const ClientCamoBundle *bundle = selectedBundle();
     const char *camoId = assignedCamoId(bundle, weapon->id);
     if (column == 1) {
         uiImage *img = camoThumbById(camoId);
@@ -1147,19 +1119,12 @@ static void weaponSetCellValue(uiTableModelHandler *mh, uiTableModel *m, int row
     (void)mh; (void)m; (void)row; (void)column; (void)val;
 }
 
-static void refreshSelectedBundleRow(void) {
-    if (bundleListModel && selectedBundleRow >= 0 &&
-        (size_t)selectedBundleRow < bundleRowCount) {
-        uiTableModelRowChanged(bundleListModel, selectedBundleRow);
-    }
-}
-
 static void refreshAssignButton(void) {
     if (!assignBtn) return;
 
-    const CamoBundle *bundle = selectedBundle();
-    const CamoWeapon *weapon = previewWeapon();
-    const Camo *camo = selectedCamo();
+    const ClientCamoBundle *bundle = selectedBundle();
+    const ClientCamoWeapon *weapon = previewWeapon();
+    const ClientCamo *camo = selectedCamo();
 
     const char *blocked = NULL;
     if (!weapon) blocked = "No weapons available";
@@ -1171,10 +1136,10 @@ static void refreshAssignButton(void) {
         return;
     }
 
-    const char *weaponName = weapon->name ? weapon->name : weapon->id;
-    const char *camoName = camo->name ? camo->name : "";
+    const char *weaponName = weapon->name[0] ? weapon->name : weapon->id;
+    const char *camoName = camo->name;
     const char *assigned = assignedCamoId(bundle, weapon->id);
-    bool remove = assigned && camo->id && strcmp(assigned, camo->id) == 0;
+    bool remove = assigned && strcmp(assigned, camo->id) == 0;
 
     char label[192];
     snprintf(label, sizeof(label), remove ? "Remove \"%s\" from %s" : "Assign %s to %s",
@@ -1183,16 +1148,18 @@ static void refreshAssignButton(void) {
     uiControlEnable(uiControl(assignBtn));
 }
 
+static void refreshUninstallButton(void) {
+    if (!uninstallBtn) return;
+    if (activeBundleId[0] != '\0') uiControlEnable(uiControl(uninstallBtn));
+    else uiControlDisable(uiControl(uninstallBtn));
+}
+
 static void refreshActiveStatus(void) {
+    reloadBundles();
     for (size_t i = 0; i < bundleRowCount; ++i) {
         if (bundleListModel) uiTableModelRowChanged(bundleListModel, (int)i);
     }
-    const char *installedFile = camoManagerGetInstalledBundleFile(manager);
-    bool installed = installedFile && installedFile[0] != '\0';
-    if (uninstallBtn) {
-        if (installed) uiControlEnable(uiControl(uninstallBtn));
-        else uiControlDisable(uiControl(uninstallBtn));
-    }
+    refreshUninstallButton();
 }
 
 static void rebuildWeaponAssignment(void) {
@@ -1202,8 +1169,8 @@ static void rebuildWeaponAssignment(void) {
     }
     if (assignmentTitle) {
         char title[128];
-        const CamoBundle *bundle = selectedBundle();
-        if (bundle && bundle->name) {
+        const ClientCamoBundle *bundle = selectedBundle();
+        if (bundle) {
             snprintf(title, sizeof(title), "Camo Assignment: %s", bundle->name);
         } else {
             snprintf(title, sizeof(title), "Camo Assignment");
@@ -1215,8 +1182,8 @@ static void rebuildWeaponAssignment(void) {
 
 static void rebuildBundleList(void) {
     if (!bundleListModel) return;
-    size_t total = 0;
-    camoManagerGetBundles(manager, &total);
+    reloadBundles();
+    size_t total = bundleCount;
     for (int i = (int)bundleRowCount - 1; i >= 0; --i) {
         bundleRowCount = (size_t)i;
         uiTableModelRowDeleted(bundleListModel, i);
@@ -1228,6 +1195,7 @@ static void rebuildBundleList(void) {
     bundleRowCount = total;
     if (selectedBundleRow >= (int)total) selectedBundleRow = -1;
 
+    refreshUninstallButton();
     rebuildWeaponAssignment();
 }
 
@@ -1247,42 +1215,31 @@ static void onWeaponSelectionChanged(uiTable *table, void *data) {
 static void onAssignClicked(uiButton *button, void *data) {
     (void)button; (void)data;
 
-    const CamoBundle *bundle = selectedBundle();
-    const CamoWeapon *weapon = previewWeapon();
-    const Camo *camo = selectedCamo();
+    const ClientCamoBundle *bundle = selectedBundle();
+    const ClientCamoWeapon *weapon = previewWeapon();
+    const ClientCamo *camo = selectedCamo();
     if (!bundle || !weapon || !camo) return;
 
     const char *assigned = assignedCamoId(bundle, weapon->id);
-    bool remove = assigned && camo->id && strcmp(assigned, camo->id) == 0;
+    bool remove = assigned && strcmp(assigned, camo->id) == 0;
 
-    char *bundleId = _strdup(bundle->id);
-    char *weaponId = _strdup(weapon->id);
-    char *camoId = _strdup(camo->id);
-    if (!bundleId || !weaponId || !camoId) {
-        free(bundleId);
-        free(weaponId);
-        free(camoId);
-        return;
-    }
+    char bundleId[CLIENT_CAMO_ID_SIZE];
+    char weaponId[CLIENT_CAMO_ID_SIZE];
+    snprintf(bundleId, sizeof(bundleId), "%s", bundle->id);
+    snprintf(weaponId, sizeof(weaponId), "%s", weapon->id);
 
-    CamoResult result = remove
-                            ? camoManagerBundleRemoveCamo(manager, bundleId, weaponId)
-                            : camoManagerBundleAddCamo(manager, bundleId, weaponId, camoId);
-    free(camoId);
-
-    if (result != CAMO_RESULT_OK) {
+    ClientResult result = remove
+                              ? clientUnassignCamo(client, bundleId, weaponId)
+                              : clientAssignCamo(client, bundleId, weaponId, camo->id);
+    if (result != CLIENT_OK) {
         uiMsgBoxError(parent, "Assign camo", "Could not update the assignment.");
-        free(bundleId);
-        free(weaponId);
         refreshAssignButton();
         return;
     }
 
+    refreshActiveStatus();
     reconcileActiveBundleRebuild(bundleId);
-    free(bundleId);
-    free(weaponId);
     rebuildWeaponAssignment();
-    refreshSelectedBundleRow();
 }
 
 static void onCreateBundleClicked(uiButton *button, void *data) {
@@ -1294,9 +1251,9 @@ static void onCreateBundleClicked(uiButton *button, void *data) {
         free(name);
         return;
     }
-    CamoResult result = camoManagerBundleCreate(manager, name);
+    ClientResult result = clientCreateCamoBundle(client, name, NULL);
     free(name);
-    if (result != CAMO_RESULT_OK) {
+    if (result != CLIENT_OK) {
         uiMsgBoxError(parent, "Create bundle", "Could not create the bundle.");
         return;
     }
@@ -1305,20 +1262,12 @@ static void onCreateBundleClicked(uiButton *button, void *data) {
 
 static void onInstallBundleClicked(uiButton *button, void *data) {
     (void)button; (void)data;
-    const CamoBundle *bundle = selectedBundle();
+    const ClientCamoBundle *bundle = selectedBundle();
     if (!bundle) {
         uiMsgBoxError(parent, "Install bundle", "Select a bundle to install.");
         return;
     }
-    char location[MAX_PATH];
-    if (!camoGameLocation(location, sizeof(location))) {
-        uiMsgBoxError(parent, "Install bundle",
-                      "The game location is not set. Set the Black Ops 1 game folder "
-                      "before installing a camo bundle.");
-        return;
-    }
-    CamoResult result = camoManagerBundleInstall(manager, bundle->id, location);
-    if (result != CAMO_RESULT_OK) {
+    if (clientInstallCamoBundle(client, bundle->id) != CLIENT_OK) {
         uiMsgBoxError(parent, "Install bundle",
                       "Could not install the bundle. Check that the game location is "
                       "set and that its \"main\" folder exists, then try again.");
@@ -1332,20 +1281,11 @@ static void onInstallBundleClicked(uiButton *button, void *data) {
 
 static void onUninstallBundleClicked(uiButton *button, void *data) {
     (void)button; (void)data;
-    const char *installedFile = camoManagerGetInstalledBundleFile(manager);
-    if (!installedFile || installedFile[0] == '\0') {
+    if (activeBundleId[0] == '\0') {
         uiMsgBoxError(parent, "Uninstall bundle", "No camo bundle is currently installed.");
         return;
     }
-    char location[MAX_PATH];
-    if (!camoGameLocation(location, sizeof(location))) {
-        uiMsgBoxError(parent, "Uninstall bundle",
-                      "The game location is not set. Set the Black Ops 1 game folder "
-                      "before uninstalling the active camo bundle.");
-        return;
-    }
-    CamoResult result = camoManagerBundleUninstall(manager, location);
-    if (result != CAMO_RESULT_OK) {
+    if (clientUninstallCamoBundle(client, activeBundleId) != CLIENT_OK) {
         uiMsgBoxError(parent, "Uninstall bundle",
                       "Could not uninstall the active bundle. Check that the game "
                       "location is set and that its \"main\" folder exists, then try again.");
@@ -1359,52 +1299,28 @@ static void onUninstallBundleClicked(uiButton *button, void *data) {
 
 static void onDeleteBundleClicked(uiButton *button, void *data) {
     (void)button; (void)data;
-    const CamoBundle *bundle = selectedBundle();
+    const ClientCamoBundle *bundle = selectedBundle();
     if (!bundle) {
         uiMsgBoxError(parent, "Delete bundle", "Select a bundle to delete.");
         return;
     }
-    char *id = _strdup(bundle->id);
-    if (!id) return;
+    char id[CLIENT_CAMO_ID_SIZE];
+    snprintf(id, sizeof(id), "%s", bundle->id);
 
     char msg[256];
-    snprintf(msg, sizeof(msg), "Delete bundle \"%s\"?", bundle->name ? bundle->name : "");
-    if (uiMsgBoxOkCancel(parent, "Delete bundle", msg) != 1) {
-        free(id);
-        return;
-    }
+    snprintf(msg, sizeof(msg), "Delete bundle \"%s\"?", bundle->name);
+    if (uiMsgBoxOkCancel(parent, "Delete bundle", msg) != 1) return;
 
-    if (isActiveBundle(id)) {
-        char location[MAX_PATH];
-        if (!camoGameLocation(location, sizeof(location))) {
-            uiMsgBoxError(parent, "Delete bundle",
-                          "This bundle is installed, but the game location is not set, so "
-                          "its installed files can't be removed. Set the game location and "
-                          "uninstall it before deleting.");
-            free(id);
-            return;
-        }
-        if (camoManagerBundleUninstall(manager, location) != CAMO_RESULT_OK) {
-            uiMsgBoxError(parent, "Delete bundle",
-                          "Could not uninstall the bundle before deleting it. Check that "
-                          "the game location is set and that its \"main\" folder exists, "
-                          "then try again.");
-            free(id);
-            return;
-        }
-    }
-
-    CamoResult result = camoManagerBundleRemove(manager, id);
-    free(id);
-    if (result != CAMO_RESULT_OK) {
-        uiMsgBoxError(parent, "Delete bundle", "Could not delete the bundle.");
+    if (clientDeleteCamoBundle(client, id) != CLIENT_OK) {
+        uiMsgBoxError(parent, "Delete bundle",
+                      "Could not delete the bundle. If it is installed, check that the "
+                      "game location is set and that its \"main\" folder exists, then "
+                      "try again.");
         return;
     }
 
     selectedBundleRow = -1;
     rebuildBundleList();
-    rebuildWeaponAssignment();
-    refreshActiveStatus();
 }
 
 static void buildDetailsInto(uiGrid *grid);
@@ -1529,7 +1445,17 @@ static void buildDetailsInto(uiGrid *grid) {
     refreshCamoDetails();
 }
 
-static bool camoHasBaseFile(const Camo *camo, CamoFileType type) {
+static const char **requestSlot(CamoViewerRequest *request, CamoFileType type) {
+    switch (type) {
+    case CAMO_FILE_SPEC:   return &request->specPath;
+    case CAMO_FILE_COLOR:  return &request->colorPath;
+    case CAMO_FILE_ENV:    return &request->envPath;
+    case CAMO_FILE_NORMAL: return &request->normalPath;
+    }
+    return NULL;
+}
+
+static bool camoHasBaseFile(const ClientCamo *camo, CamoFileType type) {
     if (!camo) return false;
     for (size_t i = 0; i < camo->fileCount; ++i) {
         if (camo->files[i].type == type && camo->files[i].number == 0) return true;
@@ -1539,15 +1465,15 @@ static bool camoHasBaseFile(const Camo *camo, CamoFileType type) {
 
 static void refreshViewerTitle(void) {
     if (!viewerGroup) return;
-    const CamoWeapon *weapon = previewWeapon();
-    const Camo *camo = selectedCamo();
+    const ClientCamoWeapon *weapon = previewWeapon();
+    const ClientCamo *camo = selectedCamo();
     char title[160];
     if (weapon && camo) {
         snprintf(title, sizeof(title), "Camo Viewer: %s - %s",
-                 weapon->name ? weapon->name : weapon->id, camo->name ? camo->name : "");
+                 weapon->name[0] ? weapon->name : weapon->id, camo->name);
     } else if (weapon) {
         snprintf(title, sizeof(title), "Camo Viewer: %s",
-                 weapon->name ? weapon->name : weapon->id);
+                 weapon->name[0] ? weapon->name : weapon->id);
     } else {
         snprintf(title, sizeof(title), "Camo Viewer");
     }
@@ -1562,34 +1488,34 @@ static void refreshViewer(void) {
     memset(&request, 0, sizeof(request));
 
     char modelPath[MAX_PATH];
-    const CamoWeapon *weapon = previewWeapon();
-    if (weapon &&
-        camoManagerWeaponModelPath(manager, weapon->id, modelPath, sizeof(modelPath))) {
+    const ClientCamoWeapon *weapon = previewWeapon();
+    if (weaponModelPath(weapon, modelPath, sizeof(modelPath))) {
         request.modelPath = modelPath;
     }
 
-    const Camo *camo = selectedCamo();
-    char specPath[MAX_PATH], colorPath[MAX_PATH], envPath[MAX_PATH], normalPath[MAX_PATH];
-    if (camo) {
-        if (camoHasBaseFile(camo, CAMO_FILE_SPEC) &&
-            camoManagerCamoFilePath(manager, camo->id, CAMO_FILE_SPEC, 0, specPath, sizeof(specPath))) {
-            request.specPath = specPath;
-        }
-        if (camoHasBaseFile(camo, CAMO_FILE_COLOR) &&
-            camoManagerCamoFilePath(manager, camo->id, CAMO_FILE_COLOR, 0, colorPath, sizeof(colorPath))) {
-            request.colorPath = colorPath;
-        }
-        if (camoHasBaseFile(camo, CAMO_FILE_ENV) &&
-            camoManagerCamoFilePath(manager, camo->id, CAMO_FILE_ENV, 0, envPath, sizeof(envPath))) {
-            request.envPath = envPath;
-        }
-        if (camoHasBaseFile(camo, CAMO_FILE_NORMAL) &&
-            camoManagerCamoFilePath(manager, camo->id, CAMO_FILE_NORMAL, 0, normalPath, sizeof(normalPath))) {
-            request.normalPath = normalPath;
+    const ClientCamo *camo = selectedCamo();
+    ClientCamoWeaponFile *defaults = NULL;
+    size_t defaultCount = 0;
+    if (!camo && weapon) {
+        clientGetCamoWeaponFiles(client, weapon->id, &defaults, &defaultCount);
+    }
+
+    char paths[CAMO_FILE_TYPE_COUNT][MAX_PATH];
+    for (int i = 0; i < CAMO_FILE_TYPE_COUNT; ++i) {
+        CamoFileType type = (CamoFileType)i;
+        const char **slot = requestSlot(&request, type);
+        if (camo) {
+            if (camoHasBaseFile(camo, type) &&
+                camoPersistenceCamoFilePath(paths[i], MAX_PATH, camo->id, type, 0)) {
+                *slot = paths[i];
+            }
+        } else if (weaponDefaultFilePath(defaults, defaultCount, type, paths[i], MAX_PATH)) {
+            *slot = paths[i];
         }
     }
 
     camoViewerSetCamo(viewer, &request);
+    clientFreeCamoWeaponFiles(defaults);
 }
 
 static void onViewerAutoRotateToggled(uiCheckbox *checkbox, void *data) {
@@ -1692,8 +1618,7 @@ static void buildAssignmentInto(uiGrid *grid) {
     uiGridAppend(grid, uiControl(assignBtn),
                  1, 2, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
 
-    size_t total = 0;
-    camoManagerGetWeapons(manager, &total);
+    size_t total = weaponCount;
     for (size_t i = 0; i < total; ++i) {
         weaponRowCount = i + 1;
         uiTableModelRowInserted(weaponModel, (int)i);
@@ -1742,19 +1667,16 @@ static void buildCamoWindow(void) {
     uiWindowSetIcon(camoWindow, IDI_ICON1);
 }
 
-void uiCamoShow(uiWindow *parentInstance) {
+void uiCamoShow(Client *clientInstance, uiWindow *parentInstance) {
+    client = clientInstance;
     parent = parentInstance;
 
-    if (manager == NULL) {
-        manager = camoManagerCreate();
-        if (manager == NULL) {
-            uiMsgBoxError(parent, "Camo Manager", "Failed to initialize the camo manager.");
-            return;
-        }
-    }
-
     if (camoWindow == NULL) {
+        reloadWeapons();
         buildCamoWindow();
+    } else {
+        rebuildCamoList();
+        rebuildBundleList();
     }
 
     uiControlShow(uiControl(camoWindow));
@@ -1771,8 +1693,13 @@ void uiCamoCleanup(void) {
         camoViewerDestroy(viewer);
         viewer = NULL;
     }
-    if (manager) {
-        camoManagerDestroy(manager);
-        manager = NULL;
-    }
+    clientFreeCamos(camos, camoCount);
+    camos = NULL;
+    camoCount = 0;
+    clientFreeCamoBundles(bundles, bundleCount);
+    bundles = NULL;
+    bundleCount = 0;
+    clientFreeCamoWeapons(weapons, weaponCount);
+    weapons = NULL;
+    weaponCount = 0;
 }

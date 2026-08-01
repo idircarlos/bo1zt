@@ -14,6 +14,7 @@
 
 typedef struct WidgetManager WidgetManager;
 typedef struct BindManager BindManager;
+typedef struct CamoManager CamoManager;
 
 struct Controller {
     Process *process;
@@ -26,6 +27,7 @@ struct Controller {
     CommandManager *commandManager;
     WidgetManager *widgetManager;
     BindManager *bindManager;
+    CamoManager *camoManager;
 };
 
 Engine *_controllerGetEngine(Controller *controller);

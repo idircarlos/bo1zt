@@ -58,11 +58,11 @@ typedef enum {
 CamoManager *camoManagerCreate(void);
 void camoManagerDestroy(CamoManager *manager);
 
-CamoResult camoManagerCamoCreate(CamoManager *, const char *name, const CamoFile *files, size_t fileCount);
+CamoResult camoManagerCamoCreate(CamoManager *, const char *name, const CamoFile *files, size_t fileCount, const char **idOut);
 CamoResult camoManagerCamoUpdate(CamoManager *, const char *camoId, const char *name, const CamoFile *files, size_t fileCount);
 CamoResult camoManagerCamoRemove(CamoManager *, const char *camoId, bool removeReferences);
 
-CamoResult camoManagerBundleCreate(CamoManager *, const char *name);
+CamoResult camoManagerBundleCreate(CamoManager *, const char *name, const char **idOut);
 CamoResult camoManagerBundleUpdate(CamoManager *, const char *bundleId, const char *name);
 CamoResult camoManagerBundleRemove(CamoManager *, const char *bundleId);
 CamoResult camoManagerBundleAddCamo(CamoManager *, const char *bundleId, const char *weaponId, const char *camoId);

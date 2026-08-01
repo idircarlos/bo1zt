@@ -15,6 +15,7 @@
 #include "logic/state.h"
 #include "logic/widget/manager.h"
 #include "logic/bind/manager.h"
+#include "logic/camo/manager.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -31,6 +32,7 @@ Controller* controllerCreate() {
     controller->commandManager = NULL;
     controller->widgetManager = NULL;
     controller->bindManager = NULL;
+    controller->camoManager = NULL;
     controllerAttachGame(controller);
     return controller;
 }
@@ -39,6 +41,7 @@ void controllerInitManagers(Controller *controller) {
     if (!controller) return;
     if (!controller->widgetManager) controller->widgetManager = widgetManagerCreate(controller);
     if (!controller->bindManager) controller->bindManager = bindManagerCreate(controller);
+    if (!controller->camoManager) controller->camoManager = camoManagerCreate();
 }
 
 void controllerUpdateManagers(Controller *controller) {
@@ -55,6 +58,11 @@ WidgetManager *controllerGetWidgetManager(Controller *controller) {
 BindManager *controllerGetBindManager(Controller *controller) {
     if (!controller) return NULL;
     return controller->bindManager;
+}
+
+CamoManager *controllerGetCamoManager(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->camoManager;
 }
 
 Process* controllerGetProcess(Controller *controller) {
@@ -231,6 +239,10 @@ void controllerDestroy(Controller *controller) {
         if (controller->cheatManager) {
             cheatManagerDestroy(controller->cheatManager);
             controller->cheatManager = NULL;
+        }
+        if (controller->camoManager) {
+            camoManagerDestroy(controller->camoManager);
+            controller->camoManager = NULL;
         }
         if (controller->process) {
             processClose(controller->process);

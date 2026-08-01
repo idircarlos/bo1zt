@@ -290,7 +290,8 @@ bool camoManagerWeaponModelPath(const CamoManager *manager, const char *weaponId
 }
 
 CamoResult camoManagerCamoCreate(CamoManager *manager, const char *name,
-                                 const CamoFile *files, size_t fileCount) {
+                                 const CamoFile *files, size_t fileCount,
+                                 const char **idOut) {
     if (!manager || !name || name[0] == '\0') return CAMO_RESULT_INVALID;
     if (fileCount > 0 && !files) return CAMO_RESULT_INVALID;
     if (hasDuplicateFileKeys(files, fileCount)) return CAMO_RESULT_INVALID;
@@ -348,6 +349,7 @@ CamoResult camoManagerCamoCreate(CamoManager *manager, const char *name,
         return CAMO_RESULT_INVALID;
     }
 
+    if (idOut) *idOut = camo->id;
     return CAMO_RESULT_OK;
 }
 
@@ -493,7 +495,8 @@ CamoResult camoManagerCamoRemove(CamoManager *manager, const char *camoId,
     return CAMO_RESULT_OK;
 }
 
-CamoResult camoManagerBundleCreate(CamoManager *manager, const char *name) {
+CamoResult camoManagerBundleCreate(CamoManager *manager, const char *name,
+                                  const char **idOut) {
     if (!manager || !name || name[0] == '\0') return CAMO_RESULT_INVALID;
 
     char id[64];
@@ -533,6 +536,7 @@ CamoResult camoManagerBundleCreate(CamoManager *manager, const char *name) {
         return CAMO_RESULT_INVALID;
     }
 
+    if (idOut) *idOut = bundle->id;
     return CAMO_RESULT_OK;
 }
 
