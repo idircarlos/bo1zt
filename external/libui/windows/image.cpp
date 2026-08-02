@@ -176,6 +176,61 @@ IWICBitmap *uiprivImageAppropriateForDC(uiImage *i, HDC dc)
 	return m.best;
 }
 
+HRESULT uiprivWICBitmapFromData(const void *data, size_t size, IWICBitmap **b)
+{
+	IStream *stream;
+	IWICBitmapDecoder *decoder = NULL;
+	IWICBitmapFrameDecode *frame = NULL;
+	IWICFormatConverter *converter = NULL;
+	HRESULT hr;
+
+	*b = NULL;
+	stream = SHCreateMemStream((const BYTE *) data, (UINT) size);
+	if (stream == NULL)
+		return E_OUTOFMEMORY;
+	hr = uiprivWICFactory->CreateDecoderFromStream(stream, NULL, WICDecodeMetadataCacheOnDemand, &decoder);
+	if (hr == S_OK)
+		hr = decoder->GetFrame(0, &frame);
+	if (hr == S_OK)
+		hr = uiprivWICFactory->CreateFormatConverter(&converter);
+	if (hr == S_OK)
+		hr = converter->Initialize(frame, formatForGDI,
+			WICBitmapDitherTypeNone, NULL, 0.0, WICBitmapPaletteTypeMedianCut);
+	if (hr == S_OK)
+		hr = uiprivWICFactory->CreateBitmapFromSource(converter, WICBitmapCacheOnDemand, b);
+	if (converter != NULL)
+		converter->Release();
+	if (frame != NULL)
+		frame->Release();
+	if (decoder != NULL)
+		decoder->Release();
+	stream->Release();
+	return hr;
+}
+
+HRESULT uiprivWICBitmapFromResource(int resourceId, IWICBitmap **b)
+{
+	HMODULE mod;
+	HRSRC res;
+	HGLOBAL blob;
+	DWORD size;
+	void *data;
+
+	*b = NULL;
+	mod = GetModuleHandleW(NULL);
+	res = FindResourceW(mod, MAKEINTRESOURCEW(resourceId), RT_RCDATA);
+	if (res == NULL)
+		return HRESULT_FROM_WIN32(GetLastError());
+	size = SizeofResource(mod, res);
+	blob = LoadResource(mod, res);
+	if (size == 0 || blob == NULL)
+		return HRESULT_FROM_WIN32(GetLastError());
+	data = LockResource(blob);
+	if (data == NULL)
+		return E_FAIL;
+	return uiprivWICBitmapFromData(data, size, b);
+}
+
 // TODO this needs to center images if the given size is not the same aspect ratio
 HRESULT uiprivWICToGDI(IWICBitmap *b, HDC dc, int width, int height, HBITMAP *hb)
 {

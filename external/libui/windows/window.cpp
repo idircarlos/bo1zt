@@ -8,6 +8,7 @@ struct uiWindow {
 	HWND hwnd;
 	HMENU menubar;
 	uiControl *child;
+	uiStatusBar *statusBar;
 	BOOL shownOnce;
 	int visible;
 	int margined;
@@ -54,13 +55,15 @@ static void windowRelayout(uiWindow *w)
 	int mx, my;
 	HWND child;
 
-	if (w->child == NULL)
-		return;
 	x = 0;
 	y = 0;
 	uiWindowsEnsureGetClientRect(w->hwnd, &r);
 	width = r.right - r.left;
 	height = r.bottom - r.top;
+	if (w->statusBar != NULL)
+		height -= uiprivStatusBarRelayout(w->statusBar);
+	if (w->child == NULL)
+		return;
 	windowMargins(w, &mx, &my);
 	x += mx;
 	y += my;
@@ -185,6 +188,9 @@ static void uiWindowDestroy(uiControl *c)
 		uiControlSetParent(w->child, NULL);
 		uiControlDestroy(w->child);
 	}
+	// now free the status bar, if any
+	if (w->statusBar != NULL)
+		uiprivStatusBarDestroy(w->statusBar);
 	// now free the menubar, if any
 	if (w->menubar != NULL)
 		freeMenubar(w->menubar);
@@ -267,6 +273,8 @@ static void uiWindowMinimumSize(uiWindowsControl *c, int *width, int *height)
 	windowMargins(w, &mx, &my);
 	*width += 2 * mx;
 	*height += 2 * my;
+	if (w->statusBar != NULL)
+		*height += uiprivStatusBarHeight(w->statusBar);
 }
 
 static void uiWindowMinimumSizeChanged(uiWindowsControl *c)
@@ -289,6 +297,8 @@ static void uiWindowLayoutRect(uiWindowsControl *c, RECT *r)
 
 	// the layout rect is the client rect in this case
 	uiWindowsEnsureGetClientRect(w->hwnd, r);
+	if (w->statusBar != NULL)
+		r->bottom -= uiprivStatusBarHeight(w->statusBar);
 }
 
 uiWindowsControlDefaultAssignControlIDZOrder(uiWindow)
@@ -488,6 +498,17 @@ void uiWindowSetChild(uiWindow *w, uiControl *child)
 		uiWindowsControlAssignSoleControlIDZOrder(uiWindowsControl(w->child));
 		windowRelayout(w);
 	}
+}
+
+void uiWindowSetStatusBar(uiWindow *w, uiStatusBar *sb)
+{
+	if (w->statusBar != NULL)
+		uiprivStatusBarDestroy(w->statusBar);
+	w->statusBar = sb;
+	if (w->statusBar != NULL)
+		uiprivStatusBarSetParent(w->statusBar, w->hwnd);
+	uiWindowsControlMinimumSizeChanged(uiWindowsControl(w));
+	windowRelayout(w);
 }
 
 int uiWindowMargined(uiWindow *w)

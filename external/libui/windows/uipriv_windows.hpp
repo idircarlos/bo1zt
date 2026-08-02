@@ -173,6 +173,14 @@ extern HRESULT uiprivInitImage(void);
 extern void uiprivUninitImage(void);
 extern IWICBitmap *uiprivImageAppropriateForDC(uiImage *i, HDC dc);
 extern HRESULT uiprivWICToGDI(IWICBitmap *b, HDC dc, int width, int height, HBITMAP *hb);
+extern HRESULT uiprivWICBitmapFromData(const void *data, size_t size, IWICBitmap **b);
+extern HRESULT uiprivWICBitmapFromResource(int resourceId, IWICBitmap **b);
+
+// statusbar.cpp
+extern void uiprivStatusBarDestroy(uiStatusBar *sb);
+extern void uiprivStatusBarSetParent(uiStatusBar *sb, HWND parent);
+extern int uiprivStatusBarRelayout(uiStatusBar *sb);
+extern int uiprivStatusBarHeight(uiStatusBar *sb);
 
 #endif
 

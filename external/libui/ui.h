@@ -4574,6 +4574,143 @@ _UI_EXTERN uiMarkdownViewer *uiNewMarkdownViewer(void);
  */
 _UI_EXTERN void uiMarkdownViewerSetText(uiMarkdownViewer *mv, const char *markdown);
 
+/**
+ * A bar at the bottom of a uiWindow holding read-only status items.
+ *
+ * Items occupy the bar from left to right in append order, each one in its
+ * own section, and are addressed by the index returned on append. An item
+ * shows a text with an optional custom color and an optional icon.
+ *
+ * @struct uiStatusBar
+ * @ingroup static
+ */
+typedef struct uiStatusBar uiStatusBar;
+#define uiStatusBar(this) ((uiStatusBar *) (this))
+
+/**
+ * Creates a new status bar.
+ *
+ * @param grip `TRUE` to show a sizing grip at the right end that resizes the
+ *             window, `FALSE` to leave the corner inert.
+ * @returns A new uiStatusBar instance.
+ * @memberof uiStatusBar @static
+ */
+_UI_EXTERN uiStatusBar *uiNewStatusBar(int grip);
+
+/**
+ * Sets the window's status bar.
+ *
+ * The window takes ownership of the status bar: a previously set status bar
+ * is destroyed and the current one is destroyed along with the window.
+ *
+ * @param w uiWindow instance.
+ * @param sb Status bar to attach, `NULL` to remove the current one.
+ * @memberof uiWindow
+ */
+_UI_EXTERN void uiWindowSetStatusBar(uiWindow *w, uiStatusBar *sb);
+
+/**
+ * Appends an item to the status bar.
+ *
+ * @param sb uiStatusBar instance.
+ * @param text Item text.\n
+ *             A valid, `NUL` terminated UTF-8 string.\n
+ *             Data is copied internally. Ownership is not transferred.
+ * @returns Index of the appended item.
+ * @memberof uiStatusBar
+ */
+_UI_EXTERN int uiStatusBarAppend(uiStatusBar *sb, const char *text);
+
+/**
+ * Removes all items from the status bar.
+ *
+ * @param sb uiStatusBar instance.
+ * @memberof uiStatusBar
+ */
+_UI_EXTERN void uiStatusBarClear(uiStatusBar *sb);
+
+/**
+ * Returns the text of a status bar item.
+ *
+ * @param sb uiStatusBar instance.
+ * @param item Item index.
+ * @returns The text of the item.\n
+ *          A `NUL` terminated UTF-8 string.\n
+ *          Caller is responsible for freeing the data with `uiFreeText()`.
+ * @memberof uiStatusBar
+ */
+_UI_EXTERN char *uiStatusBarItemText(uiStatusBar *sb, int item);
+
+/**
+ * Sets the text of a status bar item.
+ *
+ * @param sb uiStatusBar instance.
+ * @param item Item index.
+ * @param text Item text.\n
+ *             A valid, `NUL` terminated UTF-8 string.\n
+ *             Data is copied internally. Ownership is not transferred.
+ * @memberof uiStatusBar
+ */
+_UI_EXTERN void uiStatusBarSetItemText(uiStatusBar *sb, int item, const char *text);
+
+/**
+ * Sets the width range of a status bar item.
+ *
+ * The item is as wide as its content and stays within the given range,
+ * eliding its text when the content does not fit @p max.
+ *
+ * @param sb uiStatusBar instance.
+ * @param item Item index.
+ * @param min Minimum width in pixels, `0` for none.
+ * @param max Maximum width in pixels, `-1` for none.
+ * @memberof uiStatusBar
+ */
+_UI_EXTERN void uiStatusBarSetItemWidth(uiStatusBar *sb, int item, int min, int max);
+
+/**
+ * Sets the text color of a status bar item.
+ *
+ * @param sb uiStatusBar instance.
+ * @param item Item index.
+ * @param r Red component (0-255).
+ * @param g Green component (0-255).
+ * @param b Blue component (0-255).
+ * @memberof uiStatusBar
+ */
+_UI_EXTERN void uiStatusBarSetItemTextColor(uiStatusBar *sb, int item, int r, int g, int b);
+
+/**
+ * Clears the text color of a status bar item.
+ *
+ * The item reverts to the system text color.
+ *
+ * @param sb uiStatusBar instance.
+ * @param item Item index.
+ * @memberof uiStatusBar
+ */
+_UI_EXTERN void uiStatusBarClearItemTextColor(uiStatusBar *sb, int item);
+
+/**
+ * Sets the icon of a status bar item, drawn left of its text.
+ *
+ * @param sb uiStatusBar instance.
+ * @param item Item index.
+ * @param resourceId Identifier of an `RCDATA` resource holding an image,
+ *                   scaled to the system small icon size.
+ * @returns `TRUE` on success, `FALSE` if the resource could not be loaded.
+ * @memberof uiStatusBar
+ */
+_UI_EXTERN int uiStatusBarSetItemIcon(uiStatusBar *sb, int item, int resourceId);
+
+/**
+ * Removes the icon of a status bar item.
+ *
+ * @param sb uiStatusBar instance.
+ * @param item Item index.
+ * @memberof uiStatusBar
+ */
+_UI_EXTERN void uiStatusBarClearItemIcon(uiStatusBar *sb, int item);
+
 #ifdef __cplusplus
 }
 #endif

@@ -125,72 +125,14 @@ uiImageView *uiNewImageView(int width, int height)
 
 int uiImageViewSetFromData(uiImageView *iv, const void *data, size_t size)
 {
-	if (iv->wicBitmap != NULL) {
+	IWICBitmap *bitmap;
+
+	if (uiprivWICBitmapFromData(data, size, &bitmap) != S_OK)
+		return 0;
+
+	if (iv->wicBitmap != NULL)
 		iv->wicBitmap->Release();
-		iv->wicBitmap = NULL;
-	}
-
-	IStream *stream = SHCreateMemStream((const BYTE *)data, (UINT)size);
-	if (stream == NULL)
-		return 0;
-
-	IWICBitmapDecoder *decoder = NULL;
-	HRESULT hr = uiprivWICFactory->CreateDecoderFromStream(
-		stream,
-		NULL,
-		WICDecodeMetadataCacheOnDemand,
-		&decoder);
-
-	if (FAILED(hr)) {
-		stream->Release();
-		return 0;
-	}
-
-	IWICBitmapFrameDecode *frame = NULL;
-	hr = decoder->GetFrame(0, &frame);
-	if (FAILED(hr)) {
-		decoder->Release();
-		stream->Release();
-		return 0;
-	}
-
-	IWICFormatConverter *converter = NULL;
-	hr = uiprivWICFactory->CreateFormatConverter(&converter);
-	if (FAILED(hr)) {
-		frame->Release();
-		decoder->Release();
-		stream->Release();
-		return 0;
-	}
-
-	hr = converter->Initialize(
-		frame,
-		GUID_WICPixelFormat32bppPBGRA,
-		WICBitmapDitherTypeNone,
-		NULL,
-		0.0,
-		WICBitmapPaletteTypeMedianCut);
-
-	if (FAILED(hr)) {
-		converter->Release();
-		frame->Release();
-		decoder->Release();
-		stream->Release();
-		return 0;
-	}
-
-	hr = uiprivWICFactory->CreateBitmapFromSource(
-		converter,
-		WICBitmapCacheOnDemand,
-		&iv->wicBitmap);
-
-	converter->Release();
-	frame->Release();
-	decoder->Release();
-	stream->Release();
-
-	if (FAILED(hr))
-		return 0;
+	iv->wicBitmap = bitmap;
 
 	uiImageViewUpdateBitmap(iv);
 	return 1;
@@ -198,24 +140,17 @@ int uiImageViewSetFromData(uiImageView *iv, const void *data, size_t size)
 
 int uiImageViewSetFromResource(uiImageView *iv, int resourceId)
 {
-	HINSTANCE hExe = GetModuleHandle(NULL);
-	HRSRC hRes = FindResourceW(hExe, MAKEINTRESOURCEW(resourceId), RT_RCDATA);
-	if (hRes == NULL)
+	IWICBitmap *bitmap;
+
+	if (uiprivWICBitmapFromResource(resourceId, &bitmap) != S_OK)
 		return 0;
 
-	DWORD size = SizeofResource(hExe, hRes);
-	if (size == 0)
-		return 0;
+	if (iv->wicBitmap != NULL)
+		iv->wicBitmap->Release();
+	iv->wicBitmap = bitmap;
 
-	HGLOBAL hGlobal = LoadResource(hExe, hRes);
-	if (hGlobal == NULL)
-		return 0;
-
-	void *data = LockResource(hGlobal);
-	if (data == NULL)
-		return 0;
-
-	return uiImageViewSetFromData(iv, data, size);
+	uiImageViewUpdateBitmap(iv);
+	return 1;
 }
 
 int uiImageViewWidth(uiImageView *iv)
