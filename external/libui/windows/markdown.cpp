@@ -2,13 +2,14 @@
 #include "uipriv_windows.hpp"
 #include "markdown.hpp"
 
-static void addRun(std::vector<markdownRun> *runs, const std::wstring &text, int style)
+static void addRun(std::vector<markdownRun> *runs, const std::wstring &text, int style, const std::wstring &url)
 {
 	markdownRun run;
 
 	if (text.empty())
 		return;
 	run.text = text;
+	run.url = url;
 	run.style = style;
 	runs->push_back(run);
 }
@@ -34,6 +35,25 @@ static int styleMarkerAt(const std::wstring &text, size_t i, size_t *markerLengt
 	return 0;
 }
 
+static BOOL linkAt(const std::wstring &text, size_t i, std::wstring *label, std::wstring *url, size_t *length)
+{
+	size_t close, end;
+
+	if (text[i] != L'[')
+		return FALSE;
+	close = text.find(L']', i + 1);
+	if (close == std::wstring::npos || close + 1 >= text.length() || text[close + 1] != L'(')
+		return FALSE;
+	end = text.find(L')', close + 2);
+	if (end == std::wstring::npos)
+		return FALSE;
+
+	*label = text.substr(i + 1, close - i - 1);
+	*url = text.substr(close + 2, end - close - 2);
+	*length = end - i + 1;
+	return TRUE;
+}
+
 static void parseRuns(const std::wstring &text, std::vector<markdownRun> *runs)
 {
 	std::wstring current;
@@ -43,9 +63,19 @@ static void parseRuns(const std::wstring &text, std::vector<markdownRun> *runs)
 	while (i < text.length()) {
 		size_t markerLength;
 		int toggle = styleMarkerAt(text, i, &markerLength);
+		std::wstring label, url;
+		size_t linkLength;
 
 		if ((style & markdownStyleCode) != 0 && toggle != markdownStyleCode)
 			toggle = 0;
+
+		if (toggle == 0 && (style & markdownStyleCode) == 0 && linkAt(text, i, &label, &url, &linkLength)) {
+			addRun(runs, current, style, L"");
+			current.clear();
+			addRun(runs, label, style | markdownStyleLink, url);
+			i += linkLength;
+			continue;
+		}
 
 		if (toggle == 0) {
 			current += text[i];
@@ -53,19 +83,21 @@ static void parseRuns(const std::wstring &text, std::vector<markdownRun> *runs)
 			continue;
 		}
 
-		addRun(runs, current, style);
+		addRun(runs, current, style, L"");
 		current.clear();
 		style ^= toggle;
 		i += markerLength;
 	}
-	addRun(runs, current, style);
+	addRun(runs, current, style, L"");
 }
 
-static void addBlock(std::vector<markdownBlock> *blocks, markdownBlockKind kind, const std::wstring &text)
+static void addBlock(std::vector<markdownBlock> *blocks, markdownBlockKind kind, int indent, const std::wstring &marker, const std::wstring &text)
 {
 	markdownBlock block;
 
 	block.kind = kind;
+	block.marker = marker;
+	block.indent = indent;
 	parseRuns(text, &(block.runs));
 	if (block.runs.empty())
 		return;
@@ -106,47 +138,113 @@ static BOOL isBullet(const std::wstring &line)
 	return line[1] == L' ';
 }
 
+static BOOL numberMarkerOf(const std::wstring &line, std::wstring *marker)
+{
+	size_t digits = 0;
+
+	while (digits < line.length() && iswdigit(line[digits]))
+		digits++;
+	if (digits == 0 || digits + 1 >= line.length())
+		return FALSE;
+	if (line[digits] != L'.' && line[digits] != L')')
+		return FALSE;
+	if (line[digits + 1] != L' ')
+		return FALSE;
+
+	*marker = line.substr(0, digits + 1);
+	return TRUE;
+}
+
+// a tab nests one level, as does every group of four spaces; a leftover group of
+// at least two counts as well, so bullets aligned under a numbered item nest too
+static int indentLevelOf(const std::wstring &line, size_t *offset)
+{
+	int level = 0;
+	int spaces = 0;
+	size_t i = 0;
+
+	while (i < line.length() && (line[i] == L' ' || line[i] == L'\t')) {
+		if (line[i] == L'\t') {
+			level++;
+			spaces = 0;
+		} else
+			spaces++;
+		i++;
+	}
+	*offset = i;
+	return level + (spaces + 2) / 4;
+}
+
+struct pendingBlock {
+	markdownBlockKind kind;
+	std::wstring marker;
+	std::wstring text;
+	int indent;
+};
+
+static void beginPending(pendingBlock *pending, markdownBlockKind kind, int indent, const std::wstring &marker, const std::wstring &text)
+{
+	pending->kind = kind;
+	pending->marker = marker;
+	pending->text = text;
+	pending->indent = indent;
+}
+
+static void flushPending(std::vector<markdownBlock> *blocks, pendingBlock *pending)
+{
+	addBlock(blocks, pending->kind, pending->indent, pending->marker, pending->text);
+	beginPending(pending, markdownParagraph, 0, L"", L"");
+}
+
 void uiprivMarkdownParse(const char *markdown, std::vector<markdownBlock> *blocks)
 {
 	WCHAR *wmarkdown = toUTF16(markdown);
 	const WCHAR *p = wmarkdown;
-	std::wstring pending;
+	pendingBlock pending;
 
 	blocks->clear();
+	beginPending(&pending, markdownParagraph, 0, L"", L"");
 	while (*p != L'\0') {
-		std::wstring line;
-		size_t markerLength = 0;
+		std::wstring raw, line, marker;
+		size_t markerLength = 0, offset;
+		int indent;
 
 		while (*p != L'\0' && *p != L'\n')
-			line += *p++;
+			raw += *p++;
 		if (*p == L'\n')
 			p++;
-		line = trimmed(line);
+		indent = indentLevelOf(raw, &offset);
+		line = trimmed(raw.substr(offset));
 
 		markdownBlockKind heading = headingKindOf(line, &markerLength);
-		BOOL bullet = isBullet(line);
 
-		if (line.empty() || markerLength > 0 || bullet) {
-			addBlock(blocks, markdownParagraph, pending);
-			pending.clear();
-		}
-
-		if (line.empty())
+		if (line.empty()) {
+			flushPending(blocks, &pending);
 			continue;
+		}
 		if (markerLength > 0) {
-			addBlock(blocks, heading, trimmed(line.substr(markerLength)));
+			flushPending(blocks, &pending);
+			addBlock(blocks, heading, indent, L"", trimmed(line.substr(markerLength)));
 			continue;
 		}
-		if (bullet) {
-			addBlock(blocks, markdownBullet, trimmed(line.substr(1)));
+		if (isBullet(line)) {
+			flushPending(blocks, &pending);
+			beginPending(&pending, markdownBullet, indent, L"\x2022", trimmed(line.substr(1)));
+			continue;
+		}
+		if (numberMarkerOf(line, &marker)) {
+			flushPending(blocks, &pending);
+			beginPending(&pending, markdownNumber, indent, marker, trimmed(line.substr(marker.length())));
 			continue;
 		}
 
-		if (!pending.empty())
-			pending += L' ';
-		pending += line;
+		// an unmarked line continues the block above it, list item included
+		if (pending.text.empty())
+			beginPending(&pending, markdownParagraph, indent, L"", line);
+		else
+			pending.text += L' ' + line;
 	}
-	addBlock(blocks, markdownParagraph, pending);
+	flushPending(blocks, &pending);
 
 	uiprivFree(wmarkdown);
 }

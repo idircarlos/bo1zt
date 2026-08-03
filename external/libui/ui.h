@@ -4544,7 +4544,10 @@ _UI_EXTERN uiGLArea *uiNewGLArea(int minWidth, int minHeight);
  * A read-only control that renders markdown text.
  *
  * Supported markdown: `#` to `####` headings, `- ` bullet lists,
- * `**bold**`, `*italic*`, `__underline__` and `` `code` `` inline styles.
+ * `1. ` numbered lists, `**bold**`, `*italic*`, `__underline__` and
+ * `` `code` `` inline styles, and `[text](url)` links, which open in the
+ * default browser when clicked. Leading tabs and groups of two to four
+ * spaces nest a block one level deeper each.
  * Consecutive text lines are joined into a single wrapped paragraph,
  * blank lines separate paragraphs.
  *

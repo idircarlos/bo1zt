@@ -9,13 +9,15 @@ enum {
 	markdownStyleItalic = 1 << 1,
 	markdownStyleUnderline = 1 << 2,
 	markdownStyleCode = 1 << 3,
+	markdownStyleLink = 1 << 4,
 };
 
-#define markdownStyleCount 16
+#define markdownStyleCount 32
 
 enum markdownBlockKind {
 	markdownParagraph,
 	markdownBullet,
+	markdownNumber,
 	markdownHeading1,
 	markdownHeading2,
 	markdownHeading3,
@@ -25,11 +27,14 @@ enum markdownBlockKind {
 
 struct markdownRun {
 	std::wstring text;
+	std::wstring url;
 	int style;
 };
 
 struct markdownBlock {
 	markdownBlockKind kind;
+	std::wstring marker;
+	int indent;
 	std::vector<markdownRun> runs;
 };
 

@@ -1,25 +1,30 @@
 // uiMarkdownViewer - A read-only control that renders a basic subset of markdown
 #include "uipriv_windows.hpp"
 #include "markdown.hpp"
+#include <shellapi.h>
 
 #define markdownViewerPaddingX 10
 #define markdownViewerPaddingY 8
-#define markdownViewerBulletIndent 12
+#define markdownViewerIndentStep 18
+#define markdownViewerMarkerGap 5
 #define markdownViewerFontCount (markdownBlockKindCount * markdownStyleCount)
 #define markdownViewerFallbackBorder RGB(0xAC, 0xAC, 0xAC)
 #define markdownViewerCodeFace L"Consolas"
 #define markdownViewerCodeScale 92
 #define markdownViewerCodePadding 2
+#define markdownViewerLinkColor RGB(0, 102, 204)
 
-static const int blockFontScales[markdownBlockKindCount] = { 100, 100, 175, 140, 120, 105 };
-static const int blockSpaceBefore[markdownBlockKindCount] = { 4, 0, 8, 8, 6, 5 };
-static const int blockSpaceAfter[markdownBlockKindCount] = { 4, 2, 3, 3, 2, 2 };
+static const int blockFontScales[markdownBlockKindCount] = { 100, 100, 100, 175, 140, 120, 105 };
+static const int blockSpaceBefore[markdownBlockKindCount] = { 4, 0, 0, 8, 8, 6, 5 };
+static const int blockSpaceAfter[markdownBlockKindCount] = { 4, 2, 2, 3, 3, 2, 2 };
 
 struct viewerFragment {
 	std::wstring text;
+	std::wstring url;
 	markdownBlockKind kind;
 	int style;
 	int x;
+	int width;
 	int ascent;
 	BOOL mergeable;
 };
@@ -56,7 +61,7 @@ static HFONT viewerFont(uiMarkdownViewer *mv, markdownBlockKind kind, int style)
 	if ((style & markdownStyleBold) != 0 || kind >= markdownHeading1)
 		lf.lfWeight = FW_BOLD;
 	lf.lfItalic = (style & markdownStyleItalic) != 0;
-	lf.lfUnderline = (style & markdownStyleUnderline) != 0;
+	lf.lfUnderline = (style & (markdownStyleUnderline | markdownStyleLink)) != 0;
 	if ((style & markdownStyleCode) != 0) {
 		lf.lfHeight = MulDiv(lf.lfHeight, markdownViewerCodeScale, 100);
 		lf.lfPitchAndFamily = FIXED_PITCH | FF_MODERN;
@@ -67,14 +72,16 @@ static HFONT viewerFont(uiMarkdownViewer *mv, markdownBlockKind kind, int style)
 	return mv->fonts[index];
 }
 
-static void appendFragment(viewerLine *line, const markdownBlock &block, int style, const std::wstring &text, int x, int ascent, BOOL mergeable)
+static void appendFragment(viewerLine *line, const markdownBlock &block, int style, const std::wstring &url, const std::wstring &text, int x, int width, int ascent, BOOL mergeable)
 {
 	viewerFragment fragment;
 
 	fragment.text = text;
+	fragment.url = url;
 	fragment.kind = block.kind;
 	fragment.style = style;
 	fragment.x = x;
+	fragment.width = width;
 	fragment.ascent = ascent;
 	fragment.mergeable = mergeable;
 	line->fragments.push_back(fragment);
@@ -101,31 +108,37 @@ static void growLine(viewerLine *line, const TEXTMETRICW *tm)
 
 // only text of the same style that directly follows the previous word can grow a
 // fragment; spaces between fragments are left undrawn so they carry no underline
-static BOOL canMergeInto(const viewerLine *line, int style)
+static BOOL canMergeInto(const viewerLine *line, const markdownRun &run)
 {
 	if (line->fragments.empty())
 		return FALSE;
-	return line->fragments.back().mergeable && line->fragments.back().style == style;
+	if (!line->fragments.back().mergeable || line->fragments.back().style != run.style)
+		return FALSE;
+	return line->fragments.back().url == run.url;
 }
 
 static int layoutBlock(uiMarkdownViewer *mv, HDC dc, const markdownBlock &block, int width, int top)
 {
-	int indent = (block.kind == markdownBullet) ? markdownViewerBulletIndent : 0;
-	int x = indent;
-	int y = top;
+	int marginLeft = block.indent * markdownViewerIndentStep;
+	int indent = marginLeft;
+	int x, y = top;
 	viewerLine line;
 	BOOL pendingSpace = FALSE;
 
 	beginLine(&line, y);
 
-	if (block.kind == markdownBullet) {
+	if (!block.marker.empty()) {
 		TEXTMETRICW tm;
+		SIZE marker;
 
 		SelectObject(dc, viewerFont(mv, block.kind, 0));
 		GetTextMetricsW(dc, &tm);
+		GetTextExtentPoint32W(dc, block.marker.c_str(), (int) block.marker.length(), &marker);
 		growLine(&line, &tm);
-		appendFragment(&line, block, 0, L"\x2022", 0, tm.tmAscent, FALSE);
+		appendFragment(&line, block, 0, L"", block.marker, marginLeft, marker.cx, tm.tmAscent, FALSE);
+		indent = marginLeft + marker.cx + markdownViewerMarkerGap;
 	}
+	x = indent;
 
 	for (size_t r = 0; r < block.runs.size(); r++) {
 		const markdownRun &run = block.runs[r];
@@ -165,16 +178,17 @@ static int layoutBlock(uiMarkdownViewer *mv, HDC dc, const markdownBlock &block,
 				gap = 0;
 			}
 
-			if (canMergeInto(&line, run.style)) {
+			if (canMergeInto(&line, run)) {
 				viewerFragment &last = line.fragments.back();
 
 				if (gap > 0)
 					last.text += L' ';
 				last.text += word;
+				last.width += gap + size.cx;
 			} else {
 				x += gap;
 				gap = 0;
-				appendFragment(&line, block, run.style, word, x, tm.tmAscent, TRUE);
+				appendFragment(&line, block, run.style, run.url, word, x, size.cx, tm.tmAscent, TRUE);
 			}
 
 			x += gap + size.cx;
@@ -318,7 +332,6 @@ static void paint(uiMarkdownViewer *mv, HDC dc, RECT *client)
 {
 	FillRect(dc, client, GetSysColorBrush(COLOR_WINDOW));
 	SetBkMode(dc, TRANSPARENT);
-	SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
 
 	for (size_t i = 0; i < mv->lines->size(); i++) {
 		const viewerLine &line = (*(mv->lines))[i];
@@ -333,11 +346,36 @@ static void paint(uiMarkdownViewer *mv, HDC dc, RECT *client)
 			int top = y + line.ascent - fragment.ascent;
 
 			SelectObject(dc, viewerFont(mv, fragment.kind, fragment.style));
+			if ((fragment.style & markdownStyleLink) != 0)
+				SetTextColor(dc, markdownViewerLinkColor);
+			else
+				SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
 			if ((fragment.style & markdownStyleCode) != 0)
 				paintCodeBackground(dc, fragment.text, x, top);
 			TextOutW(dc, x, top, fragment.text.c_str(), (int) fragment.text.length());
 		}
 	}
+}
+
+static const std::wstring *linkURLAt(uiMarkdownViewer *mv, int x, int y)
+{
+	for (size_t i = 0; i < mv->lines->size(); i++) {
+		const viewerLine &line = (*(mv->lines))[i];
+		int top = line.y - mv->scrollPos;
+
+		if (y < top || y >= top + line.height)
+			continue;
+		for (size_t f = 0; f < line.fragments.size(); f++) {
+			const viewerFragment &fragment = line.fragments[f];
+			int left = markdownViewerPaddingX + fragment.x;
+
+			if ((fragment.style & markdownStyleLink) == 0)
+				continue;
+			if (x >= left && x < left + fragment.width)
+				return &(fragment.url);
+		}
+	}
+	return NULL;
 }
 
 static void paintBuffered(uiMarkdownViewer *mv)
@@ -430,6 +468,26 @@ static LRESULT CALLBACK markdownViewerSubProc(HWND hwnd, UINT uMsg, WPARAM wPara
 		// the wheel only reaches the control that holds the focus
 		SetFocus(hwnd);
 		return 0;
+	case WM_LBUTTONUP:
+		{
+			const std::wstring *url = linkURLAt(mv, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+
+			if (url != NULL)
+				ShellExecuteW(NULL, L"open", url->c_str(), NULL, NULL, SW_SHOWNORMAL);
+		}
+		return 0;
+	case WM_SETCURSOR:
+		{
+			POINT pt;
+
+			GetCursorPos(&pt);
+			ScreenToClient(hwnd, &pt);
+			if (linkURLAt(mv, pt.x, pt.y) != NULL) {
+				SetCursor(LoadCursorW(NULL, IDC_HAND));
+				return TRUE;
+			}
+		}
+		break;
 	case WM_NCDESTROY:
 		RemoveWindowSubclass(hwnd, markdownViewerSubProc, uIdSubclass);
 		break;
