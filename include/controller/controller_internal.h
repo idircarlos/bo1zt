@@ -15,6 +15,7 @@
 typedef struct WidgetManager WidgetManager;
 typedef struct BindManager BindManager;
 typedef struct CamoManager CamoManager;
+typedef struct TwitchManager TwitchManager;
 
 struct Controller {
     Process *process;
@@ -28,6 +29,7 @@ struct Controller {
     WidgetManager *widgetManager;
     BindManager *bindManager;
     CamoManager *camoManager;
+    TwitchManager *twitchManager;
 };
 
 Engine *_controllerGetEngine(Controller *controller);

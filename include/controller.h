@@ -84,10 +84,12 @@ CommandManager *controllerGetCommandManager(Controller *controller);
 typedef struct WidgetManager WidgetManager;
 typedef struct BindManager BindManager;
 typedef struct CamoManager CamoManager;
+typedef struct TwitchManager TwitchManager;
 void controllerInitManagers(Controller *controller);
 void controllerUpdateManagers(Controller *controller);
 WidgetManager *controllerGetWidgetManager(Controller *controller);
 BindManager *controllerGetBindManager(Controller *controller);
 CamoManager *controllerGetCamoManager(Controller *controller);
+TwitchManager *controllerGetTwitchManager(Controller *controller);
 
 #endif // CONTROLLER_H_

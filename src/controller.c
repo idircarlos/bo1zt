@@ -16,6 +16,7 @@
 #include "logic/widget/manager.h"
 #include "logic/bind/manager.h"
 #include "logic/camo/manager.h"
+#include "logic/twitch/manager.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -33,6 +34,7 @@ Controller* controllerCreate() {
     controller->widgetManager = NULL;
     controller->bindManager = NULL;
     controller->camoManager = NULL;
+    controller->twitchManager = NULL;
     controllerAttachGame(controller);
     return controller;
 }
@@ -42,6 +44,7 @@ void controllerInitManagers(Controller *controller) {
     if (!controller->widgetManager) controller->widgetManager = widgetManagerCreate(controller);
     if (!controller->bindManager) controller->bindManager = bindManagerCreate(controller);
     if (!controller->camoManager) controller->camoManager = camoManagerCreate();
+    if (!controller->twitchManager) controller->twitchManager = twitchManagerCreate();
 }
 
 void controllerUpdateManagers(Controller *controller) {
@@ -63,6 +66,11 @@ BindManager *controllerGetBindManager(Controller *controller) {
 CamoManager *controllerGetCamoManager(Controller *controller) {
     if (!controller) return NULL;
     return controller->camoManager;
+}
+
+TwitchManager *controllerGetTwitchManager(Controller *controller) {
+    if (!controller) return NULL;
+    return controller->twitchManager;
 }
 
 Process* controllerGetProcess(Controller *controller) {
@@ -243,6 +251,10 @@ void controllerDestroy(Controller *controller) {
         if (controller->camoManager) {
             camoManagerDestroy(controller->camoManager);
             controller->camoManager = NULL;
+        }
+        if (controller->twitchManager) {
+            twitchManagerDestroy(controller->twitchManager);
+            controller->twitchManager = NULL;
         }
         if (controller->process) {
             processClose(controller->process);

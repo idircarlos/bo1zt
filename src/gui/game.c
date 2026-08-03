@@ -3,6 +3,7 @@
 #include "gui/widgets.h"
 #include "gui/binds.h"
 #include "gui/camo.h"
+#include "gui/twitch.h"
 #include "client/cheats.h"
 #include "client/game.h"
 #include "client/round.h"
@@ -300,7 +301,7 @@ static void onCamoButtonClick(uiButton *button, void *data) {
 static void onTwitchButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
-    // TODO: open Twitch Integration window
+    uiTwitchShow(client, parent);
 }
 
 static void onCloseButtonClick(uiButton *button, void *data) {

@@ -9,6 +9,7 @@
 #include "service/widgets.h"
 #include "service/binds.h"
 #include "service/camo.h"
+#include "service/twitch.h"
 #include "service/actions.h"
 #include "service/commands.h"
 #include "service/stats.h"
@@ -1518,6 +1519,52 @@ static void handleCamoBundleUninstall(Service *service, HttpResponse *response, 
 // Router
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Handlers: twitch
+// ---------------------------------------------------------------------------
+
+static void handleTwitchGet(Service *service, HttpResponse *response) {
+    TwitchConnection connection;
+    ServiceResult r = serviceTwitchGetConnection(service, &connection);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    JsonValue *obj = jsonNewObject();
+    jsonObjectSetString(obj, "state", serviceTwitchStateName(connection.state));
+    jsonObjectSetBool(obj, "authorized", connection.authorized);
+    jsonObjectSetString(obj, "client-id", connection.clientId);
+    jsonObjectSetString(obj, "login", connection.login);
+    jsonObjectSetString(obj, "display-name", connection.displayName);
+    jsonObjectSetString(obj, "user-code", connection.userCode);
+    jsonObjectSetString(obj, "verification-uri", connection.verificationUri);
+    jsonObjectSetString(obj, "error", connection.error);
+    respondJson(response, 200, obj);
+}
+
+static void handleTwitchConnect(Service *service, HttpResponse *response, const char *body) {
+    static const char *KEYS[] = { "client-id" };
+    JsonValue *parsed = (body && body[0]) ? jsonParse(body) : NULL;
+    const char *clientId = NULL;
+    if (parsed) {
+        if (jsonTypeOf(parsed) != JSON_OBJECT ||
+            !hasOnlyKnownKeys(parsed, KEYS, (int)(sizeof(KEYS) / sizeof(KEYS[0])))) {
+            jsonFree(parsed);
+            respondError(response, 400, "INVALID_PARAM", "Expected an object with 'client-id'");
+            return;
+        }
+        JsonValue *field = jsonObjectGet(parsed, "client-id");
+        if (field && jsonTypeOf(field) != JSON_STRING) {
+            jsonFree(parsed);
+            respondError(response, 400, "INVALID_PARAM", "Expected string for client-id");
+            return;
+        }
+        clientId = field ? jsonGetString(field, "") : NULL;
+    }
+
+    ServiceResult r = serviceTwitchConnect(service, clientId);
+    jsonFree(parsed);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    handleTwitchGet(service, response);
+}
+
 static bool isExact(const char *sub, const char *seg) {
     return strcmp(sub, seg) == 0;
 }
@@ -1802,6 +1849,25 @@ static void route(Service *service, const HttpRequest *request, HttpResponse *re
             return;
         }
         respondNotFound(response);
+        return;
+    }
+
+    // --- twitch ---
+    if (isExact(sub, "/twitch")) {
+        if (strcmp(method, "GET") != 0) { respondNotFound(response); return; }
+        handleTwitchGet(service, response);
+        return;
+    }
+    if (isExact(sub, "/twitch/connect")) {
+        if (strcmp(method, "POST") != 0) { respondNotFound(response); return; }
+        handleTwitchConnect(service, response, body);
+        return;
+    }
+    if (isExact(sub, "/twitch/disconnect")) {
+        if (strcmp(method, "POST") != 0) { respondNotFound(response); return; }
+        ServiceResult r = serviceTwitchDisconnect(service);
+        if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+        httpResponseStatus(response, 204);
         return;
     }
 

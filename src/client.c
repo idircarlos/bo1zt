@@ -69,7 +69,8 @@ ClientResult clientRequest(Client *client, const char *method, const char *path,
     if (!client) return CLIENT_ERR_INVALID_PARAM;
     clientClearError(client);
 
-    HttpClientResponse resp = httpClientRequest(client->port, method, path, body);
+    HttpClientResponse resp = httpClientRequest("127.0.0.1", client->port, method, path,
+                                                "Content-Type: application/json\r\n", body);
     ClientResult result = resultFromStatus(resp.status);
 
     if (result == CLIENT_OK) {

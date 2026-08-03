@@ -1,7 +1,10 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <windows.h>
+#include <winhttp.h>
 
 #include "win/http.h"
+#include "win/text.h"
 #include "logger.h"
 
 #include <stdlib.h>
@@ -11,6 +14,7 @@
 
 #define REQ_BUFFER_SIZE 8192
 #define CLIENT_BUFFER_SIZE 65536
+#define RESPONSE_CHUNK 4096
 
 struct HttpResponse {
     int status;
@@ -179,38 +183,54 @@ int httpServe(int port, HttpHandler handler, void *userData) {
     return 0;
 }
 
-HttpClientResponse httpClientRequest(int port, const char *method, const char *path, const char *body) {
+HttpClientResponse httpClientRequest(const char *host, int port, const char *method,
+                                     const char *path, const char *headers, const char *body) {
     HttpClientResponse result = { -1, NULL };
+    if (!host) host = "127.0.0.1";
 
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) return result;
 
-    SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (sock == INVALID_SOCKET) { WSACleanup(); return result; }
+    // Resolve the host (supports both hostnames and dotted IPs).
+    char portStr[16];
+    snprintf(portStr, sizeof(portStr), "%d", port);
 
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons((unsigned short)port);
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
 
-    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == SOCKET_ERROR) {
-        closesocket(sock);
+    struct addrinfo *addrs = NULL;
+    if (getaddrinfo(host, portStr, &hints, &addrs) != 0 || !addrs) {
+        LOG_ERROR("HTTP: could not resolve host %s", host);
         WSACleanup();
         return result;
     }
 
+    SOCKET sock = socket(addrs->ai_family, addrs->ai_socktype, addrs->ai_protocol);
+    if (sock == INVALID_SOCKET) { freeaddrinfo(addrs); WSACleanup(); return result; }
+
+    if (connect(sock, addrs->ai_addr, (int)addrs->ai_addrlen) == SOCKET_ERROR) {
+        freeaddrinfo(addrs);
+        closesocket(sock);
+        WSACleanup();
+        return result;
+    }
+    freeaddrinfo(addrs);
+
+    const char *extraHeaders = headers ? headers : "";
     int bodyLen = body ? (int)strlen(body) : 0;
     int headerLen = snprintf(NULL, 0,
-        "%s %s HTTP/1.1\r\nHost: 127.0.0.1:%d\r\nContent-Type: application/json\r\n"
+        "%s %s HTTP/1.1\r\nHost: %s:%d\r\n%s"
         "Content-Length: %d\r\nConnection: close\r\n\r\n",
-        method, path, port, bodyLen);
+        method, path, host, port, extraHeaders, bodyLen);
     char *request = (char *)malloc(headerLen + bodyLen + 1);
     if (!request) { closesocket(sock); WSACleanup(); return result; }
     int reqLen = snprintf(request, headerLen + 1,
-        "%s %s HTTP/1.1\r\nHost: 127.0.0.1:%d\r\nContent-Type: application/json\r\n"
+        "%s %s HTTP/1.1\r\nHost: %s:%d\r\n%s"
         "Content-Length: %d\r\nConnection: close\r\n\r\n",
-        method, path, port, bodyLen);
+        method, path, host, port, extraHeaders, bodyLen);
     if (bodyLen > 0) memcpy(request + reqLen, body, bodyLen);
     int totalReq = reqLen + bodyLen;
 
@@ -248,4 +268,100 @@ void httpClientResponseFree(HttpClientResponse *response) {
     if (!response) return;
     free(response->body);
     response->body = NULL;
+}
+
+static int readStatusCode(HINTERNET request) {
+    DWORD status = 0;
+    DWORD size = sizeof(status);
+    if (!WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+                             WINHTTP_HEADER_NAME_BY_INDEX, &status, &size,
+                             WINHTTP_NO_HEADER_INDEX)) {
+        LOG_ERROR("HTTPS: WinHttpQueryHeaders failed (%lu)", GetLastError());
+        return -1;
+    }
+    return (int)status;
+}
+
+static char *readResponseBody(HINTERNET request) {
+    size_t capacity = RESPONSE_CHUNK;
+    size_t total = 0;
+    char *buffer = (char *)malloc(capacity);
+    if (!buffer) return NULL;
+
+    for (;;) {
+        DWORD available = 0;
+        if (!WinHttpQueryDataAvailable(request, &available) || available == 0) break;
+
+        while (total + available + 1 > capacity) capacity *= 2;
+        char *grown = (char *)realloc(buffer, capacity);
+        if (!grown) { free(buffer); return NULL; }
+        buffer = grown;
+
+        DWORD read = 0;
+        if (!WinHttpReadData(request, buffer + total, available, &read)) break;
+        total += read;
+    }
+
+    buffer[total] = '\0';
+    return buffer;
+}
+
+HttpClientResponse httpsClientRequest(const char *host, int port, const char *method,
+                                      const char *path, const char *headers, const char *body) {
+    HttpClientResponse result = { -1, NULL };
+    if (!host || !method || !path) return result;
+
+    // All locals declared up front so the goto-based cleanup is valid in C++.
+    wchar_t *wideHost    = textToWide(host);
+    wchar_t *wideMethod  = textToWide(method);
+    wchar_t *widePath    = textToWide(path);
+    wchar_t *wideHeaders = headers ? textToWide(headers) : NULL;
+
+    HINTERNET session = NULL, connection = NULL, request = NULL;
+    DWORD bodyLen = body ? (DWORD)strlen(body) : 0;
+
+    if (!wideHost || !wideMethod || !widePath) { LOG_ERROR("HTTPS: out of memory"); goto cleanup; }
+
+    session = WinHttpOpen(L"bo1zt/1.0",
+                          WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+                          WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    if (!session) { LOG_ERROR("HTTPS: WinHttpOpen failed (%lu)", GetLastError()); goto cleanup; }
+
+    connection = WinHttpConnect(session, wideHost, (INTERNET_PORT)port, 0);
+    if (!connection) { LOG_ERROR("HTTPS: WinHttpConnect failed (%lu)", GetLastError()); goto cleanup; }
+
+    request = WinHttpOpenRequest(connection, wideMethod, widePath, NULL,
+                                 WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
+                                 WINHTTP_FLAG_SECURE);
+    if (!request) { LOG_ERROR("HTTPS: WinHttpOpenRequest failed (%lu)", GetLastError()); goto cleanup; }
+
+    if (wideHeaders && wideHeaders[0]) {
+        WinHttpAddRequestHeaders(request, wideHeaders, (DWORD)-1L,
+                                 WINHTTP_ADDREQ_FLAG_ADD | WINHTTP_ADDREQ_FLAG_REPLACE);
+    }
+
+    if (!WinHttpSendRequest(request, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
+                            (LPVOID)body, bodyLen, bodyLen, 0)) {
+        LOG_ERROR("HTTPS: WinHttpSendRequest failed (%lu)", GetLastError());
+        goto cleanup;
+    }
+
+    if (!WinHttpReceiveResponse(request, NULL)) {
+        LOG_ERROR("HTTPS: WinHttpReceiveResponse failed (%lu)", GetLastError());
+        goto cleanup;
+    }
+
+    result.status = readStatusCode(request);
+    result.body = readResponseBody(request);
+    if (!result.body) result.status = -1;
+
+cleanup:
+    if (request)    WinHttpCloseHandle(request);
+    if (connection) WinHttpCloseHandle(connection);
+    if (session)    WinHttpCloseHandle(session);
+    free(wideHost);
+    free(wideMethod);
+    free(widePath);
+    free(wideHeaders);
+    return result;
 }

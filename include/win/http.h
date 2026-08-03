@@ -8,22 +8,20 @@ typedef struct {
     const char *body;
 } HttpRequest;
 
-typedef struct HttpResponse HttpResponse;
-
-void httpResponseSet(HttpResponse *response, int status, const char *contentType, const char *body);
-void httpResponseJson(HttpResponse *response, int status, const char *jsonBody);
-void httpResponseStatus(HttpResponse *response, int status);
-
-typedef void (*HttpHandler)(const HttpRequest *request, HttpResponse *response, void *userData);
-
-int httpServe(int port, HttpHandler handler, void *userData);
-
 typedef struct {
     int status;
     char *body;
 } HttpClientResponse;
 
-HttpClientResponse httpClientRequest(int port, const char *method, const char *path, const char *body);
+typedef struct HttpResponse HttpResponse;
+typedef void (*HttpHandler)(const HttpRequest *request, HttpResponse *response, void *userData);
+
+void httpResponseSet(HttpResponse *response, int status, const char *contentType, const char *body);
+void httpResponseJson(HttpResponse *response, int status, const char *jsonBody);
+void httpResponseStatus(HttpResponse *response, int status);
+int httpServe(int port, HttpHandler handler, void *userData);
+HttpClientResponse httpClientRequest(const char *host, int port, const char *method, const char *path, const char *headers, const char *body);
+HttpClientResponse httpsClientRequest(const char *host, int port, const char *method, const char *path, const char *headers, const char *body);
 void httpClientResponseFree(HttpClientResponse *response);
 
 #endif // WIN_HTTP_H_
