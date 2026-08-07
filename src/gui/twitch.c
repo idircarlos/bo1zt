@@ -9,9 +9,19 @@
 
 #define TWITCH_WINDOW_TITLE "Twitch Integration"
 #define TWITCH_WINDOW_WIDTH 420
-#define TWITCH_WINDOW_HEIGHT 230
+#define TWITCH_WINDOW_HEIGHT 300
 #define TWITCH_REFRESH_INTERVAL_MS 1000
 #define TWITCH_INFO_ROWS 2
+#define TWITCH_OPTION_COUNT 3
+
+static const char *TWITCH_OPTION_KEYS[TWITCH_OPTION_COUNT] = {
+    "show-chat", "send-chat", "announce-raids",
+};
+static const char *TWITCH_OPTION_LABELS[TWITCH_OPTION_COUNT] = {
+    " Show Twitch chat in the game chat",
+    " Send the game chat to Twitch",
+    " Announce raids on screen",
+};
 
 static Client *client = NULL;
 static uiWindow *twitchWindow = NULL;
@@ -20,6 +30,7 @@ static uiEntry *clientIdEntry = NULL;
 static uiLabel *infoKeys[TWITCH_INFO_ROWS] = {NULL, NULL};
 static uiLabel *infoValues[TWITCH_INFO_ROWS] = {NULL, NULL};
 static uiButton *actionButton = NULL;
+static uiCheckbox *optionCheckboxes[TWITCH_OPTION_COUNT] = {NULL, NULL, NULL};
 static ClientTwitchState shownState = CLIENT_TWITCH_DISCONNECTED;
 
 static void setInfoRow(int row, const char *key, const char *value) {
@@ -147,12 +158,35 @@ static uiControl *buildConnectionGroup(void) {
     return uiControl(group);
 }
 
+static void onOptionToggled(uiCheckbox *checkbox, void *data) {
+    bool enabled = uiCheckboxChecked(checkbox) != 0;
+    if (clientTwitchSetOption(client, (const char *)data, enabled) == CLIENT_OK) return;
+    uiCheckboxSetChecked(checkbox, !enabled);
+    uiMsgBoxError(twitchWindow, TWITCH_WINDOW_TITLE, clientLastErrorMessage(client));
+}
+
+static void showOptions(const ClientTwitchOptions *options) {
+    const bool values[TWITCH_OPTION_COUNT] = {
+        options->showChat, options->sendChat, options->announceRaids,
+    };
+    for (int i = 0; i < TWITCH_OPTION_COUNT; i++) {
+        if (uiCheckboxChecked(optionCheckboxes[i]) != values[i]) {
+            uiCheckboxSetChecked(optionCheckboxes[i], values[i]);
+        }
+    }
+}
+
 static uiControl *buildOptionsGroup(void) {
-    uiGroup *group = uiNewGroup("Integration Options (coming soon)");
+    uiGroup *group = uiNewGroup("Integration Options");
     uiGroupSetMargined(group, 1);
 
     uiBox *box = uiNewVerticalBox();
     uiBoxSetPadded(box, 1);
+    for (int i = 0; i < TWITCH_OPTION_COUNT; i++) {
+        optionCheckboxes[i] = uiNewCheckbox(TWITCH_OPTION_LABELS[i]);
+        uiCheckboxOnToggled(optionCheckboxes[i], onOptionToggled, (void *)TWITCH_OPTION_KEYS[i]);
+        uiBoxAppend(box, uiControl(optionCheckboxes[i]), 0);
+    }
     uiGroupSetChild(group, uiControl(box));
     return uiControl(group);
 }
@@ -188,6 +222,9 @@ void uiTwitchShow(Client *clientInstance, uiWindow *parentInstance) {
         if (connection.clientId[0]) uiEntrySetText(clientIdEntry, connection.clientId);
         showConnection(&connection);
     }
+
+    ClientTwitchOptions options;
+    if (clientGetTwitchOptions(client, &options) == CLIENT_OK) showOptions(&options);
 
     uiControlShow(uiControl(twitchWindow));
     SetForegroundWindow((HWND)uiControlHandle(uiControl(twitchWindow)));

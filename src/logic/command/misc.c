@@ -53,15 +53,15 @@ static void formatDuration(int ms, char *hms, size_t size) {
 
 bool commandPerkHandle(Command command) {
     if (command.argc < 3) {
-        serverChatMessage(server, "Usage: /perk <add | rm> <perk1> [perk2]...");
-        serverChatMessage(server, "Perks: jg qr sc dt su mk");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Usage: /perk <add | rm> <perk1> [perk2]...");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Perks: jg qr sc dt su mk");
         return false;
     }
 
     bool isAdd = strcmp(command.argv[1], "add") == 0;
     bool isRemove = strcmp(command.argv[1], "rm") == 0;
     if (!isAdd && !isRemove) {
-        serverChatMessage(server, "Unknown perk action. Use: add, rm");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Unknown perk action. Use: add, rm");
         return false;
     }
 
@@ -87,8 +87,8 @@ bool commandPerkHandle(Command command) {
 
 bool commandGiveHandle(Command command) {
     if (command.argc < 2) {
-        serverChatMessage(server, "/give must receive an argument!");
-        serverChatMessage(server, "Usage: /give ammo | <weapon>");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "/give must receive an argument!");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Usage: /give ammo | <weapon>");
         return false;
     }
 
@@ -129,18 +129,18 @@ bool commandTpHandle(Command command) {
     if (command.argc == 1) {
         TeleportCoords coords;
         if (clientGetPosition(client, &coords) == CLIENT_OK) {
-            snprintf(buffer, 64, "Position: (%d, %d, %d)", (int)coords.x, (int)coords.y, (int)coords.z);
+            snprintf(buffer, 64, SERVER_BO1ZT_MSG_PREFIX "Position: (%d, %d, %d)", (int)coords.x, (int)coords.y, (int)coords.z);
             serverChatMessage(server, buffer);
             clientDestroy(client);
             return true;
         }
-        serverChatMessage(server, "Failed to get current position!");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Failed to get current position!");
         clientDestroy(client);
         return false;
     }
 
     if (command.argc < 4) {
-        serverChatMessage(server, "Usage: /tp [x y z]");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Usage: /tp [x y z]");
         clientDestroy(client);
         return false;
     }
@@ -150,7 +150,7 @@ bool commandTpHandle(Command command) {
     float z = (float)atof(command.argv[3]);
 
     bool ok = clientTeleport(client, x, y, z) == CLIENT_OK;
-    if (!ok) serverChatMessage(server, "Failed to teleport!");
+    if (!ok) serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Failed to teleport!");
     clientDestroy(client);
     return ok;
 }
@@ -165,14 +165,16 @@ bool commandNextSpecialRoundHandle(Command command) {
     clientDestroy(client);
 
     if (r != CLIENT_OK) {
-        serverChatMessage(server, "No special rounds");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "No special rounds");
         return false;
     }
     if (special.next[0] != '\0') {
-        serverChatMessage(server, special.next);
+        char buffer[64];
+        snprintf(buffer, 64, SERVER_BO1ZT_MSG_PREFIX "%s", special.next);
+        serverChatMessage(server, buffer);
         return true;
     }
-    serverChatMessage(server, "No special rounds");
+    serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "No special rounds");
     return false;
 }
 
@@ -187,7 +189,7 @@ bool commandClaymoresHandle(Command command) {
     if (r != CLIENT_OK) return false;
 
     char buffer[64];
-    snprintf(buffer, 64, "Claymores: %d", claymores);
+    snprintf(buffer, 64, SERVER_BO1ZT_MSG_PREFIX "Claymores: %d", claymores);
     serverChatMessage(server, buffer);
     return true;
 }
@@ -203,7 +205,7 @@ bool commandEntitiesHandle(Command command) {
     if (r != CLIENT_OK) return false;
 
     char buffer[64];
-    snprintf(buffer, 64, "Entities: %d/%d", current, max);
+    snprintf(buffer, 64, SERVER_BO1ZT_MSG_PREFIX "Entities: %d/%d", current, max);
     serverChatMessage(server, buffer);
     return true;
 }
@@ -215,7 +217,7 @@ bool commandSphHandle(Command command) {
     if (command.argc >= 2) {
         scopeRound = atoi(command.argv[1]);
         if (scopeRound <= 0) {
-            serverChatMessage(server, "Usage: /sph or /sph <round>");
+            serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Usage: /sph or /sph <round>");
             return false;
         }
     }
@@ -229,26 +231,26 @@ bool commandSphHandle(Command command) {
 
     if (r == CLIENT_OK) {
         if (scopeRound > 0) {
-            snprintf(buffer, 128, "SPH for round %d: %.1f", scopeRound, sph);
+            snprintf(buffer, 128, SERVER_BO1ZT_MSG_PREFIX "SPH for round %d: %.1f", scopeRound, sph);
             serverChatMessage(server, buffer);
             return true;
         }
         if (sph <= 0.0) {
-            serverChatMessage(server, "No valid rounds to calculate SPH yet!");
+            serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "No valid rounds to calculate SPH yet!");
             return false;
         }
-        snprintf(buffer, 128, "Average SPH: %.2f", sph);
+        snprintf(buffer, 128, SERVER_BO1ZT_MSG_PREFIX "Average SPH: %.2f", sph);
         serverChatMessage(server, buffer);
         return true;
     }
 
     if (r == CLIENT_ERR_INVALID_PARAM && scopeRound > 0) {
-        snprintf(buffer, 128, "Round %d was special or out of range!", scopeRound);
+        snprintf(buffer, 128, SERVER_BO1ZT_MSG_PREFIX "Round %d was special or out of range!", scopeRound);
         serverChatMessage(server, buffer);
     } else if (r == CLIENT_ERR_CONFLICT) {
-        serverChatMessage(server, "No previous rounds to display SPH for!");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "No previous rounds to display SPH for!");
     } else {
-        serverChatMessage(server, "Failed to get SPH!");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Failed to get SPH!");
     }
     return false;
 }
@@ -280,12 +282,12 @@ bool commandTradeHandle(Command command) {
     if (command.argc < 2) {
         TradeStatus status;
         if (clientGetTrade(client, &status) != CLIENT_OK || !status.running) {
-            serverChatMessage(server, "No trade running");
+            serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "No trade running");
             clientDestroy(client);
             return true;
         }
         formatDuration(status.elapsedMs, hms, sizeof(hms));
-        snprintf(buffer, 128, "Trade: %s | Hits: %d", hms, status.hits);
+        snprintf(buffer, 128, SERVER_BO1ZT_MSG_PREFIX "Trade: %s | Hits: %d", hms, status.hits);
         serverChatMessage(server, buffer);
         clientDestroy(client);
         return true;
@@ -293,7 +295,8 @@ bool commandTradeHandle(Command command) {
 
     if (strcmp(command.argv[1], "start") == 0) {
         bool ok = clientStartTrade(client) == CLIENT_OK;
-        serverChatMessage(server, ok ? "Trade started" : "Trade already running");
+        serverChatMessage(server, ok ? SERVER_BO1ZT_MSG_PREFIX "Trade started"
+                                     : SERVER_BO1ZT_MSG_PREFIX "Trade already running");
         clientDestroy(client);
         return true;
     }
@@ -302,10 +305,10 @@ bool commandTradeHandle(Command command) {
         TradeStatus status;
         if (clientEndTrade(client, &status) == CLIENT_OK) {
             formatDuration(status.elapsedMs, hms, sizeof(hms));
-            snprintf(buffer, 128, "Trade ended: %s | Hits: %d", hms, status.hits);
+            snprintf(buffer, 128, SERVER_BO1ZT_MSG_PREFIX "Trade ended: %s | Hits: %d", hms, status.hits);
             serverChatMessage(server, buffer);
         } else {
-            serverChatMessage(server, "No trade running");
+            serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "No trade running");
         }
         clientDestroy(client);
         return true;
@@ -313,7 +316,8 @@ bool commandTradeHandle(Command command) {
 
     if (strcmp(command.argv[1], "cancel") == 0) {
         bool ok = clientCancelTrade(client) == CLIENT_OK;
-        serverChatMessage(server, ok ? "Trade cancelled" : "No trade running");
+        serverChatMessage(server, ok ? SERVER_BO1ZT_MSG_PREFIX "Trade cancelled"
+                                     : SERVER_BO1ZT_MSG_PREFIX "No trade running");
         clientDestroy(client);
         return true;
     }
@@ -321,18 +325,18 @@ bool commandTradeHandle(Command command) {
     if (strcmp(command.argv[1], "total") == 0) {
         TradeTotal total;
         if (clientGetTradeTotal(client, &total) != CLIENT_OK || total.trades == 0) {
-            serverChatMessage(server, "No trades recorded");
+            serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "No trades recorded");
             clientDestroy(client);
             return true;
         }
         formatDuration(total.totalMs, hms, sizeof(hms));
-        snprintf(buffer, 128, "Total: %s | Hits: %d (%d trades)", hms, total.totalHits, total.trades);
+        snprintf(buffer, 128, SERVER_BO1ZT_MSG_PREFIX "Total: %s | Hits: %d (%d trades)", hms, total.totalHits, total.trades);
         serverChatMessage(server, buffer);
         clientDestroy(client);
         return true;
     }
 
-    serverChatMessage(server, "Usage: /trade [start | end | cancel | total]");
+    serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Usage: /trade [start | end | cancel | total]");
     clientDestroy(client);
     return false;
 }
@@ -348,7 +352,7 @@ bool commandRevivesHandle(Command command) {
     if (r != CLIENT_OK) return false;
 
     char buffer[64];
-    snprintf(buffer, 64, "Quick Revives Drunk: %d", revives);
+    snprintf(buffer, 64, SERVER_BO1ZT_MSG_PREFIX "Quick Revives Drunk: %d", revives);
     serverChatMessage(server, buffer);
     return true;
 }

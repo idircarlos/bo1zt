@@ -198,6 +198,23 @@ static bool hasOnlyKnownKeys(JsonValue *obj, const char **keys, int keyCount) {
     return true;
 }
 
+// A PATCH body omits whatever it does not change, so each field carries its own
+// `has` flag. Expects the handler locals to be named `parsed`, `patch` and `response`.
+#define PATCH_FIELD(read, typeName, key, hasField, field) do { \
+        int _found = read(parsed, key, &patch.field); \
+        if (_found < 0) { \
+            jsonFree(parsed); \
+            respondError(response, 400, "INVALID_PARAM", "Expected " typeName " for " key); \
+            return; \
+        } \
+        if (_found) patch.hasField = true; \
+    } while (0)
+
+#define INT_FIELD(key, hasField, field)   PATCH_FIELD(getIntField, "number", key, hasField, field)
+#define BOOL_FIELD(key, hasField, field)  PATCH_FIELD(getBoolField, "boolean", key, hasField, field)
+#define COLOR_FIELD(key, hasField, field) PATCH_FIELD(getColorField, "color", key, hasField, field)
+#define RECT_FIELD(key, hasField, field)  PATCH_FIELD(getRectField, "rect", key, hasField, field)
+
 // ---------------------------------------------------------------------------
 // Handlers: discovery / health
 // ---------------------------------------------------------------------------
@@ -621,27 +638,11 @@ static void handlePlayerPatch(Service *service, HttpResponse *response, const ch
     }
 
     ServicePlayerPatch patch = {};
-    int r;
-    if ((r = getIntField(parsed, "health", &patch.health)) < 0) {
-        jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected number for health"); return;
-    }
-    if (r) patch.hasHealth = true;
-    if ((r = getIntField(parsed, "points", &patch.points)) < 0) {
-        jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected number for points"); return;
-    }
-    if (r) patch.hasPoints = true;
-    if ((r = getIntField(parsed, "kills", &patch.kills)) < 0) {
-        jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected number for kills"); return;
-    }
-    if (r) patch.hasKills = true;
-    if ((r = getIntField(parsed, "headshots", &patch.headshots)) < 0) {
-        jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected number for headshots"); return;
-    }
-    if (r) patch.hasHeadshots = true;
-    if ((r = getIntField(parsed, "movement-speed", &patch.movementSpeed)) < 0) {
-        jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected number for movement-speed"); return;
-    }
-    if (r) patch.hasMovementSpeed = true;
+    INT_FIELD("health", hasHealth, health);
+    INT_FIELD("points", hasPoints, points);
+    INT_FIELD("kills", hasKills, kills);
+    INT_FIELD("headshots", hasHeadshots, headshots);
+    INT_FIELD("movement-speed", hasMovementSpeed, movementSpeed);
 
     JsonValue *nameField = jsonObjectGet(parsed, "name");
     if (nameField) {
@@ -894,15 +895,6 @@ static void handleGraphicsPatch(Service *service, HttpResponse *response, const 
     }
 
     GraphicsPatch patch = {};
-#define INT_FIELD(key, hasf, valf) do { \
-        int _r = getIntField(parsed, key, &patch.valf); \
-        if (_r < 0) { jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected number for " key); return; } \
-        if (_r) patch.hasf = true; } while (0)
-#define BOOL_FIELD(key, hasf, valf) do { \
-        int _r = getBoolField(parsed, key, &patch.valf); \
-        if (_r < 0) { jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected boolean for " key); return; } \
-        if (_r) patch.hasf = true; } while (0)
-
     INT_FIELD("fov", hasFov, fov);
     INT_FIELD("fov-scale", hasFovScale, fovScale);
     INT_FIELD("fps-cap", hasFpsCap, fpsCap);
@@ -912,8 +904,6 @@ static void handleGraphicsPatch(Service *service, HttpResponse *response, const 
     BOOL_FIELD("disable-fog", hasDisableFog, disableFog);
     BOOL_FIELD("fullbright", hasFullbright, fullbright);
     BOOL_FIELD("colorized", hasColorized, colorized);
-#undef INT_FIELD
-#undef BOOL_FIELD
     jsonFree(parsed);
 
     ServiceResult r = serviceGraphicsUpdate(service, &patch);
@@ -976,15 +966,6 @@ static void handleCustomizerPatch(Service *service, HttpResponse *response, cons
     }
 
     CustomizerPatch patch = {};
-#define COLOR_FIELD(key, hasf, valf) do { \
-        int _r = getColorField(parsed, key, &patch.valf); \
-        if (_r < 0) { jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected color for " key); return; } \
-        if (_r) patch.hasf = true; } while (0)
-#define INT_FIELD(key, hasf, valf) do { \
-        int _r = getIntField(parsed, key, &patch.valf); \
-        if (_r < 0) { jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected number for " key); return; } \
-        if (_r) patch.hasf = true; } while (0)
-
     COLOR_FIELD("score-background", hasScoreBackground, scoreBackground);
     COLOR_FIELD("score-player-1", hasScorePlayer1, scorePlayer1);
     COLOR_FIELD("score-player-2", hasScorePlayer2, scorePlayer2);
@@ -1001,8 +982,6 @@ static void handleCustomizerPatch(Service *service, HttpResponse *response, cons
     INT_FIELD("warning-frequency", hasWarningFrequency, warningFrequency);
     INT_FIELD("warning-min", hasWarningMin, warningMin);
     INT_FIELD("warning-max", hasWarningMax, warningMax);
-#undef COLOR_FIELD
-#undef INT_FIELD
     jsonFree(parsed);
 
     ServiceResult r = serviceCustomizerUpdate(service, &patch);
@@ -1076,31 +1055,11 @@ static void handleWidgetPatch(Service *service, HttpResponse *response, const ch
     }
 
     WidgetPatch patch = {};
-    int r;
-    if ((r = getBoolField(parsed, "enabled", &patch.enabled)) < 0) {
-        jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected boolean for enabled"); return;
-    }
-    if (r) patch.hasEnabled = true;
-
-    if ((r = getIntField(parsed, "font-size", &patch.fontSize)) < 0) {
-        jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected number for font-size"); return;
-    }
-    if (r) patch.hasFontSize = true;
-
-    if ((r = getColorField(parsed, "text-color", &patch.textColor)) < 0) {
-        jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected color for text-color"); return;
-    }
-    if (r) patch.hasTextColor = true;
-
-    if ((r = getBoolField(parsed, "hide-outside-game", &patch.hideOutsideGame)) < 0) {
-        jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected boolean for hide-outside-game"); return;
-    }
-    if (r) patch.hasHideOutsideGame = true;
-
-    if ((r = getRectField(parsed, "rect", &patch.rect)) < 0) {
-        jsonFree(parsed); respondError(response, 400, "INVALID_PARAM", "Expected rect for rect"); return;
-    }
-    if (r) patch.hasRect = true;
+    BOOL_FIELD("enabled", hasEnabled, enabled);
+    INT_FIELD("font-size", hasFontSize, fontSize);
+    COLOR_FIELD("text-color", hasTextColor, textColor);
+    BOOL_FIELD("hide-outside-game", hasHideOutsideGame, hideOutsideGame);
+    RECT_FIELD("rect", hasRect, rect);
 
     JsonValue *fontField = jsonObjectGet(parsed, "font");
     char fontBuf[256];
@@ -1565,6 +1524,42 @@ static void handleTwitchConnect(Service *service, HttpResponse *response, const 
     handleTwitchGet(service, response);
 }
 
+static void handleTwitchOptionsGet(Service *service, HttpResponse *response) {
+    TwitchConfig options;
+    ServiceResult r = serviceTwitchGetOptions(service, &options);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    JsonValue *obj = jsonNewObject();
+    jsonObjectSetBool(obj, "show-chat", options.showChat);
+    jsonObjectSetBool(obj, "send-chat", options.sendChat);
+    jsonObjectSetBool(obj, "announce-raids", options.announceRaids);
+    respondJson(response, 200, obj);
+}
+
+static void handleTwitchOptionsPatch(Service *service, HttpResponse *response, const char *body) {
+    static const char *KEYS[] = { "show-chat", "send-chat", "announce-raids" };
+    JsonValue *parsed = jsonParse(body);
+    if (jsonTypeOf(parsed) != JSON_OBJECT) {
+        jsonFree(parsed);
+        respondError(response, 400, "INVALID_PARAM", "Expected a JSON object");
+        return;
+    }
+    if (!hasOnlyKnownKeys(parsed, KEYS, (int)(sizeof(KEYS) / sizeof(KEYS[0])))) {
+        jsonFree(parsed);
+        respondError(response, 400, "INVALID_PARAM", "Unknown field");
+        return;
+    }
+
+    TwitchOptionsPatch patch = {};
+    BOOL_FIELD("show-chat", hasShowChat, showChat);
+    BOOL_FIELD("send-chat", hasSendChat, sendChat);
+    BOOL_FIELD("announce-raids", hasAnnounceRaids, announceRaids);
+    jsonFree(parsed);
+
+    ServiceResult r = serviceTwitchUpdateOptions(service, &patch);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    handleTwitchOptionsGet(service, response);
+}
+
 static bool isExact(const char *sub, const char *seg) {
     return strcmp(sub, seg) == 0;
 }
@@ -1856,6 +1851,12 @@ static void route(Service *service, const HttpRequest *request, HttpResponse *re
     if (isExact(sub, "/twitch")) {
         if (strcmp(method, "GET") != 0) { respondNotFound(response); return; }
         handleTwitchGet(service, response);
+        return;
+    }
+    if (isExact(sub, "/twitch/options")) {
+        if (strcmp(method, "GET") == 0) handleTwitchOptionsGet(service, response);
+        else if (strcmp(method, "PATCH") == 0) handleTwitchOptionsPatch(service, response, body);
+        else respondNotFound(response);
         return;
     }
     if (isExact(sub, "/twitch/connect")) {

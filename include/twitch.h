@@ -33,10 +33,10 @@ typedef struct {
     int  viewerCount;
 } TwitchStream;
 
-typedef void (*TwitchTokenHandler)(TwitchClient *client, void *userData);
+typedef void (*TwitchTokenHandler)(TwitchClient *client, void *context);
 TwitchClient *twitchCreate(const char *clientId, const char *token);
 void twitchDestroy(TwitchClient *client);
-void twitchSetTokenHandler(TwitchClient *client, TwitchTokenHandler handler, void *userData);
+void twitchSetTokenHandler(TwitchClient *client, TwitchTokenHandler handler, void *context);
 const char *twitchClientId(const TwitchClient *client);
 const char *twitchLogin(const TwitchClient *client);
 const char *twitchLastError(const TwitchClient *client);

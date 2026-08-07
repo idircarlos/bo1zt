@@ -52,7 +52,7 @@ static TwitchResult storeTokenPair(TwitchClient *client, const JsonValue *respon
     client->login[0] = '\0';
     client->userId[0] = '\0';
 
-    if (client->listener.handler) client->listener.handler(client, client->listener.userData);
+    if (client->listener.handler) client->listener.handler(client, client->listener.context);
     return TWITCH_OK;
 }
 

@@ -21,8 +21,17 @@ typedef struct {
     char error[256];
 } ClientTwitchConnection;
 
+typedef struct {
+    bool showChat;
+    bool sendChat;
+    bool announceRaids;
+} ClientTwitchOptions;
+
 ClientResult clientGetTwitchConnection(Client *client, ClientTwitchConnection *out);
 ClientResult clientTwitchConnect(Client *client, const char *clientId);
 ClientResult clientTwitchDisconnect(Client *client);
+
+ClientResult clientGetTwitchOptions(Client *client, ClientTwitchOptions *out);
+ClientResult clientTwitchSetOption(Client *client, const char *option, bool enabled);
 
 #endif // CLIENT_TWITCH_H_

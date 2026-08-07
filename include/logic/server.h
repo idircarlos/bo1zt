@@ -3,6 +3,8 @@
 
 #include "controller.h"
 
+#define SERVER_BO1ZT_MSG_PREFIX "^0[^1bo1zt^0]^7 "
+
 typedef struct Server Server;
 
 Server *serverCreate(Controller *controller);

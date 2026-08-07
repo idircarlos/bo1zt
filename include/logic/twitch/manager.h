@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+typedef struct Controller Controller;
 typedef struct TwitchManager TwitchManager;
 
 typedef enum {
@@ -29,10 +30,11 @@ typedef enum {
     TWITCH_MANAGER_BUSY,
 } TwitchManagerResult;
 
-TwitchManager *twitchManagerCreate(void);
+TwitchManager *twitchManagerCreate(Controller *controller);
 void twitchManagerDestroy(TwitchManager *manager);
 TwitchManagerResult twitchManagerConnect(TwitchManager *manager, const char *clientId);
 void twitchManagerDisconnect(TwitchManager *manager);
 void twitchManagerGetConnection(TwitchManager *manager, TwitchConnection *out);
+void twitchManagerSendChatMessage(TwitchManager *manager, const char *message);
 
 #endif // TWITCH_MANAGER_H_

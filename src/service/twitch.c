@@ -42,3 +42,22 @@ ServiceResult serviceTwitchDisconnect(Service *service) {
     twitchManagerDisconnect(manager);
     return SERVICE_OK;
 }
+
+ServiceResult serviceTwitchGetOptions(Service *service, TwitchConfig *out) {
+    if (!service || !out) return SERVICE_INVALID_PARAM;
+    *out = controllerGetTwitchConfig(service->controller);
+    return SERVICE_OK;
+}
+
+ServiceResult serviceTwitchUpdateOptions(Service *service, const TwitchOptionsPatch *patch) {
+    if (!service || !patch) return SERVICE_INVALID_PARAM;
+    Config *config = controllerGetConfig(service->controller);
+    if (!config) return SERVICE_ENGINE_FAILED;
+
+    if (patch->hasShowChat)      config->twitch.showChat = patch->showChat;
+    if (patch->hasSendChat)      config->twitch.sendChat = patch->sendChat;
+    if (patch->hasAnnounceRaids) config->twitch.announceRaids = patch->announceRaids;
+
+    configSave(config);
+    return SERVICE_OK;
+}

@@ -9,7 +9,7 @@
 
 #define SV_CMD_FORMAT_LENGTH 256
 
-#define SV_CMD_MSG_FORMAT "%c \"^0[^1bo1zt^0]^7 %s\""
+#define SV_CMD_MSG_FORMAT "%c \"%s\""
 #define SV_CMD_MSG_CENTER_KEY 'c'
 #define SV_CMD_MSG_CHAT_KEY 'h'
 #define SV_CMD_MSG_KILLFEED_KEY 'e'

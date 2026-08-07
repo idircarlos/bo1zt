@@ -1,6 +1,7 @@
 #include "logic/event.h"
 #include "logic/command/manager.h"
 #include "logic/gsc.h"
+#include "logic/twitch/manager.h"
 #include "controller.h"
 #include "controller/controller_internal.h"
 #include "logic/game.h"
@@ -55,6 +56,10 @@ bool eventHandle(Event event) {
 
 static bool eventHandleChatMessage(Event event) {
     Command command = commandBuild(commandManager, event.data.chat.message);
+    if (command.name == COMMAND_NONE) {
+        twitchManagerSendChatMessage(controllerGetTwitchManager(controller), event.data.chat.message);
+        return true;
+    }
     return commandHandle(command);
 }
 

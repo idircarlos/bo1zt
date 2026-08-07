@@ -67,6 +67,7 @@ GraphicsConfig controllerGetGraphicsConfig(Controller *controller);
 CustomizerConfig controllerGetCustomizerConfig(Controller *controller);
 WidgetConfig controllerGetWidgetConfig(Controller *controller, int index);
 BindsConfig controllerGetBindsConfig(Controller *controller);
+TwitchConfig controllerGetTwitchConfig(Controller *controller);
 Config *controllerGetConfig(Controller *controller);
 void controllerResetConfig(Controller *controller, ConfigType type);
 void controllerResetWidgetConfig(Controller *controller, int index);

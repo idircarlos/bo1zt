@@ -61,7 +61,7 @@ bool commandFovHandle(Command command) {
     }
 
     if (command.argc == 1) {
-        snprintf(buffer, 64, "FOV: %d", config.fov);
+        snprintf(buffer, 64, SERVER_BO1ZT_MSG_PREFIX "FOV: %d", config.fov);
         serverChatMessage(server, buffer);
         clientDestroy(client);
         return true;
@@ -69,7 +69,7 @@ bool commandFovHandle(Command command) {
 
     int fov = atoi(command.argv[1]);
     if (!fov) {
-        serverChatMessage(server, "That's an invalid value!");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "That's an invalid value!");
         clientDestroy(client);
         return false;
     }
@@ -92,7 +92,7 @@ bool commandFovscaleHandle(Command command) {
     }
 
     if (command.argc == 1) {
-        snprintf(buffer, 64, "FOV Scale: %d", config.fovScale);
+        snprintf(buffer, 64, SERVER_BO1ZT_MSG_PREFIX "FOV Scale: %d", config.fovScale);
         serverChatMessage(server, buffer);
         clientDestroy(client);
         return true;
@@ -100,7 +100,7 @@ bool commandFovscaleHandle(Command command) {
 
     int fovScale = atoi(command.argv[1]);
     if (fovScale <= 0) {
-        serverChatMessage(server, "Invalid FOV Scale value!");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Invalid FOV Scale value!");
         clientDestroy(client);
         return false;
     }
@@ -123,7 +123,7 @@ bool commandFpsHandle(Command command) {
     }
 
     if (command.argc == 1) {
-        snprintf(buffer, 64, "FPS Cap: %d", config.fpsCap);
+        snprintf(buffer, 64, SERVER_BO1ZT_MSG_PREFIX "FPS Cap: %d", config.fpsCap);
         serverChatMessage(server, buffer);
         clientDestroy(client);
         return true;
@@ -131,7 +131,7 @@ bool commandFpsHandle(Command command) {
 
     int fpsCap = atoi(command.argv[1]);
     if (fpsCap <= 0) {
-        serverChatMessage(server, "Invalid FPS value!");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Invalid FPS value!");
         clientDestroy(client);
         return false;
     }

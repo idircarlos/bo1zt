@@ -61,3 +61,30 @@ ClientResult clientTwitchConnect(Client *client, const char *clientId) {
 ClientResult clientTwitchDisconnect(Client *client) {
     return clientRequest(client, "POST", CLIENT_API_BASE "/twitch/disconnect", NULL, NULL);
 }
+
+ClientResult clientGetTwitchOptions(Client *client, ClientTwitchOptions *out) {
+    if (!out) return CLIENT_ERR_INVALID_PARAM;
+    JsonValue *body = NULL;
+    ClientResult r = clientRequest(client, "GET", CLIENT_API_BASE "/twitch/options", NULL, &body);
+    if (r != CLIENT_OK) return r;
+    if (!body) return CLIENT_ERR_PROTOCOL;
+
+    out->showChat = jsonObjectGetBool(body, "show-chat", false);
+    out->sendChat = jsonObjectGetBool(body, "send-chat", false);
+    out->announceRaids = jsonObjectGetBool(body, "announce-raids", false);
+    jsonFree(body);
+    return CLIENT_OK;
+}
+
+ClientResult clientTwitchSetOption(Client *client, const char *option, bool enabled) {
+    if (!option) return CLIENT_ERR_INVALID_PARAM;
+    JsonValue *obj = jsonNewObject();
+    jsonObjectSetBool(obj, option, enabled);
+    char *reqBody = jsonSerialize(obj);
+    jsonFree(obj);
+    if (!reqBody) return CLIENT_ERR_PROTOCOL;
+
+    ClientResult r = clientRequest(client, "PATCH", CLIENT_API_BASE "/twitch/options", reqBody, NULL);
+    free(reqBody);
+    return r;
+}

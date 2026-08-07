@@ -23,11 +23,11 @@ typedef struct {
     int viewerCount;
 } TwitchEvent;
 
-typedef void (*TwitchEventHandler)(const TwitchEvent *event, void *userData);
+typedef void (*TwitchEventHandler)(const TwitchEvent *event, void *context);
 TwitchEventSub *twitchEventSubConnect(TwitchClient *client, const char *channel);
 void twitchEventSubShutdown(TwitchEventSub *session);
 void twitchEventSubDisconnect(TwitchEventSub *session);
-TwitchResult twitchEventSubPoll(TwitchEventSub *session, TwitchEventHandler handler, void *userData);
+TwitchResult twitchEventSubPoll(TwitchEventSub *session, TwitchEventHandler handler, void *context);
 TwitchResult twitchEventSubSendMessage(TwitchEventSub *session, const char *text);
 
 #endif // TWITCH_EVENTSUB_H_

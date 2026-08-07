@@ -203,7 +203,7 @@ static bool readEvent(const char *subscriptionType, const JsonValue *json, Twitc
 }
 
 static TwitchResult dispatch(TwitchEventSub *session, const char *frame,
-                             TwitchEventHandler handler, void *userData) {
+                             TwitchEventHandler handler, void *context) {
     JsonValue *root = jsonParse(frame);
     if (!root) {
         setError(session, "malformed EventSub frame");
@@ -219,7 +219,7 @@ static TwitchResult dispatch(TwitchEventSub *session, const char *frame,
         TwitchEvent event;
         if (readEvent(jsonObjectGetString(metadata, "subscription_type", ""),
                       jsonObjectGet(payload, "event"), &event)) {
-            handler(&event, userData);
+            handler(&event, context);
         }
     } else if (strcmp(messageType, "session_reconnect") == 0) {
         JsonValue *info = jsonObjectGet(payload, "session");
@@ -288,14 +288,14 @@ void twitchEventSubDisconnect(TwitchEventSub *session) {
 }
 
 TwitchResult twitchEventSubPoll(TwitchEventSub *session, TwitchEventHandler handler,
-                                void *userData) {
+                                void *context) {
     if (!session || !handler) return TWITCH_ERR_INVALID_PARAM;
 
     char frame[EVENTSUB_FRAME_SIZE];
     TwitchResult r = receiveFrame(session, session->socket, frame, (int)sizeof(frame));
     if (r != TWITCH_OK) return r;
 
-    return dispatch(session, frame, handler, userData);
+    return dispatch(session, frame, handler, context);
 }
 
 TwitchResult twitchEventSubSendMessage(TwitchEventSub *session, const char *text) {

@@ -75,6 +75,12 @@ typedef struct {
 } HacksConfig;
 
 typedef struct {
+    bool showChat;
+    bool sendChat;
+    bool announceRaids;
+} TwitchConfig;
+
+typedef struct {
     char keyName[MAX_KEY_NAME_LENGTH];
     char command[MAX_COMMAND_LENGTH];
 } KeyBindConfig;
@@ -89,6 +95,7 @@ typedef struct {
     GraphicsConfig graphics;
     CustomizerConfig customizer;
     HacksConfig hacks;
+    TwitchConfig twitch;
     WidgetConfig widgets[N_CONFIG_WIDGETS];
     BindsConfig binds;
 } Config;
@@ -110,6 +117,7 @@ void configResetCustomizer(Config *config);
 void configResetWidget(Config *config, int index);
 void configResetBinds(Config *config);
 void configResetHacks(Config *config);
+void configResetTwitch(Config *config);
 void configDestroy(Config *config);
 
 #endif // CONFIG_H_

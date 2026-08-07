@@ -44,7 +44,7 @@ void controllerInitManagers(Controller *controller) {
     if (!controller->widgetManager) controller->widgetManager = widgetManagerCreate(controller);
     if (!controller->bindManager) controller->bindManager = bindManagerCreate(controller);
     if (!controller->camoManager) controller->camoManager = camoManagerCreate();
-    if (!controller->twitchManager) controller->twitchManager = twitchManagerCreate();
+    if (!controller->twitchManager) controller->twitchManager = twitchManagerCreate(controller);
 }
 
 void controllerUpdateManagers(Controller *controller) {
@@ -131,9 +131,9 @@ bool controllerAttachGame(Controller *controller) {
     controller->state->gameResets = engineGetGameResets(controller->engine);
 
     if (controllerIsGameRunning(controller) && controllerIsZombiesGameOngoing(controller)) {
-        serverChatMessage(controller->server, "Zombies game is already in progress...");
-        serverChatMessage(controller->server, "Some functionalities may not work.");
-        serverChatMessage(controller->server, "You might want to /restart the run!");
+        serverChatMessage(controller->server, SERVER_BO1ZT_MSG_PREFIX "Zombies game is already in progress...");
+        serverChatMessage(controller->server, SERVER_BO1ZT_MSG_PREFIX "Some functionalities may not work.");
+        serverChatMessage(controller->server, SERVER_BO1ZT_MSG_PREFIX "You might want to /restart the run!");
         
         // Initialize activeGame with current game state when attaching mid-game
         Game *activeGame = &controller->state->activeGame;
@@ -480,6 +480,10 @@ WidgetConfig controllerGetWidgetConfig(Controller *controller, int index) {
 
 BindsConfig controllerGetBindsConfig(Controller *controller) {
     return controller->config->binds;
+}
+
+TwitchConfig controllerGetTwitchConfig(Controller *controller) {
+    return controller->config->twitch;
 }
 
 Config *controllerGetConfig(Controller *controller) {

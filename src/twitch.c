@@ -48,10 +48,10 @@ void twitchDestroy(TwitchClient *client) {
     if (client) free(client);
 }
 
-void twitchSetTokenHandler(TwitchClient *client, TwitchTokenHandler handler, void *userData) {
+void twitchSetTokenHandler(TwitchClient *client, TwitchTokenHandler handler, void *context) {
     if (!client) return;
     client->listener.handler = handler;
-    client->listener.userData = userData;
+    client->listener.context = context;
 }
 
 const char *twitchClientId(const TwitchClient *client) {

@@ -169,6 +169,11 @@ static bool configLoad(Config *config) {
     config->hacks.boxNeverMoves = iniparser_getboolean(dictionary, "Hacks:BoxNeverMoves", config->hacks.boxNeverMoves);
     config->hacks.thirdPerson = iniparser_getboolean(dictionary, "Hacks:ThirdPerson", config->hacks.thirdPerson);
 
+    configResetTwitch(config);
+    config->twitch.showChat = iniparser_getboolean(dictionary, "Twitch:ShowChat", config->twitch.showChat);
+    config->twitch.sendChat = iniparser_getboolean(dictionary, "Twitch:SendChat", config->twitch.sendChat);
+    config->twitch.announceRaids = iniparser_getboolean(dictionary, "Twitch:AnnounceRaids", config->twitch.announceRaids);
+
     iniparser_freedict(dictionary);
     return true;
 }
@@ -287,6 +292,11 @@ bool configSave(Config *config) {
     ret += iniparser_set(dictionary, "Hacks:BoxNeverMoves", strfmt(valueBuffer, "%d", config->hacks.boxNeverMoves));
     ret += iniparser_set(dictionary, "Hacks:ThirdPerson", strfmt(valueBuffer, "%d", config->hacks.thirdPerson));
 
+    ret += iniparser_set(dictionary, "Twitch", NULL);
+    ret += iniparser_set(dictionary, "Twitch:ShowChat", strfmt(valueBuffer, "%d", config->twitch.showChat));
+    ret += iniparser_set(dictionary, "Twitch:SendChat", strfmt(valueBuffer, "%d", config->twitch.sendChat));
+    ret += iniparser_set(dictionary, "Twitch:AnnounceRaids", strfmt(valueBuffer, "%d", config->twitch.announceRaids));
+
     if (ret < 0) {
         LOG_ERROR("Error setting ini values");
         return false;
@@ -302,6 +312,7 @@ void configReset(Config *config) {
     configResetGraphics(config);
     configResetCustomizer(config);
     configResetHacks(config);
+    configResetTwitch(config);
     for (int i = 0; i < N_CONFIG_WIDGETS; i++) {
         configResetWidget(config, i);
     }
@@ -390,6 +401,15 @@ void configResetHacks(Config *config) {
         .thirdPerson = false,
     };
     config->hacks = hacks;
+}
+
+void configResetTwitch(Config *config) {
+    TwitchConfig twitch = {
+        .showChat = true,
+        .sendChat = true,
+        .announceRaids = true,
+    };
+    config->twitch = twitch;
 }
 
 void configDestroy(Config *config) {

@@ -1,4 +1,7 @@
 #include "logic/twitch/manager.h"
+#include "logic/server.h"
+#include "controller.h"
+#include "controller/controller_internal.h"
 #include "twitch.h"
 #include "twitch/auth.h"
 #include "twitch/eventsub.h"
@@ -12,9 +15,13 @@
 #include <string.h>
 
 #define SESSION_JOIN_TIMEOUT_MS 5000
+#define SEND_CHAT_MESSAGE_SIZE 512
+#define GAME_CHAT_LINE_SIZE 200
+#define GAME_CHAT_NAME_SIZE 80
 
 struct TwitchManager {
     CRITICAL_SECTION lock;
+    Controller *controller;
     TwitchClient *client;
     TwitchEventSub *session;
     Thread *sessionThread;
@@ -23,6 +30,11 @@ struct TwitchManager {
     volatile bool working;
     volatile bool stopping;
 };
+
+typedef struct {
+    TwitchManager *manager;
+    char text[SEND_CHAT_MESSAGE_SIZE];
+} SendChatMessageArgs;
 
 static void setState(TwitchManager *manager, TwitchConnectionState state) {
     EnterCriticalSection(&manager->lock);
@@ -39,8 +51,8 @@ static void failWith(TwitchManager *manager, const char *message) {
     LeaveCriticalSection(&manager->lock);
 }
 
-static void onTokensChanged(TwitchClient *client, void *userData) {
-    TwitchManager *manager = (TwitchManager *)userData;
+static void onTokensChanged(TwitchClient *client, void *context) {
+    TwitchManager *manager = (TwitchManager *)context;
     if (!twitchAuthSave(client)) {
         LOG_ERROR("Twitch: the authorization could not be stored");
         return;
@@ -52,14 +64,70 @@ static void onTokensChanged(TwitchClient *client, void *userData) {
     LeaveCriticalSection(&manager->lock);
 }
 
-static void onEvent(const TwitchEvent *event, void *userData) {
-    (void)userData;
+// Chatters control this text and it ends up inside a quoted server command.
+static void sanitize(char *text) {
+    for (char *c = text; *c; c++) {
+        if (*c == '"') *c = '\'';
+        if (*c == '\n' || *c == '\r' || *c == ';') *c = ' ';
+    }
+}
+
+static void sendChatLines(Server *server, const char *name, const char *text) {
+    char line[GAME_CHAT_LINE_SIZE];
+    while (*text) {
+        size_t room = sizeof(line) - strlen(name) - 1;
+        size_t taken = strlen(text);
+        if (taken > room) taken = room;
+        snprintf(line, sizeof(line), "%s%.*s", name, (int)taken, text);
+        sanitize(line);
+        serverChatMessage(server, line);
+        text += taken;
+        name = "";
+    }
+}
+
+static void showChatMessage(TwitchManager *manager, const TwitchEvent *event) {
+    char name[GAME_CHAT_NAME_SIZE];
+    snprintf(name, sizeof(name), "%s: ", event->chatter.displayName);
+    sendChatLines(_controllerGetServer(manager->controller), name, event->text);
+}
+
+static void announceRaid(TwitchManager *manager, const TwitchEvent *event) {
+    char line[GAME_CHAT_LINE_SIZE];
+    snprintf(line, sizeof(line), SERVER_BO1ZT_MSG_PREFIX "%s is raiding with %d viewers!",
+             event->chatter.displayName, event->viewerCount);
+    sanitize(line);
+    serverCenterMessage(_controllerGetServer(manager->controller), line);
+}
+
+// Whatever we forward to Twitch comes back through our own chat subscription.
+static bool isOwnChatter(TwitchManager *manager, const char *login) {
+    EnterCriticalSection(&manager->lock);
+    bool own = manager->connection.login[0] && strcmp(login, manager->connection.login) == 0;
+    LeaveCriticalSection(&manager->lock);
+    return own;
+}
+
+static void onEvent(const TwitchEvent *event, void *context) {
+    TwitchManager *manager = (TwitchManager *)context;
     if (event->type == TWITCH_EVENT_RAID) {
         LOG_INFO("Twitch: %s raids with %d viewers", event->chatter.displayName,
                  event->viewerCount);
+    } else {
+        LOG_DEBUG("Twitch: %s: %s", event->chatter.displayName, event->text);
+    }
+
+    if (!controllerIsGameAttached(manager->controller) ||
+        !controllerIsGameReady(manager->controller)) return;
+
+    TwitchConfig config = controllerGetTwitchConfig(manager->controller);
+    if (event->type == TWITCH_EVENT_RAID) {
+        if (config.announceRaids) announceRaid(manager, event);
         return;
     }
-    LOG_DEBUG("Twitch: %s: %s", event->chatter.displayName, event->text);
+    if (config.showChat && !(config.sendChat && isOwnChatter(manager, event->chatter.login))) {
+        showChatMessage(manager, event);
+    }
 }
 
 // Returns false when a disconnect came in while sleeping.
@@ -176,13 +244,14 @@ static int sessionThreadProc(void *data) {
     return 0;
 }
 
-TwitchManager *twitchManagerCreate(void) {
+TwitchManager *twitchManagerCreate(Controller *controller) {
     TwitchManager *manager = (TwitchManager *)calloc(1, sizeof(TwitchManager));
     if (!manager) {
         LOG_ERROR("Couldn't allocate TwitchManager");
         return NULL;
     }
     InitializeCriticalSection(&manager->lock);
+    manager->controller = controller;
 
     manager->client = twitchAuthLoad();
     if (manager->client) {
@@ -279,4 +348,33 @@ void twitchManagerGetConnection(TwitchManager *manager, TwitchConnection *out) {
     EnterCriticalSection(&manager->lock);
     *out = manager->connection;
     LeaveCriticalSection(&manager->lock);
+}
+
+static int sendChatMessageThreadProc(void *context) {
+    SendChatMessageArgs *args = (SendChatMessageArgs *)context;
+    TwitchManager *manager = args->manager;
+
+    EnterCriticalSection(&manager->lock);
+    TwitchEventSub *session = manager->session;
+    LeaveCriticalSection(&manager->lock);
+
+    if (session && twitchEventSubSendMessage(session, args->text) != TWITCH_OK) {
+        LOG_ERROR("Twitch: %s", twitchLastError(manager->client));
+    }
+    free(args);
+    return 0;
+}
+
+// Helix makes the sender wait, so callers never pay for it on their own thread.
+void twitchManagerSendChatMessage(TwitchManager *manager, const char *message) {
+    if (!manager || !message || !message[0]) return;
+    if (!controllerGetTwitchConfig(manager->controller).sendChat) return;
+
+    SendChatMessageArgs *args = (SendChatMessageArgs *)malloc(sizeof(SendChatMessageArgs));
+    if (!args) return;
+    args->manager = manager;
+    snprintf(args->text, sizeof(args->text), "%s", message);
+
+    Thread *thread = threadCreate(sendChatMessageThreadProc, args);
+    threadClose(thread);
 }

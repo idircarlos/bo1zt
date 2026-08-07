@@ -13,7 +13,7 @@ static void notifyCheatFailed(CheatManager *manager) {
     if (!manager || !manager->controller) return;
     Server *server = _controllerGetServer(manager->controller);
     if (server) {
-        serverChatMessage(server, "Cheat failed to apply");
+        serverChatMessage(server, SERVER_BO1ZT_MSG_PREFIX "Cheat failed to apply");
     }
 }
 

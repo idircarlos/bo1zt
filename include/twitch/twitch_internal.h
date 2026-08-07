@@ -12,7 +12,7 @@
 
 typedef struct {
     TwitchTokenHandler handler;
-    void *userData;
+    void *context;
 } TwitchListener;
 
 struct TwitchClient {
