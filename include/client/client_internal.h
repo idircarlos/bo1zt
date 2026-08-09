@@ -3,7 +3,8 @@
 
 #include "client.h"
 #include "utils/json.h"
-#include "utils/common.h" // Color, Rect
+#include "utils/color.h"
+#include "utils/common.h" // Rect
 
 #define CLIENT_API_BASE "/api/v1"
 #define CLIENT_ERROR_MAX 128
@@ -19,9 +20,9 @@ ClientResult clientRequest(Client *client, const char *method, const char *path,
 
 void clientClearError(Client *client);
 
-JsonValue *clientColorJson(Color color);
+JsonValue *clientColorJson(RGBAColor color);
 JsonValue *clientRectJson(Rect rect);
-bool clientParseColor(const JsonValue *obj, Color *out);
+bool clientParseColor(const JsonValue *obj, RGBAColor *out);
 bool clientParseRect(const JsonValue *obj, Rect *out);
 
 #endif // CLIENT_INTERNAL_H_

@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <stdbool.h>
+#include "utils/color.h"
 #include "utils/common.h"
 
 typedef struct WidgetVTable WidgetVTable;
@@ -18,6 +19,6 @@ void widgetSetPosition(Widget* widget, Rect rect);
 int widgetGetFontSize(const Widget *widget);
 void widgetSetFontSize(Widget* widget, int fontSize);
 void widgetSetFont(Widget* widget, const char* face);
-void widgetSetTextColor(Widget* widget, Color color);
+void widgetSetTextColor(Widget* widget, RGBAColor color);
 
 #endif // WIDGET_H_

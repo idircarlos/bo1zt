@@ -52,7 +52,7 @@ static ULONGLONG lastPoll = 0;
 
 // --- Helpers ----------------------------------------------------------------
 
-static bool colorEquals(Color a, Color b) {
+static bool colorEquals(RGBAColor a, RGBAColor b) {
     return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
 }
 
@@ -270,7 +270,7 @@ uiControl *uiWidgetsBuild(Client *clientInstance, uiWindow *parentInstance) {
     }
     uiComboboxSetSelected(widgetFontCombobox, 0);
 
-    colorLabel = uiNewLabel("Color ");
+    colorLabel = uiNewLabel("RGBAColor ");
     widgetColorBtn = uiNewColorButton();
     hideOutsideGameCheckbox = uiNewCheckbox(" Hide Outside Game");
     btnReset = uiNewButton("Reset");

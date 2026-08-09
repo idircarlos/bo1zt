@@ -13,6 +13,7 @@
 #include "client/widgets.h"
 #include "client/binds.h"
 #include "client/actions.h"
+#include "client/twitch.h"
 #include "service.h"
 
 #include "argparse.h"
@@ -241,7 +242,7 @@ static int cmdHealth(Client *client) {
     return 0;
 }
 
-static void printColorLine(const char *name, Color c) {
+static void printColorLine(const char *name, RGBAColor c) {
     printf("%s: %d,%d,%d,%d\n", name, c.r, c.g, c.b, c.a);
 }
 
@@ -776,6 +777,102 @@ static int cmdTrade(Client *client, const Namespace *ns) {
     return 2;
 }
 
+static const char *TWITCH_STATE_NAMES[] = {
+    "disconnected",
+    "awaiting-authorization",
+    "connecting",
+    "connected",
+};
+
+static const char *TWITCH_OPTION_KEYS[] = { "show-chat", "send-chat", "announce-raids" };
+
+static bool isTwitchOptionKey(const char *key) {
+    for (size_t i = 0; i < sizeof(TWITCH_OPTION_KEYS) / sizeof(TWITCH_OPTION_KEYS[0]); i++) {
+        if (strcmp(key, TWITCH_OPTION_KEYS[i]) == 0) return true;
+    }
+    return false;
+}
+
+static void printTwitchConnection(const ClientTwitchConnection *c) {
+    printf("state: %s\n", TWITCH_STATE_NAMES[c->state]);
+    printf("authorized: %s\n", c->authorized ? "yes" : "no");
+    printf("client-id: %s\n", c->clientId[0] ? c->clientId : "-");
+    printf("login: %s\n", c->login[0] ? c->login : "-");
+    printf("display-name: %s\n", c->displayName[0] ? c->displayName : "-");
+    printf("user-code: %s\n", c->userCode[0] ? c->userCode : "-");
+    printf("verification-uri: %s\n", c->verificationUri[0] ? c->verificationUri : "-");
+    printf("error: %s\n", c->error[0] ? c->error : "-");
+}
+
+static int showTwitchConnection(Client *client) {
+    ClientTwitchConnection connection;
+    ClientResult r = clientGetTwitchConnection(client, &connection);
+    if (r != CLIENT_OK) return reportClientError(client, r);
+    printTwitchConnection(&connection);
+    return 0;
+}
+
+static int cmdTwitchOptions(Client *client, const Namespace *ns) {
+    size_t count = GetCount(ns, "args");
+    if (count == 0) {
+        ClientTwitchOptions options;
+        ClientResult r = clientGetTwitchOptions(client, &options);
+        if (r != CLIENT_OK) return reportClientError(client, r);
+        printf("show-chat: %s\n", options.showChat ? "on" : "off");
+        printf("send-chat: %s\n", options.sendChat ? "on" : "off");
+        printf("announce-raids: %s\n", options.announceRaids ? "on" : "off");
+        return 0;
+    }
+
+    for (size_t i = 0; i < count; i++) {
+        const char *token = GetStringAt(ns, "args", i);
+        const char *eq = token ? strchr(token, '=') : NULL;
+        if (!eq || eq == token || eq[1] == '\0') {
+            fprintf(stderr, "error: expected KEY=on|off, got '%s'\n", token ? token : "");
+            return 2;
+        }
+        char key[64];
+        size_t n = (size_t)(eq - token);
+        if (n >= sizeof(key)) n = sizeof(key) - 1;
+        memcpy(key, token, n);
+        key[n] = '\0';
+        if (!isTwitchOptionKey(key)) {
+            fprintf(stderr, "error: unknown twitch option '%s' "
+                            "(show-chat|send-chat|announce-raids)\n", key);
+            return 2;
+        }
+        const char *value = eq + 1;
+        if (strcmp(value, "on") != 0 && strcmp(value, "off") != 0) {
+            fprintf(stderr, "error: %s expects on|off\n", key);
+            return 2;
+        }
+        ClientResult r = clientTwitchSetOption(client, key, strcmp(value, "on") == 0);
+        if (r != CLIENT_OK) return reportClientError(client, r);
+    }
+    printf("set %zu option(s)\n", count);
+    return 0;
+}
+
+static int cmdTwitch(Client *client, const Namespace *ns) {
+    const char *action = GetString(ns, "action");
+    if (!action || strcmp(action, "status") == 0) return showTwitchConnection(client);
+    if (strcmp(action, "options") == 0) return cmdTwitchOptions(client, ns);
+    if (strcmp(action, "connect") == 0) {
+        const char *clientId = GetCount(ns, "args") > 0 ? GetStringAt(ns, "args", 0) : NULL;
+        ClientResult r = clientTwitchConnect(client, clientId);
+        if (r != CLIENT_OK) return reportClientError(client, r);
+        return showTwitchConnection(client);
+    }
+    if (strcmp(action, "disconnect") == 0) {
+        ClientResult r = clientTwitchDisconnect(client);
+        if (r != CLIENT_OK) return reportClientError(client, r);
+        printf("disconnected\n");
+        return 0;
+    }
+    fprintf(stderr, "error: unknown twitch action '%s'\n", action);
+    return 2;
+}
+
 static void buildParser(Parser *p) {
     SetDescription(p, "bo1zt CLI - control a running bo1zt instance over HTTP.");
 
@@ -856,6 +953,15 @@ static void buildParser(Parser *p) {
     ArgHelp(ArgNargs(AddArgument(widgets, "set", NULL), NARGS_ZERO_OR_MORE),
             "assignments, e.g. enabled=on font=\"Arial\" font-size=48 "
             "color=255,0,0,255 hide-outside-game=off rect=200,200,300,100");
+
+    Parser *twitch = AddParser(sp, "twitch", "Twitch integration (status, connect, disconnect, options)");
+    Argument *twitchAction = AddArgument(twitch, "action", NULL);
+    ArgNargs(twitchAction, NARGS_OPTIONAL);
+    ArgChoices(twitchAction, "status", "connect", "disconnect", "options", NULL);
+    ArgHelp(twitchAction, "status (default), connect, disconnect, or options");
+    ArgHelp(ArgNargs(AddArgument(twitch, "args", NULL), NARGS_ZERO_OR_MORE),
+            "for 'connect': Client-ID (omit to reuse the stored authorization); "
+            "for 'options': KEY=on|off, e.g. show-chat=on");
 }
 
 int cliMain(int argc, char **argv) {
@@ -916,6 +1022,8 @@ int cliMain(int argc, char **argv) {
         rc = cmdStats(client, sub);
     } else if (strcmp(command, "trade") == 0) {
         rc = cmdTrade(client, sub);
+    } else if (strcmp(command, "twitch") == 0) {
+        rc = cmdTwitch(client, sub);
     }
 
     clientDestroy(client);

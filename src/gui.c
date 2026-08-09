@@ -228,13 +228,13 @@ void guiCleanup(void) {
     uiUninit();
 }
 
-Color buildColor(uiColorButton *button) {
+RGBAColor buildColor(uiColorButton *button) {
     double r, g, b, a;
     uiColorButtonColor(button, &r, &g, &b, &a);
-    Color color = colorCreate(r*255, g*255, b*255, a*255);
+    RGBAColor color = rgbaColorCreate(r*255, g*255, b*255, a*255);
     return color;
 }
 
-void setColorButton(uiColorButton *button, Color color) {
+void setColorButton(uiColorButton *button, RGBAColor color) {
     uiColorButtonSetColor(button, color.r / 255.0, color.g / 255.0, color.b / 255.0, 1.0);
 }

@@ -152,24 +152,6 @@ typedef struct {
     uintptr_t offset;
 } ServerCheat;
 
-typedef enum {
-    CHAT_COLOR_GRAY = 0x38,
-    CHAT_COLOR_LIGHT_GRAY = 0x3E,
-    CHAT_COLOR_WHITE = 0x37,
-    CHAT_COLOR_BLACK = 0x30,
-    CHAT_COLOR_RED = 0x31,
-    CHAT_COLOR_GREEN = 0x32,
-    CHAT_COLOR_YELLOW = 0x33,
-    CHAT_COLOR_ORANGE = 0x3C,
-    CHAT_COLOR_DARK_ORANGE = 0x40,
-    CHAT_COLOR_BROWN = 0x39,
-    CHAT_COLOR_CYAN = 0x35,
-    CHAT_COLOR_BLUE = 0x3D,
-    CHAT_COLOR_DARK_BLUE = 0x34,
-    CHAT_COLOR_PINK = 0x36,
-    CHAT_COLOR_PURPLE = 0x3F,
-} ChatColor;
-
 // Cheats box
 extern Cheat CHEAT_GOD_MODE;
 extern Cheat CHEAT_INVISIBLE;
@@ -244,8 +226,6 @@ extern ServerCheat SERVER_CHEAT_SEND_COMMAND;
 extern ServerCheat SERVER_CHEAT_CBUF_ADDTEXT;
 extern ServerCheat SERVER_CHEAT_GET_DVAR_PTR;
 
-int cheatGetChatColorIndex(ChatColor color);
-ChatColor cheatGetChatColor(int index);
 SimpleCheat cheatGetSimpleCheat(SimpleCheatName cheatName);
 CustomizerCheat cheatGetCustomizerCheat(SimpleCheatName cheatName);
 

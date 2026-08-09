@@ -1,4 +1,5 @@
 #include "logic/twitch/manager.h"
+#include "logic/twitch/color.h"
 #include "logic/server.h"
 #include "controller.h"
 #include "controller/controller_internal.h"
@@ -18,6 +19,8 @@
 #define SEND_CHAT_MESSAGE_SIZE 512
 #define GAME_CHAT_LINE_SIZE 200
 #define GAME_CHAT_NAME_SIZE 80
+
+#define GAME_CHAT_USER_FORMAT SERVER_CHAT_COLOR_FORMAT "%s" SERVER_CHAT_COLOR_FORMAT ": " // "^%c%s^%c: " 
 
 struct TwitchManager {
     CRITICAL_SECTION lock;
@@ -72,14 +75,16 @@ static void sanitize(char *text) {
     }
 }
 
+// The name is expected to be sanitized already, its color code must survive.
 static void sendChatLines(Server *server, const char *name, const char *text) {
     char line[GAME_CHAT_LINE_SIZE];
     while (*text) {
-        size_t room = sizeof(line) - strlen(name) - 1;
+        size_t prefix = strlen(name);
+        size_t room = sizeof(line) - prefix - 1;
         size_t taken = strlen(text);
         if (taken > room) taken = room;
         snprintf(line, sizeof(line), "%s%.*s", name, (int)taken, text);
-        sanitize(line);
+        sanitize(line + prefix);
         serverChatMessage(server, line);
         text += taken;
         name = "";
@@ -87,8 +92,13 @@ static void sendChatLines(Server *server, const char *name, const char *text) {
 }
 
 static void showChatMessage(TwitchManager *manager, const TwitchEvent *event) {
+    char chatter[GAME_CHAT_NAME_SIZE];
+    snprintf(chatter, sizeof(chatter), "%s", event->chatter.displayName);
+    sanitize(chatter);
+
     char name[GAME_CHAT_NAME_SIZE];
-    snprintf(name, sizeof(name), "%s: ", event->chatter.displayName);
+    snprintf(name, sizeof(name), GAME_CHAT_USER_FORMAT,
+             twitchColorToChatColor(event->chatter.color), chatter, CHAT_COLOR_WHITE);
     sendChatLines(_controllerGetServer(manager->controller), name, event->text);
 }
 

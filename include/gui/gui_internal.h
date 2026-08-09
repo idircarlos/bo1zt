@@ -2,8 +2,9 @@
 #define GUI_INTERNAL_H_
 
 #include "gui.h"
+#include "utils/color.h"
 
-Color buildColor(uiColorButton *button);
-void setColorButton(uiColorButton *button, Color color);
+RGBAColor buildColor(uiColorButton *button);
+void setColorButton(uiColorButton *button, RGBAColor color);
 
 #endif // GUI_INTERNAL_H_

@@ -3,6 +3,7 @@
 
 #include "service.h"
 #include "logic/config.h"
+#include "utils/color.h"
 
 int serviceWidgetCount(void);
 const char *serviceWidgetNameAt(int index);
@@ -16,7 +17,7 @@ typedef struct {
     bool hasEnabled;         bool enabled;
     bool hasFont;            const char *font;
     bool hasFontSize;        int fontSize;
-    bool hasTextColor;       Color textColor;
+    bool hasTextColor;       RGBAColor textColor;
     bool hasHideOutsideGame; bool hideOutsideGame;
     bool hasRect;            Rect rect;
 } WidgetPatch;

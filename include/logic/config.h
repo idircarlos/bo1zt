@@ -2,6 +2,7 @@
 #define CONFIG_H_
 
 #include "logic/cheat.h"
+#include "utils/color.h"
 #include "utils/common.h"
 #include <stdbool.h>
 
@@ -31,17 +32,17 @@ typedef struct {
 } GraphicsConfig;
 
 typedef struct {
-    Color scoreBackground;
-    Color scorePlayer1;
-    Color scorePlayer2;
-    Color scorePlayer3;
-    Color scorePlayer4;
-    Color reloadWarnPrimary;
-    Color reloadWarnSecondary;
-    Color lowAmmoWarnPrimary;
-    Color lowAmmoWarnSecondary;
-    Color noAmmoWarnPrimary;
-    Color noAmmoWarnSecondary;
+    RGBAColor scoreBackground;
+    RGBAColor scorePlayer1;
+    RGBAColor scorePlayer2;
+    RGBAColor scorePlayer3;
+    RGBAColor scorePlayer4;
+    RGBAColor reloadWarnPrimary;
+    RGBAColor reloadWarnSecondary;
+    RGBAColor lowAmmoWarnPrimary;
+    RGBAColor lowAmmoWarnSecondary;
+    RGBAColor noAmmoWarnPrimary;
+    RGBAColor noAmmoWarnSecondary;
     int scoreboardTransparency;
     int pointsTransparency;
     int warningTransitionsFrequency;
@@ -52,7 +53,7 @@ typedef struct {
 typedef struct {
     bool enabled;
     char font[256];
-    Color textColor;
+    RGBAColor textColor;
     bool hideOutsideGame;
     // Non-reseteable props
     Rect rect;

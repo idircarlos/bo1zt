@@ -451,7 +451,7 @@ void widgetSetFont(Widget* widget, const char* face) {
     if (widget->win.hwnd) PostMessageA(widget->win.hwnd, WM_USER + 1, 0, 0);
 }
 
-void widgetSetTextColor(Widget* widget, Color color) {
+void widgetSetTextColor(Widget* widget, RGBAColor color) {
     if (!widget) return;
     // This is a workaround for a known bug that whenever the color is Pure Black (0,0,0) it became transparent
     // Since it cannot be differentiated between textColor and bgColor when displaying it.
@@ -483,7 +483,7 @@ Widget* widgetCreate(const char* className, WidgetVTable* vTable, void* displayD
     wgt->render.fontFace = _strdup("Digital-7 Mono");
     wgt->render.fontSize = fontSize;
     wgt->render.initialFontSize = fontSize;
-    wgt->render.textColor = colorCreate(255, 255, 255, 255);
+    wgt->render.textColor = rgbaColorCreate(255, 255, 255, 255);
     wgt->win.flags = 0;
     wgt->win.resizeEdge = -1;
     wgt->win.savedExstyle = 0;

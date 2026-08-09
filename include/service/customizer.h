@@ -3,20 +3,20 @@
 
 #include "service.h"
 #include "logic/config.h"
-#include "utils/common.h"
+#include "utils/color.h"
 
 typedef struct {
-    bool hasScoreBackground;      Color scoreBackground;
-    bool hasScorePlayer1;         Color scorePlayer1;
-    bool hasScorePlayer2;         Color scorePlayer2;
-    bool hasScorePlayer3;         Color scorePlayer3;
-    bool hasScorePlayer4;         Color scorePlayer4;
-    bool hasReloadWarnPrimary;    Color reloadWarnPrimary;
-    bool hasReloadWarnSecondary;  Color reloadWarnSecondary;
-    bool hasLowAmmoWarnPrimary;   Color lowAmmoWarnPrimary;
-    bool hasLowAmmoWarnSecondary; Color lowAmmoWarnSecondary;
-    bool hasNoAmmoWarnPrimary;    Color noAmmoWarnPrimary;
-    bool hasNoAmmoWarnSecondary;  Color noAmmoWarnSecondary;
+    bool hasScoreBackground;      RGBAColor scoreBackground;
+    bool hasScorePlayer1;         RGBAColor scorePlayer1;
+    bool hasScorePlayer2;         RGBAColor scorePlayer2;
+    bool hasScorePlayer3;         RGBAColor scorePlayer3;
+    bool hasScorePlayer4;         RGBAColor scorePlayer4;
+    bool hasReloadWarnPrimary;    RGBAColor reloadWarnPrimary;
+    bool hasReloadWarnSecondary;  RGBAColor reloadWarnSecondary;
+    bool hasLowAmmoWarnPrimary;   RGBAColor lowAmmoWarnPrimary;
+    bool hasLowAmmoWarnSecondary; RGBAColor lowAmmoWarnSecondary;
+    bool hasNoAmmoWarnPrimary;    RGBAColor noAmmoWarnPrimary;
+    bool hasNoAmmoWarnSecondary;  RGBAColor noAmmoWarnSecondary;
     bool hasScoreboardTransparency; int scoreboardTransparency;
     bool hasPointsTransparency;     int pointsTransparency;
     bool hasWarningFrequency;       int warningFrequency;

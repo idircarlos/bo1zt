@@ -4,14 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define COLOR_WHITE colorCreate(255, 255, 255, 255)
-
-typedef struct {
-    uint8_t r, g, b, a;
-} Color;
-
-Color colorCreate(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-
 typedef struct {
     uint32_t x, y, w, h;
 } Rect;

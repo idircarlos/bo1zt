@@ -117,7 +117,7 @@ static void respondNotFound(HttpResponse *response) {
     respondError(response, 404, "NOT_FOUND", "Unknown resource");
 }
 
-static JsonValue *colorJson(Color color) {
+static JsonValue *colorJson(RGBAColor color) {
     JsonValue *obj = jsonNewObject();
     jsonObjectSetInt(obj, "r", color.r);
     jsonObjectSetInt(obj, "g", color.g);
@@ -135,13 +135,13 @@ static JsonValue *rectJson(Rect rect) {
     return obj;
 }
 
-static bool parseColor(JsonValue *obj, Color *out) {
+static bool parseColor(JsonValue *obj, RGBAColor *out) {
     if (jsonTypeOf(obj) != JSON_OBJECT) return false;
     JsonValue *r = jsonObjectGet(obj, "r"), *g = jsonObjectGet(obj, "g");
     JsonValue *b = jsonObjectGet(obj, "b"), *a = jsonObjectGet(obj, "a");
     if (jsonTypeOf(r) != JSON_NUMBER || jsonTypeOf(g) != JSON_NUMBER ||
         jsonTypeOf(b) != JSON_NUMBER || jsonTypeOf(a) != JSON_NUMBER) return false;
-    *out = colorCreate((uint8_t)jsonGetInt(r, 0), (uint8_t)jsonGetInt(g, 0),
+    *out = rgbaColorCreate((uint8_t)jsonGetInt(r, 0), (uint8_t)jsonGetInt(g, 0),
                        (uint8_t)jsonGetInt(b, 0), (uint8_t)jsonGetInt(a, 0));
     return true;
 }
@@ -173,7 +173,7 @@ static int getBoolField(JsonValue *obj, const char *key, bool *out) {
     return 1;
 }
 
-static int getColorField(JsonValue *obj, const char *key, Color *out) {
+static int getColorField(JsonValue *obj, const char *key, RGBAColor *out) {
     JsonValue *v = jsonObjectGet(obj, key);
     if (!v) return 0;
     return parseColor(v, out) ? 1 : -1;

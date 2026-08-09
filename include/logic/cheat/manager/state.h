@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "logic/cheat.h"
 #include "logic/config.h"
+#include "logic/server.h"
 
 typedef struct {
     // HacksConfig toggles

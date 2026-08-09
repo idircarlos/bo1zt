@@ -109,7 +109,7 @@ ClientResult clientGetVersion(Client *client, char *out, size_t size) {
 // Shared color / rect (de)serialization (matches src/service.c)
 // ---------------------------------------------------------------------------
 
-JsonValue *clientColorJson(Color color) {
+JsonValue *clientColorJson(RGBAColor color) {
     JsonValue *obj = jsonNewObject();
     jsonObjectSetInt(obj, "r", color.r);
     jsonObjectSetInt(obj, "g", color.g);
@@ -127,7 +127,7 @@ JsonValue *clientRectJson(Rect rect) {
     return obj;
 }
 
-bool clientParseColor(const JsonValue *obj, Color *out) {
+bool clientParseColor(const JsonValue *obj, RGBAColor *out) {
     if (!out || jsonTypeOf(obj) != JSON_OBJECT) return false;
     out->r = (uint8_t)jsonObjectGetInt(obj, "r", 0);
     out->g = (uint8_t)jsonObjectGetInt(obj, "g", 0);

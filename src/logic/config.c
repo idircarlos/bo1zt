@@ -25,12 +25,12 @@ static inline char *strfmt(char *buff, const char *fmt, ...) {
     return buff;
 }
 
-static Color colorFromString(const char *colorString) {
+static RGBAColor colorFromString(const char *colorString) {
     uint8_t r = 255, g = 255, b = 255, a = 255;
     if (sscanf(colorString, "Color(%hhu,%hhu,%hhu,%hhu)", &r, &g, &b, &a) != 4) {
         LOG_ERROR("Invalid color string: %s", colorString);
     }
-    return colorCreate(r, g, b, a);
+    return rgbaColorCreate(r, g, b, a);
 }
 
 static Rect rectFromString(const char *rectString) {
@@ -347,17 +347,17 @@ void configResetGraphics(Config *config) {
 
 void configResetCustomizer(Config *config) {
     CustomizerConfig customizer = {
-        .scoreBackground = colorCreate(108, 1, 0, 255),
-        .scorePlayer1 = colorCreate(255, 255, 255, 255),
-        .scorePlayer2 = colorCreate(124, 207, 238, 255),
-        .scorePlayer3 = colorCreate(246, 202, 80, 255),
-        .scorePlayer4 = colorCreate(131, 236, 136, 255),
-        .reloadWarnPrimary = colorCreate(230, 230, 230, 255),
-        .reloadWarnSecondary = colorCreate(255, 255, 255, 255),
-        .lowAmmoWarnPrimary = colorCreate(179, 179, 0, 255),
-        .lowAmmoWarnSecondary = colorCreate(255, 255, 0, 255),
-        .noAmmoWarnPrimary = colorCreate(204, 0, 0, 255),
-        .noAmmoWarnSecondary = colorCreate(255, 0, 0, 255),
+        .scoreBackground = rgbaColorCreate(108, 1, 0, 255),
+        .scorePlayer1 = rgbaColorCreate(255, 255, 255, 255),
+        .scorePlayer2 = rgbaColorCreate(124, 207, 238, 255),
+        .scorePlayer3 = rgbaColorCreate(246, 202, 80, 255),
+        .scorePlayer4 = rgbaColorCreate(131, 236, 136, 255),
+        .reloadWarnPrimary = rgbaColorCreate(230, 230, 230, 255),
+        .reloadWarnSecondary = rgbaColorCreate(255, 255, 255, 255),
+        .lowAmmoWarnPrimary = rgbaColorCreate(179, 179, 0, 255),
+        .lowAmmoWarnSecondary = rgbaColorCreate(255, 255, 0, 255),
+        .noAmmoWarnPrimary = rgbaColorCreate(204, 0, 0, 255),
+        .noAmmoWarnSecondary = rgbaColorCreate(255, 0, 0, 255),
         .scoreboardTransparency = 80,
         .pointsTransparency = 35,
         .warningTransitionsFrequency = 2,
@@ -372,7 +372,7 @@ void configResetWidget(Config *config, int index) {
     WidgetConfig widget;
     widget.enabled = false;
     strcpy(widget.font, "Digital-7 Mono");
-    widget.textColor = colorCreate(255, 255, 255, 255);
+    widget.textColor = rgbaColorCreate(255, 255, 255, 255);
     widget.hideOutsideGame = false;    
     config->widgets[index] = widget;
 }

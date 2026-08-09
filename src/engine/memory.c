@@ -90,7 +90,7 @@ bool _memoryBackendFov(Process *process, float value);
 bool _memoryBackendFovScale(Process *process, float value);
 bool _memoryBackendFpsCap(Process *process, uint32_t value);
 
-bool _memoryBackendCustomizerColor(Process *process, SimpleCheatName cheatName, Color color);
+bool _memoryBackendCustomizerColor(Process *process, SimpleCheatName cheatName, RGBAColor color);
 bool _memoryBackendCustomizerFloat(Process *process, SimpleCheatName cheatName, float value);
 
 bool _memoryBackendSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheatName, uint32_t value);
@@ -281,7 +281,7 @@ bool memoryBackendSetSimpleCheat(MemoryBackend *memoryBackend, SimpleCheatName s
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_LOW_AMMO_SECONDARY:
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_PRIMARY:
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_NO_AMMO_SECONDARY:
-            return _memoryBackendCustomizerColor(process, simpleCheatName, (Color)(*(Color*)value));
+            return _memoryBackendCustomizerColor(process, simpleCheatName, (RGBAColor)(*(RGBAColor*)value));
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_SCOREBOARD:
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_TRANSPARENCY_POINTS:
         case SIMPLE_CHEAT_NAME_CUSTOMIZER_WARN_MIN:
@@ -1217,7 +1217,7 @@ bool _memoryBackendFpsCap(Process *process, uint32_t value) {
 }
 
 // Colors
-static uint32_t _mergeColorComponents(Color color) {
+static uint32_t _mergeColorComponents(RGBAColor color) {
     uint32_t mergedColor = 0;
     mergedColor |= (uint32_t)color.r;
     mergedColor |= (uint32_t)color.g << 8;
@@ -1225,7 +1225,7 @@ static uint32_t _mergeColorComponents(Color color) {
     return mergedColor;
 }
 
-bool _memoryBackendCustomizerColor(Process *process, SimpleCheatName cheatName, Color color) {
+bool _memoryBackendCustomizerColor(Process *process, SimpleCheatName cheatName, RGBAColor color) {
     CustomizerCheat cheat = cheatGetCustomizerCheat(cheatName);
     uint32_t address1 = 0;
     bool success = processRead(process, cheat.baseOffset, &address1, sizeof(address1));

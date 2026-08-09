@@ -33,7 +33,7 @@ static void entitiesRender(Widget* widget) {
     if (percentage < 0.0f) percentage = 0.0f;
 
     float barWidth = 2.0f * percentage;
-    Color c = widget->render.textColor;
+    RGBAColor c = widget->render.textColor;
 
     // Draw translucent background
     // Using a visible gray color so widgetUpdateLayeredWindow detects it as non-background

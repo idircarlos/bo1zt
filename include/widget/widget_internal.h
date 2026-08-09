@@ -36,7 +36,7 @@ typedef struct RenderState {
 	int initialFontSize;
 	int w;
 	int h;
-    Color textColor;
+    RGBAColor textColor;
 } RenderState;
 
 typedef enum {

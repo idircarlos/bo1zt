@@ -14,7 +14,7 @@ ServiceResult serviceCustomizerReset(Service *service) {
     return SERVICE_OK;
 }
 
-static void applyColor(Controller *c, SimpleCheatName cheat, Color *value) {
+static void applyColor(Controller *c, SimpleCheatName cheat, RGBAColor *value) {
     if (controllerIsGameAttached(c)) controllerSetSimpleCheat(c, cheat, value);
 }
 
