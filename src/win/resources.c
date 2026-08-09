@@ -42,7 +42,7 @@ bool resourcesLoadFont(int resourceId) {
     }
 
     void* pFontData = NULL;
-    DWORD fontSize = 0;
+    uint32_t fontSize = 0;
     if (!resourcesGetData(resourceId, &pFontData, &fontSize)) {
         return false;
     }
@@ -69,7 +69,7 @@ bool resourcesExtractToFile(int resourceId, const char* outputPath) {
     }
 
     void* pResourceData = NULL;
-    DWORD resourceSize = 0;
+    uint32_t resourceSize = 0;
     if (!resourcesGetData(resourceId, &pResourceData, &resourceSize)) {
         return false;
     }
@@ -81,7 +81,7 @@ bool resourcesExtractZip(int resourceId, const char* outputDir) {
     if (!outputDir) return false;
 
     void* pResourceData = NULL;
-    DWORD resourceSize = 0;
+    uint32_t resourceSize = 0;
     if (!resourcesGetData(resourceId, &pResourceData, &resourceSize)) {
         return false;
     }
@@ -121,7 +121,7 @@ bool resourcesExtractZip(int resourceId, const char* outputDir) {
 }
 
 
-bool resourcesGetData(int resourceId, void** outData, DWORD* outSize) {
+bool resourcesGetData(int resourceId, void** outData, uint32_t* outSize) {
     if (!outData || !outSize) return false;
 
     HMODULE hModule = GetModuleHandle(NULL);
@@ -141,7 +141,7 @@ bool resourcesGetData(int resourceId, void** outData, DWORD* outSize) {
 
 IStream* resourcesCreateStream(int resourceId) {
     void* pData = NULL;
-    DWORD dataSize = 0;
+    uint32_t dataSize = 0;
 
     if (!resourcesGetData(resourceId, &pData, &dataSize)) {
         return NULL;

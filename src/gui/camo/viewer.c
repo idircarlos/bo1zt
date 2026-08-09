@@ -231,7 +231,7 @@ static void computeModelBounds(CamoViewer *viewer) {
 
 static GLuint compileShaderResource(GLenum type, int resourceId) {
     void *data = NULL;
-    DWORD size = 0;
+    uint32_t size = 0;
     if (!resourcesGetData(resourceId, &data, &size)) {
         LOG_ERROR("Camo viewer: missing shader resource %d", resourceId);
         return 0;

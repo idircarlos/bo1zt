@@ -3,10 +3,11 @@
 
 #include <windows.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 void resourcesInit(void);
 void resourcesCleanup(void);
-bool resourcesGetData(int resourceId, void** outData, DWORD* outSize);
+bool resourcesGetData(int resourceId, void** outData, uint32_t* outSize);
 bool resourcesLoadFont(int resourceId);
 bool resourcesExtractToFile(int resourceId, const char* outputPath);
 bool resourcesExtractZip(int resourceId, const char* outputDir);

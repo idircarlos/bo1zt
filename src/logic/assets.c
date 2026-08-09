@@ -100,7 +100,7 @@ static char **assetsWeaponModels(int *outCount) {
     *outCount = 0;
 
     void *data = NULL;
-    DWORD size = 0;
+    uint32_t size = 0;
     if (!resourcesGetData(IDR_CAMO_WEAPONS, &data, &size)) {
         LOG_ERROR("Failed to load embedded weapon manifest resource");
         return NULL;

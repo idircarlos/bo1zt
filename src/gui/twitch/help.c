@@ -21,7 +21,7 @@ static int onHelpWindowClose(uiWindow *window, void *data) {
 
 static char *loadHelpMarkdown(void) {
     void *data = NULL;
-    DWORD size = 0;
+    uint32_t size = 0;
     if (!resourcesGetData(IDR_MARKDOWN_TWITCH_INTEGRATION, &data, &size)) {
         LOG_ERROR("Twitch help: missing markdown resource");
         return NULL;

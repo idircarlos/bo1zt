@@ -162,7 +162,7 @@ bool camoIwdBuild(const CamoManager *manager, const CamoBundle *bundle,
     }
 
     void *blackData = NULL;
-    DWORD blackSize = 0;
+    uint32_t blackSize = 0;
     if (!resourcesGetData(IDR_CAMO_BLACK_IWI, &blackData, &blackSize)) {
         LOG_ERROR("Failed to load embedded $black.iwi resource");
         return false;
