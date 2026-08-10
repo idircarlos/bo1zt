@@ -223,6 +223,8 @@ static bool openSession(TwitchManager *manager) {
     snprintf(manager->connection.login, sizeof(manager->connection.login), "%s", owner.login);
     snprintf(manager->connection.displayName, sizeof(manager->connection.displayName), "%s",
              owner.displayName[0] ? owner.displayName : owner.login);
+    snprintf(manager->connection.profileImageUrl, sizeof(manager->connection.profileImageUrl),
+             "%s", owner.profileImageUrl);
     LeaveCriticalSection(&manager->lock);
     LOG_INFO("Twitch: listening to #%s", owner.login);
     return true;
@@ -235,6 +237,7 @@ static void closeSession(TwitchManager *manager) {
     manager->connection.state = TWITCH_CONNECTION_DISCONNECTED;
     manager->connection.login[0] = '\0';
     manager->connection.displayName[0] = '\0';
+    manager->connection.profileImageUrl[0] = '\0';
     manager->connection.userCode[0] = '\0';
     manager->connection.verificationUri[0] = '\0';
     LeaveCriticalSection(&manager->lock);
@@ -329,6 +332,7 @@ TwitchManagerResult twitchManagerConnect(TwitchManager *manager, const char *cli
     manager->connection.userCode[0] = '\0';
     manager->connection.login[0] = '\0';
     manager->connection.displayName[0] = '\0';
+    manager->connection.profileImageUrl[0] = '\0';
     snprintf(manager->connection.clientId, sizeof(manager->connection.clientId), "%s", target);
     LeaveCriticalSection(&manager->lock);
 

@@ -3213,6 +3213,30 @@ _UI_EXTERN void uiFreeImage(uiImage *i);
 _UI_EXTERN void uiImageAppend(uiImage *i, void *pixels, int pixelWidth, int pixelHeight, int byteStride);
 
 /**
+ * Creates a new image holding the icon the system uses to represent a file.
+ *
+ * One representation is appended per icon size the system provides.
+ *
+ * @param path File path.
+ * @returns A new uiImage instance, `NULL` if the file has no icon.
+ * @memberof uiImage @static
+ */
+_UI_EXTERN uiImage *uiNewImageFromFileIcon(const char *path);
+
+/**
+ * Creates a new image from encoded image data.
+ *
+ * Supported formats depend on the platform image decoders.
+ *
+ * @param data Pointer to the encoded image data.\n
+ *             Data is copied internally. Ownership is not transferred.
+ * @param size Size of the image data in bytes.
+ * @returns A new uiImage instance, `NULL` if the data could not be decoded.
+ * @memberof uiImage @static
+ */
+_UI_EXTERN uiImage *uiNewImageFromData(const void *data, size_t size);
+
+/**
  * @addtogroup table
  * @{
  *
@@ -4582,7 +4606,7 @@ _UI_EXTERN void uiMarkdownViewerSetText(uiMarkdownViewer *mv, const char *markdo
  *
  * Items occupy the bar from left to right in append order, each one in its
  * own section, and are addressed by the index returned on append. An item
- * shows a text with an optional custom color and an optional icon.
+ * shows a text and an optional icon.
  *
  * @struct uiStatusBar
  * @ingroup static
@@ -4671,39 +4695,21 @@ _UI_EXTERN void uiStatusBarSetItemText(uiStatusBar *sb, int item, const char *te
 _UI_EXTERN void uiStatusBarSetItemWidth(uiStatusBar *sb, int item, int min, int max);
 
 /**
- * Sets the text color of a status bar item.
+ * Sets the icon of a status bar item from an image, drawn left of its text.
+ *
+ * The representation matching the screen's pixel density is picked and scaled
+ * to the system small icon size.
  *
  * @param sb uiStatusBar instance.
  * @param item Item index.
- * @param r Red component (0-255).
- * @param g Green component (0-255).
- * @param b Blue component (0-255).
+ * @param image uiImage instance.\n
+ *              The image is not copied. It must outlive the status bar item,
+ *              ownership is not transferred.
+ * @param circular `TRUE` to clip the icon to a circle inscribed in the icon
+ *                 area, `FALSE` to draw it unclipped.
  * @memberof uiStatusBar
  */
-_UI_EXTERN void uiStatusBarSetItemTextColor(uiStatusBar *sb, int item, int r, int g, int b);
-
-/**
- * Clears the text color of a status bar item.
- *
- * The item reverts to the system text color.
- *
- * @param sb uiStatusBar instance.
- * @param item Item index.
- * @memberof uiStatusBar
- */
-_UI_EXTERN void uiStatusBarClearItemTextColor(uiStatusBar *sb, int item);
-
-/**
- * Sets the icon of a status bar item, drawn left of its text.
- *
- * @param sb uiStatusBar instance.
- * @param item Item index.
- * @param resourceId Identifier of an `RCDATA` resource holding an image,
- *                   scaled to the system small icon size.
- * @returns `TRUE` on success, `FALSE` if the resource could not be loaded.
- * @memberof uiStatusBar
- */
-_UI_EXTERN int uiStatusBarSetItemIcon(uiStatusBar *sb, int item, int resourceId);
+_UI_EXTERN void uiStatusBarSetItemImage(uiStatusBar *sb, int item, uiImage *image, int circular);
 
 /**
  * Removes the icon of a status bar item.

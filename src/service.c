@@ -1492,6 +1492,7 @@ static void handleTwitchGet(Service *service, HttpResponse *response) {
     jsonObjectSetString(obj, "client-id", connection.clientId);
     jsonObjectSetString(obj, "login", connection.login);
     jsonObjectSetString(obj, "display-name", connection.displayName);
+    jsonObjectSetString(obj, "profile-image-url", connection.profileImageUrl);
     jsonObjectSetString(obj, "user-code", connection.userCode);
     jsonObjectSetString(obj, "verification-uri", connection.verificationUri);
     jsonObjectSetString(obj, "error", connection.error);

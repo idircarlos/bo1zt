@@ -1,16 +1,16 @@
-// uiStatusBar - Status bar whose items are laid out in append order and can carry colored text and icons
+// uiStatusBar - Status bar whose items are laid out in append order and can carry text and icons
 #include "uipriv_windows.hpp"
 
 #define statusBarItemPadding 6
 #define statusBarIconGap 4
 #define statusBarVerticalPadding 4
+#define statusBarIconMaskSamples 4
 
 struct uiprivStatusBarItem {
 	WCHAR *text;
-	BOOL hasTextColor;
-	COLORREF textColor;
-	IWICBitmap *icon;
+	uiImage *image;
 	HBITMAP iconBitmap;
+	BOOL circularIcon;
 	int width;
 	int minWidth;
 	int maxWidth;
@@ -63,7 +63,7 @@ static int statusBarItemWidth(uiStatusBar *sb, uiprivStatusBarItem *item)
 	int width;
 
 	width = 2 * statusBarItemPadding + statusBarTextWidth(sb, item->text) + statusBarPartOverhead(sb);
-	if (item->icon != NULL)
+	if (item->image != NULL)
 		width += GetSystemMetrics(SM_CXSMICON) + statusBarIconGap;
 	if (item->maxWidth >= 0 && width > item->maxWidth)
 		width = item->maxWidth;
@@ -109,10 +109,7 @@ static void statusBarItemClearIcon(uiprivStatusBarItem *item)
 		DeleteObject(item->iconBitmap);
 		item->iconBitmap = NULL;
 	}
-	if (item->icon != NULL) {
-		item->icon->Release();
-		item->icon = NULL;
-	}
+	item->image = NULL;
 }
 
 static void statusBarFreeItem(uiprivStatusBarItem *item)
@@ -122,12 +119,63 @@ static void statusBarFreeItem(uiprivStatusBarItem *item)
 	uiprivFree(item);
 }
 
+static double statusBarCircleCoverage(int x, int y, double centerX, double centerY, double radius)
+{
+	int inside = 0;
+	int sx, sy;
+
+	for (sy = 0; sy < statusBarIconMaskSamples; sy++)
+		for (sx = 0; sx < statusBarIconMaskSamples; sx++) {
+			double dx = x + (sx + 0.5) / statusBarIconMaskSamples - centerX;
+			double dy = y + (sy + 0.5) / statusBarIconMaskSamples - centerY;
+			if (dx * dx + dy * dy <= radius * radius)
+				inside++;
+		}
+	return (double) inside / (statusBarIconMaskSamples * statusBarIconMaskSamples);
+}
+
+// the bitmap holds premultiplied BGRA, so scaling every channel by the coverage is enough to mask it
+static void statusBarMaskIconCircle(HBITMAP bitmap)
+{
+	BITMAP bmp;
+	double centerX, centerY, radius;
+	int x, y, channel;
+
+	if (GetObject(bitmap, sizeof (BITMAP), &bmp) == 0 || bmp.bmBits == NULL)
+		return;
+	centerX = bmp.bmWidth / 2.0;
+	centerY = bmp.bmHeight / 2.0;
+	radius = centerX < centerY ? centerX : centerY;
+	for (y = 0; y < bmp.bmHeight; y++) {
+		BYTE *row = (BYTE *) (bmp.bmBits) + (size_t) y * bmp.bmWidthBytes;
+
+		for (x = 0; x < bmp.bmWidth; x++) {
+			BYTE *pixel = row + 4 * x;
+			double coverage = statusBarCircleCoverage(x, y, centerX, centerY, radius);
+
+			if (coverage >= 1.0)
+				continue;
+			for (channel = 0; channel < 4; channel++)
+				pixel[channel] = (BYTE) (pixel[channel] * coverage + 0.5);
+		}
+	}
+}
+
 static HBITMAP statusBarItemIconBitmap(uiprivStatusBarItem *item, HDC dc)
 {
+	IWICBitmap *source;
+
 	if (item->iconBitmap != NULL)
 		return item->iconBitmap;
-	if (uiprivWICToGDI(item->icon, dc, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), &(item->iconBitmap)) != S_OK)
+	if (item->image == NULL)
+		return NULL;
+	source = uiprivImageAppropriateForDC(item->image, dc);
+	if (source == NULL)
+		return NULL;
+	if (uiprivWICToGDI(source, dc, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), &(item->iconBitmap)) != S_OK)
 		item->iconBitmap = NULL;
+	else if (item->circularIcon)
+		statusBarMaskIconCircle(item->iconBitmap);
 	return item->iconBitmap;
 }
 
@@ -160,7 +208,7 @@ static void statusBarDrawItem(uiStatusBar *sb, HDC dc, uiprivStatusBarItem *item
 	r = *part;
 	r.left += statusBarItemPadding;
 	r.right -= statusBarItemPadding;
-	if (item->icon != NULL) {
+	if (item->image != NULL) {
 		icon = statusBarItemIconBitmap(item, dc);
 		if (icon != NULL)
 			statusBarDrawIcon(dc, icon,
@@ -170,10 +218,7 @@ static void statusBarDrawItem(uiStatusBar *sb, HDC dc, uiprivStatusBarItem *item
 	}
 
 	SetBkMode(dc, TRANSPARENT);
-	if (item->hasTextColor)
-		SetTextColor(dc, item->textColor);
-	else
-		SetTextColor(dc, GetSysColor(COLOR_BTNTEXT));
+	SetTextColor(dc, GetSysColor(COLOR_BTNTEXT));
 	font = (HFONT) SendMessageW(sb->hwnd, WM_GETFONT, 0, 0);
 	prevFont = (HFONT) SelectObject(dc, font);
 	DrawTextW(dc, item->text, -1, &r, DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
@@ -366,39 +411,14 @@ void uiStatusBarSetItemWidth(uiStatusBar *sb, int item, int min, int max)
 	statusBarSetParts(sb);
 }
 
-void uiStatusBarSetItemTextColor(uiStatusBar *sb, int item, int r, int g, int b)
-{
-	uiprivStatusBarItem *i = statusBarItem(sb, item);
-	COLORREF color = RGB(r, g, b);
-
-	if (i->hasTextColor && i->textColor == color)
-		return;
-	i->hasTextColor = TRUE;
-	i->textColor = color;
-	statusBarItemChanged(sb, item);
-}
-
-void uiStatusBarClearItemTextColor(uiStatusBar *sb, int item)
+void uiStatusBarSetItemImage(uiStatusBar *sb, int item, uiImage *image, int circular)
 {
 	uiprivStatusBarItem *i = statusBarItem(sb, item);
 
-	if (!i->hasTextColor)
-		return;
-	i->hasTextColor = FALSE;
-	statusBarItemChanged(sb, item);
-}
-
-int uiStatusBarSetItemIcon(uiStatusBar *sb, int item, int resourceId)
-{
-	uiprivStatusBarItem *i = statusBarItem(sb, item);
-	IWICBitmap *icon;
-
-	if (uiprivWICBitmapFromResource(resourceId, &icon) != S_OK)
-		return 0;
 	statusBarItemClearIcon(i);
-	i->icon = icon;
+	i->image = image;
+	i->circularIcon = circular ? TRUE : FALSE;
 	statusBarSetParts(sb);
-	return 1;
 }
 
 void uiStatusBarClearItemIcon(uiStatusBar *sb, int item)

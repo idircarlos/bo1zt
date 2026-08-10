@@ -1,6 +1,8 @@
 #ifndef WIN_HTTP_H_
 #define WIN_HTTP_H_
 
+#include <stddef.h>
+
 typedef struct {
     const char *method;
     const char *path;
@@ -11,6 +13,7 @@ typedef struct {
 typedef struct {
     int status;
     char *body;
+    size_t size;
 } HttpClientResponse;
 
 typedef struct HttpResponse HttpResponse;

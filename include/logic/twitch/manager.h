@@ -19,6 +19,7 @@ typedef struct {
     char clientId[128];
     char login[64];
     char displayName[64];
+    char profileImageUrl[256];
     char userCode[16];
     char verificationUri[256];
     char error[256];

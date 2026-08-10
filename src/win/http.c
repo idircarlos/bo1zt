@@ -185,7 +185,7 @@ int httpServe(int port, HttpHandler handler, void *userData) {
 
 HttpClientResponse httpClientRequest(const char *host, int port, const char *method,
                                      const char *path, const char *headers, const char *body) {
-    HttpClientResponse result = { -1, NULL };
+    HttpClientResponse result = { -1, NULL, 0 };
     if (!host) host = "127.0.0.1";
 
     WSADATA wsa;
@@ -259,6 +259,7 @@ HttpClientResponse httpClientRequest(const char *host, int port, const char *met
     const char *bodyStart = strstr(resp, "\r\n\r\n");
     if (bodyStart) {
         result.body = _strdup(bodyStart + 4);
+        result.size = result.body ? strlen(result.body) : 0;
     }
     free(resp);
     return result;
@@ -282,7 +283,7 @@ static int readStatusCode(HINTERNET request) {
     return (int)status;
 }
 
-static char *readResponseBody(HINTERNET request) {
+static char *readResponseBody(HINTERNET request, size_t *outSize) {
     size_t capacity = RESPONSE_CHUNK;
     size_t total = 0;
     char *buffer = (char *)malloc(capacity);
@@ -303,12 +304,13 @@ static char *readResponseBody(HINTERNET request) {
     }
 
     buffer[total] = '\0';
+    *outSize = total;
     return buffer;
 }
 
 HttpClientResponse httpsClientRequest(const char *host, int port, const char *method,
                                       const char *path, const char *headers, const char *body) {
-    HttpClientResponse result = { -1, NULL };
+    HttpClientResponse result = { -1, NULL, 0 };
     if (!host || !method || !path) return result;
 
     // All locals declared up front so the goto-based cleanup is valid in C++.
@@ -352,7 +354,7 @@ HttpClientResponse httpsClientRequest(const char *host, int port, const char *me
     }
 
     result.status = readStatusCode(request);
-    result.body = readResponseBody(request);
+    result.body = readResponseBody(request, &result.size);
     if (!result.body) result.status = -1;
 
 cleanup:

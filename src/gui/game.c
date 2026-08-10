@@ -10,7 +10,6 @@
 #include "logger.h"
 #include "logic/cheat.h"
 #include "win/thread.h"
-#include "utils/map.h"
 #include "resource_ids.h"
 #include <windows.h>
 #include <stdbool.h>
@@ -21,37 +20,13 @@
 
 #define GAME_EXECUTABLE_NAME "BlackOps.exe"
 
-#define RUNNING_TEXT "Running"
-#define NOT_RUNNING_TEXT "Not running"
-#define OPENING_TEXT "Opening"
-#define CLOSING_TEXT "Closing"
-
-#define CACHE_GAME_ATTACHED "GAME_ATTACHED"
-#define CACHE_OPENING_GAME "OPENING_GAME"
-#define CACHE_CLOSING_GAME "CLOSING_GAME"
-
-static Map *cache = NULL;
+static bool gameAttached = false;
 
 // Shared HTTP client
 static Client *client;
 static uiWindow *parent;
 
 // UI Elements
-static uiAttribute *attrRed = NULL;
-static uiAttribute *attrGreen = NULL;
-static uiAttribute *attrBlue = NULL;
-static uiAttribute *attrOrange = NULL;
-static uiAttribute *attrBold = NULL;
-
-static uiArea *statusArea = NULL;
-static uiAreaHandler statusHandler;
-static uiAttributedString *statusCurrentText = NULL;
-static uiAttributedString *statusNotRunningText = NULL;
-static uiAttributedString *statusRunningText = NULL;
-static uiAttributedString *statusOpeningText = NULL;
-static uiAttributedString *statusClosingText = NULL;
-
-static uiLabel *statusLabel = NULL;
 static uiCheckbox *patchMovementCheckbox = NULL;
 static uiCheckbox *showFpsCheckbox = NULL;
 static uiLabel *hostnameLabel = NULL;
@@ -75,11 +50,9 @@ static int threadLaunchGame(void *data) {
     (void)data;
     LOG_INFO("Launching game from UI");
     uiControlDisable(uiControl(launchButton));
-    mapPutBool(cache, CACHE_OPENING_GAME, true);
     Client *localClient = clientCreate(guiClientPort());
     bool success = localClient && clientLaunchGame(localClient) == CLIENT_OK;
     clientDestroy(localClient);
-    mapPutBool(cache, CACHE_OPENING_GAME, false);
     if (!success) {
         uiMsgBoxError(parent, "Launch game", "Couldn't launch Call of Duty Black Ops 1. Location may have changed or the game is already running.");
         return 1;
@@ -91,11 +64,9 @@ static int threadCloseGame(void *data) {
     (void)data;
     LOG_INFO("Closing game from UI");
     uiControlDisable(uiControl(closeButton));
-    mapPutBool(cache, CACHE_CLOSING_GAME, true);
     Client *localClient = clientCreate(guiClientPort());
     bool success = localClient && clientCloseGame(localClient) == CLIENT_OK;
     clientDestroy(localClient);
-    mapPutBool(cache, CACHE_CLOSING_GAME, false);
     if (!success) {
         uiMsgBoxError(parent, "Close game", "Couldn't close Call of Duty Black Ops 1. Game is probably already closed.");
         return 1;
@@ -105,7 +76,6 @@ static int threadCloseGame(void *data) {
 
 static int onLaunchGameError(void *data) {
     (void)data;
-    mapPutBool(cache, CACHE_OPENING_GAME, false);
     uiMsgBoxError(parent, "Launch game", "Couldn't launch Call of Duty Black Ops 1. Probably is either running or stuck at launch in Steam. Try killing the game from Steam or Task Manager.");
     uiControlEnable(uiControl(launchButton));
     return 0;
@@ -113,7 +83,6 @@ static int onLaunchGameError(void *data) {
 
 static int onCloseGameError(void *data) {
     (void)data;
-    mapPutBool(cache, CACHE_CLOSING_GAME, false);
     uiMsgBoxError(parent, "Close game", "Couldn't close Call of Duty Black Ops 1. Game is probably already closed or stuck at launch in Steam. Try killing the game from Steam or Task Manager.");
     uiControlEnable(uiControl(launchButton));
     return 0;
@@ -160,52 +129,6 @@ static void extractDirectory(const char *fullPath, char *dirOut, size_t dirOutSi
 }
 
 // Listeners
-static void handlerUnusedDragBroken(uiAreaHandler *a, uiArea *area) {
-    (void)a;
-    (void)area;
-}
-
-static int handlerUnusedKeyEvent(uiAreaHandler *a, uiArea *area, uiAreaKeyEvent *e) {
-    (void)a;
-    (void)area;
-    (void)e;
-    return 0;
-}
-
-static void handlerUnusedMouseCrossed(uiAreaHandler *a, uiArea *area, int left) {
-    (void)a;
-    (void)area;
-    (void)left;
-}
-
-static void handlerUnusedMouseEvent(uiAreaHandler *a, uiArea *area, uiAreaMouseEvent *e) {
-    (void)a;
-    (void)area;
-    (void)e;
-}
-
-static void handlerStatusDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
-    (void)a;
-    (void)area;
-    if (!statusCurrentText)
-        return;
-    uiFontDescriptor font;
-    uiDrawTextLayoutParams params;
-    uiDrawTextLayout *layout;
-
-    uiLoadControlFont(&font);
-    params.String = statusCurrentText;
-    params.DefaultFont = &font;
-    params.Width = p->AreaWidth;
-    params.Align = uiDrawTextAlignLeft;
-
-    layout = uiDrawNewTextLayout(&params);
-    uiDrawText(p->Context, layout, 0, -0.5);
-    uiDrawFreeTextLayout(layout);
-
-    uiFreeFontButtonFont(&font);
-}
-
 static void onCheckboxToggled(uiCheckbox *checkbox, void *data) {
     CheatName cheatName = (CheatName)(uintptr_t)data;
     bool enabled = uiCheckboxChecked(checkbox);
@@ -314,21 +237,6 @@ static void onCloseButtonClick(uiButton *button, void *data) {
 
 
 // Builders
-static uiAttributedString *buildInfoAttributedString(const char *str, uiAttribute *colorAttribute, uiAreaHandler *areaHandler, void (*handlerDraw)(uiAreaHandler *, uiArea *, uiAreaDrawParams *)) {
-    memset(areaHandler, 0, sizeof(uiAreaHandler));
-    areaHandler->Draw = handlerDraw;
-    areaHandler->DragBroken = handlerUnusedDragBroken;
-    areaHandler->KeyEvent = handlerUnusedKeyEvent;
-    areaHandler->MouseCrossed = handlerUnusedMouseCrossed;
-    areaHandler->MouseEvent = handlerUnusedMouseEvent;
-
-    uiAttributedString *attributedString = uiNewAttributedString(str);
-    size_t len = uiAttributedStringLen(attributedString);
-    uiAttributedStringSetAttribute(attributedString, colorAttribute, 0, len);
-    uiAttributedStringSetAttribute(attributedString, attrBold, 0, len);
-    return attributedString;
-}
-
 static void buildWidgets() {
     widgetsWindow = uiNewWindow("Widget Settings", 50, 200, 0);
     uiControl *widgetsGroup = uiWidgetsBuild(client, widgetsWindow);
@@ -351,10 +259,6 @@ static void buildBinds() {
 }
 
 static void init() {
-    cache = mapCreate();
-    mapPutBool(cache, CACHE_GAME_ATTACHED, false);
-    mapPutBool(cache, CACHE_OPENING_GAME, false);
-    mapPutBool(cache, CACHE_CLOSING_GAME, false);
     GameConfigInfo config;
     if (clientGetGameConfig(client, &config) == CLIENT_OK) {
         uiEntrySetText(hostnameEntry, config.hostname);
@@ -366,26 +270,12 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
     client = clientInstance;
     parent = parentInstance;
 
-    attrRed = uiNewColorAttribute(181/256.0, 38/256.0, 62/256.0, 1.0);
-    attrGreen = uiNewColorAttribute(38/256.0, 181/256.0, 90/256.0, 1.0);
-    attrBlue = uiNewColorAttribute(52/256.0, 88/256.0, 235/256.0, 1.0);
-    attrOrange = uiNewColorAttribute(232/256.0, 142/256.0, 39/256.0, 1.0);
-    attrBold = uiNewWeightAttribute(uiTextWeightBold);
-
-    statusNotRunningText = buildInfoAttributedString(NOT_RUNNING_TEXT, attrRed, &statusHandler, handlerStatusDraw);
-    statusRunningText = buildInfoAttributedString(RUNNING_TEXT, attrGreen, &statusHandler, handlerStatusDraw);
-    statusOpeningText = buildInfoAttributedString(OPENING_TEXT, attrBlue, &statusHandler, handlerStatusDraw);
-    statusClosingText = buildInfoAttributedString(CLOSING_TEXT, attrOrange, &statusHandler, handlerStatusDraw);
-    statusCurrentText = statusNotRunningText;
-
     uiGroup *gameGroup = uiNewGroup("Game");
     uiBox *gameBox = uiNewVerticalBox();
     uiBoxSetPadded(gameBox, 1);
 
     uiGrid *grid = uiNewGrid();
     uiGridSetPadded(grid, 1);
-    statusLabel = uiNewLabel("Status");
-    statusArea = uiNewArea(&statusHandler);
     hostnameLabel = uiNewLabel("Hostname");
     hostnameEntry = uiNewEntry();
     changeRoundButton = uiNewButton("Change Round");
@@ -422,20 +312,18 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
     uiButtonOnClicked(launchButton, onLaunchButtonClick, NULL);
     uiButtonOnClicked(closeButton, onCloseButtonClick, NULL);
 
-    uiGridAppend(grid, uiControl(statusLabel),              0, 0, 1, 1, 0, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(statusArea),               1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(hostnameLabel),            0, 1, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
-    uiGridAppend(grid, uiControl(hostnameEntry),            1, 1, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
-    uiGridAppend(grid, uiControl(patchMovementCheckbox),    0, 2, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(showFpsCheckbox),          1, 2, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(changeRoundButton),        0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(changeRoundSpin),          1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(bindsButton),              0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(widgetsButton),            1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(camoButton),               0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(twitchButton),             1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(launchButton),             0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(closeButton),              1, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(hostnameLabel),            0, 0, 1, 1, 1, uiAlignFill, 0, uiAlignCenter);
+    uiGridAppend(grid, uiControl(hostnameEntry),            1, 0, 1, 1, 1, uiAlignFill, 0, uiAlignFill);
+    uiGridAppend(grid, uiControl(patchMovementCheckbox),    0, 1, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(showFpsCheckbox),          1, 1, 2, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(changeRoundButton),        0, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(changeRoundSpin),          1, 2, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(bindsButton),              0, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(widgetsButton),            1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(camoButton),               0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(twitchButton),             1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(launchButton),             0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(closeButton),              1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     uiBoxAppend(gameBox, uiControl(grid), 1);
 
@@ -473,25 +361,17 @@ static void update() {
         uiFreeText(currentHostname);
     }
 
-    bool gameAttached = s->statusValid ? s->status.attached : mapGetBool(cache, CACHE_GAME_ATTACHED);
-    // Avoid redrawing the area and modifying components constantly
-    if (gameAttached != mapGetBool(cache, CACHE_GAME_ATTACHED)) {
-        statusCurrentText = gameAttached ? statusRunningText : statusNotRunningText;
-        uiAreaQueueRedrawAll(statusArea);
-        mapPutBool(cache, CACHE_GAME_ATTACHED, gameAttached);
-        if (gameAttached == false) {
-            uiControlEnable(uiControl(launchButton));
-            uiControlDisable(uiControl(closeButton));
-        } else {
+    bool attached = s->statusValid ? s->status.attached : gameAttached;
+    // Avoid modifying components constantly
+    if (attached != gameAttached) {
+        gameAttached = attached;
+        if (attached) {
             uiControlDisable(uiControl(launchButton));
             uiControlEnable(uiControl(closeButton));
+        } else {
+            uiControlEnable(uiControl(launchButton));
+            uiControlDisable(uiControl(closeButton));
         }
-    } else if (mapGetBool(cache, CACHE_OPENING_GAME)) {
-        statusCurrentText = statusOpeningText;
-        uiAreaQueueRedrawAll(statusArea);
-    } else if (mapGetBool(cache, CACHE_CLOSING_GAME)) {
-        statusCurrentText = statusClosingText;
-        uiAreaQueueRedrawAll(statusArea);
     }
     uiWidgetsUpdate();
     uiBindsUpdate();

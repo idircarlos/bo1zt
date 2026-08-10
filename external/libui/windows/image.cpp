@@ -1,4 +1,5 @@
 #include "uipriv_windows.hpp"
+#include <shellapi.h>
 
 // TODO:
 // - is the alpha channel ignored when drawing images in tables?
@@ -176,12 +177,28 @@ IWICBitmap *uiprivImageAppropriateForDC(uiImage *i, HDC dc)
 	return m.best;
 }
 
+static HRESULT wicBitmapFromSource(IWICBitmapSource *source, IWICBitmap **b)
+{
+	IWICFormatConverter *converter = NULL;
+	HRESULT hr;
+
+	*b = NULL;
+	hr = uiprivWICFactory->CreateFormatConverter(&converter);
+	if (hr == S_OK)
+		hr = converter->Initialize(source, formatForGDI,
+			WICBitmapDitherTypeNone, NULL, 0.0, WICBitmapPaletteTypeMedianCut);
+	if (hr == S_OK)
+		hr = uiprivWICFactory->CreateBitmapFromSource(converter, WICBitmapCacheOnDemand, b);
+	if (converter != NULL)
+		converter->Release();
+	return hr;
+}
+
 HRESULT uiprivWICBitmapFromData(const void *data, size_t size, IWICBitmap **b)
 {
 	IStream *stream;
 	IWICBitmapDecoder *decoder = NULL;
 	IWICBitmapFrameDecode *frame = NULL;
-	IWICFormatConverter *converter = NULL;
 	HRESULT hr;
 
 	*b = NULL;
@@ -192,20 +209,74 @@ HRESULT uiprivWICBitmapFromData(const void *data, size_t size, IWICBitmap **b)
 	if (hr == S_OK)
 		hr = decoder->GetFrame(0, &frame);
 	if (hr == S_OK)
-		hr = uiprivWICFactory->CreateFormatConverter(&converter);
-	if (hr == S_OK)
-		hr = converter->Initialize(frame, formatForGDI,
-			WICBitmapDitherTypeNone, NULL, 0.0, WICBitmapPaletteTypeMedianCut);
-	if (hr == S_OK)
-		hr = uiprivWICFactory->CreateBitmapFromSource(converter, WICBitmapCacheOnDemand, b);
-	if (converter != NULL)
-		converter->Release();
+		hr = wicBitmapFromSource(frame, b);
 	if (frame != NULL)
 		frame->Release();
 	if (decoder != NULL)
 		decoder->Release();
 	stream->Release();
 	return hr;
+}
+
+uiImage *uiNewImageFromFileIcon(const char *path)
+{
+	static const UINT sizeFlags[] = { SHGFI_SMALLICON, SHGFI_LARGEICON };
+	uiImage *i = NULL;
+	WCHAR *wpath;
+
+	if (path == NULL || *path == '\0')
+		return NULL;
+	wpath = toUTF16(path);
+	for (size_t n = 0; n < sizeof (sizeFlags) / sizeof (*sizeFlags); n++) {
+		SHFILEINFOW info;
+		IWICBitmap *raw;
+		IWICBitmap *bitmap;
+		UINT width, height;
+
+		memset(&info, 0, sizeof (SHFILEINFOW));
+		if (SHGetFileInfoW(wpath, 0, &info, sizeof (SHFILEINFOW), SHGFI_ICON | sizeFlags[n]) == 0)
+			continue;
+		if (info.hIcon == NULL)
+			continue;
+		if (uiprivWICFactory->CreateBitmapFromHICON(info.hIcon, &raw) != S_OK) {
+			DestroyIcon(info.hIcon);
+			continue;
+		}
+		DestroyIcon(info.hIcon);
+		if (wicBitmapFromSource(raw, &bitmap) != S_OK) {
+			raw->Release();
+			continue;
+		}
+		raw->Release();
+		if (bitmap->GetSize(&width, &height) != S_OK) {
+			bitmap->Release();
+			continue;
+		}
+		if (i == NULL)
+			i = uiNewImage(width, height);
+		i->bitmaps->push_back(bitmap);
+	}
+	uiprivFree(wpath);
+	return i;
+}
+
+uiImage *uiNewImageFromData(const void *data, size_t size)
+{
+	IWICBitmap *bitmap;
+	UINT width, height;
+	uiImage *i;
+
+	if (data == NULL || size == 0)
+		return NULL;
+	if (uiprivWICBitmapFromData(data, size, &bitmap) != S_OK)
+		return NULL;
+	if (bitmap->GetSize(&width, &height) != S_OK) {
+		bitmap->Release();
+		return NULL;
+	}
+	i = uiNewImage(width, height);
+	i->bitmaps->push_back(bitmap);
+	return i;
 }
 
 HRESULT uiprivWICBitmapFromResource(int resourceId, IWICBitmap **b)
@@ -265,8 +336,7 @@ HRESULT uiprivWICToGDI(IWICBitmap *b, HDC dc, int width, int height, HBITMAP *hb
 		if (hr != S_OK)
 			return hr;
 		hr = scaler->Initialize(b, width, height,
-			// according to https://stackoverflow.com/questions/4250738/is-stretchblt-halftone-bilinear-for-all-scaling, this is what StretchBlt(COLORONCOLOR) does (with COLORONCOLOR being what's supported by AlphaBlend())
-			WICBitmapInterpolationModeNearestNeighbor);
+			WICBitmapInterpolationModeFant);
 		if (hr != S_OK) {
 			scaler->Release();
 			return hr;

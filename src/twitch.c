@@ -193,6 +193,7 @@ TwitchResult twitchGetUser(TwitchClient *client, const char *login, TwitchUser *
     snprintf(out->displayName, sizeof(out->displayName), "%s", jsonObjectGetString(user, "display_name", ""));
     snprintf(out->broadcasterType, sizeof(out->broadcasterType), "%s", jsonObjectGetString(user, "broadcaster_type", ""));
     snprintf(out->description, sizeof(out->description), "%s", jsonObjectGetString(user, "description", ""));
+    snprintf(out->profileImageUrl, sizeof(out->profileImageUrl), "%s", jsonObjectGetString(user, "profile_image_url", ""));
 
     jsonFree(body);
     return TWITCH_OK;

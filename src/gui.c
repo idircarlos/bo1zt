@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
@@ -9,6 +10,7 @@
 #include "client/state.h"
 #include "client/game.h"
 #include "client/graphics.h"
+#include "gui/status.h"
 #include "gui/player.h"
 #include "gui/character.h"
 #include "gui/weapons.h"
@@ -64,6 +66,7 @@ static void guiPoll(void) {
         snapshot.cheatsValid = false;
     }
     snapshot.valid = true;
+    uiStatusUpdate();
 }
 
 void guiPollNow(void) {
@@ -215,6 +218,7 @@ void guiInit(Client *clientInstance, int port) {
     setupWindow();
     uiControl *c = buildWindowContent();
     uiWindowSetChild(window,c);
+    uiStatusBuild(window);
 }
 
 void guiRun(void) {

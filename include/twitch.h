@@ -22,6 +22,7 @@ typedef struct {
     char displayName[64];
     char broadcasterType[16];
     char description[512];
+    char profileImageUrl[256];
 } TwitchUser;
 
 typedef struct {

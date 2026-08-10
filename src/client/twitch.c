@@ -37,6 +37,8 @@ ClientResult clientGetTwitchConnection(Client *client, ClientTwitchConnection *o
     snprintf(out->login, sizeof(out->login), "%s", jsonObjectGetString(body, "login", ""));
     snprintf(out->displayName, sizeof(out->displayName), "%s",
              jsonObjectGetString(body, "display-name", ""));
+    snprintf(out->profileImageUrl, sizeof(out->profileImageUrl), "%s",
+             jsonObjectGetString(body, "profile-image-url", ""));
     snprintf(out->userCode, sizeof(out->userCode), "%s",
              jsonObjectGetString(body, "user-code", ""));
     snprintf(out->verificationUri, sizeof(out->verificationUri), "%s",
