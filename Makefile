@@ -14,7 +14,7 @@ EXE_CFLAGS  := -std=c++20 -Wall -Wextra -pedantic $(ARCH) \
                -Iexternal/miniz -Iexternal/argparse -I$(OAT_API_DIR) -Ires -Ishared
 EXE_LDFLAGS := -Llib $(ARCH) -static -static-libgcc -static-libstdc++ \
                -lui -liniparser -lole32 -luuid -lcomctl32 -lgdi32 \
-               -lmsimg32 -loleaut32 -ld2d1 -ldwrite -luxtheme -lopengl32 -lgdiplus -lshlwapi -lshell32 -lws2_32 -lwinhttp -lwinmm
+               -lmsimg32 -loleaut32 -ld2d1 -ldwrite -luxtheme -lopengl32 -lgdiplus -lshlwapi -lshell32 -lws2_32 -lwinhttp -lwinmm -lcrypt32
 
 # DLL
 DLL_CFLAGS  := -Wall -O2 $(ARCH) -Ishared -Iexternal/cdl86 -Iexternal/miniz -Idll -Idll/gsc
