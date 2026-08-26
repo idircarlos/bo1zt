@@ -10,11 +10,12 @@ OAT_API_DIR := $(OAT_DIR)/lib
 
 # EXE
 EXE_CFLAGS  := -std=c++20 -Wall -Wextra -pedantic $(ARCH) \
-               -Iinclude -Iexternal/libui -Iexternal/iniparser/src \
+               -Iinclude -Iexternal/libui -Iexternal/scintilla/include \
+               -Iexternal/iniparser/src \
                -Iexternal/miniz -Iexternal/argparse -I$(OAT_API_DIR) -Ires -Ishared
 EXE_LDFLAGS := -Llib $(ARCH) -static -static-libgcc -static-libstdc++ \
-               -lui -liniparser -lole32 -luuid -lcomctl32 -lgdi32 \
-               -lmsimg32 -loleaut32 -ld2d1 -ldwrite -luxtheme -lopengl32 -lgdiplus -lshlwapi -lshell32 -lws2_32 -lwinhttp -lwinmm -lcrypt32
+               -lui -lscintilla -liniparser -lole32 -luuid -lcomctl32 -lgdi32 \
+               -lmsimg32 -loleaut32 -limm32 -ld2d1 -ldwrite -luxtheme -lopengl32 -lgdiplus -lshlwapi -lshell32 -lws2_32 -lwinhttp -lwinmm -lcrypt32
 
 # DLL
 DLL_CFLAGS  := -Wall -O2 $(ARCH) -Ishared -Iexternal/cdl86 -Iexternal/miniz -Idll -Idll/gsc
@@ -33,6 +34,12 @@ DLL_OBJ := $(patsubst dll/%.c,build/dll/%.o,$(DLL_SRC))
 CDL86_OBJ := build/external/cdl86.o
 MINIZ_OBJ := build/external/miniz.o
 ARGPARSE_OBJ := build/external/argparse.o
+
+SCINTILLA_DIR    := external/scintilla
+SCINTILLA_SRC    := $(wildcard $(SCINTILLA_DIR)/src/*.cxx) $(wildcard $(SCINTILLA_DIR)/win32/*.cxx)
+SCINTILLA_OBJ    := $(patsubst $(SCINTILLA_DIR)/%.cxx,build/external/scintilla/%.o,$(SCINTILLA_SRC))
+SCINTILLA_CFLAGS := -std=c++17 -O2 $(ARCH) -DNDEBUG -w -include cstdint \
+                    -I$(SCINTILLA_DIR)/include -I$(SCINTILLA_DIR)/src
 
 .PHONY: all run clean clean-dll deepclean dll release
 
@@ -57,7 +64,7 @@ deepclean: clean
 	rm -rf external/oat/build
 
 # EXE
-$(TARGET): $(OBJ) $(ARGPARSE_OBJ) lib/libui.a lib/libiniparser.a lib/libminiz.a lib/liboat.a build/resources.o
+$(TARGET): $(OBJ) $(ARGPARSE_OBJ) lib/libui.a lib/libscintilla.a lib/libiniparser.a lib/libminiz.a lib/liboat.a build/resources.o
 	@echo "Linking $@"
 	$(CXX) $(EXE_CFLAGS) -o $@ $^ $(EXE_LDFLAGS)
 
@@ -93,6 +100,15 @@ lib/libminiz.a: external/miniz/miniz.c
 	$(CC) -Wall -O2 $(ARCH) -Iexternal/miniz -c $< -o build/miniz.o
 	ar rcs $@ build/miniz.o
 	@rm -f build/miniz.o
+
+build/external/scintilla/%.o: $(SCINTILLA_DIR)/%.cxx
+	@mkdir -p $(dir $@)
+	$(CXX) $(SCINTILLA_CFLAGS) -c $< -o $@
+
+lib/libscintilla.a: $(SCINTILLA_OBJ)
+	@mkdir -p lib
+	@echo "Archiving $@"
+	@ar rcs $@ $^
 
 lib/libui.a: external/libui/build/meson-out/libui.a
 	@mkdir -p lib
