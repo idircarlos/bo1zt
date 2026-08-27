@@ -952,6 +952,26 @@ _UI_EXTERN void uiTabOnSelected(uiTab *t,
         void (*f)(uiTab *sender, void *senderData), void *data);
 
 /**
+ * Registers a callback for when the close button of a tab is clicked.
+ *
+ * Registering a callback puts a close button on every tab, passing `NULL`
+ * takes them away again.
+ *
+ * @param t uiTab instance.
+ * @param f Callback function.\n
+ *          @p sender Back reference to the instance that triggered the callback.\n
+ *          @p index Index of the tab whose close button was clicked.\n
+ *          @p senderData User data registered with the sender instance.
+ * @param data User data to be passed to the callback.
+ *
+ * @note The page is not removed for you, call uiTabDelete() from the callback.
+ * @note Only one callback can be registered at a time.
+ * @memberof uiTab
+ */
+_UI_EXTERN void uiTabOnClosing(uiTab *t,
+        void (*f)(uiTab *sender, int index, void *senderData), void *data);
+
+/**
  * Appends a control in form of a page/tab with label.
  *
  * @param t uiTab instance.
