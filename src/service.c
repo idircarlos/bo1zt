@@ -9,6 +9,7 @@
 #include "service/widgets.h"
 #include "service/binds.h"
 #include "service/camo.h"
+#include "service/gsc.h"
 #include "service/twitch.h"
 #include "service/actions.h"
 #include "service/commands.h"
@@ -1561,6 +1562,151 @@ static void handleTwitchOptionsPatch(Service *service, HttpResponse *response, c
     handleTwitchOptionsGet(service, response);
 }
 
+// ---------------------------------------------------------------------------
+// Handlers: gsc injector
+// ---------------------------------------------------------------------------
+
+static void handleGscModList(Service *service, HttpResponse *response) {
+    size_t count = 0;
+    const GSCMod *mods = serviceGscModList(service, &count);
+
+    char folder[GSC_FOLDER_SIZE] = "";
+    serviceGscFolder(service, folder, sizeof(folder));
+
+    JsonValue *arr = jsonNewArray();
+    for (size_t i = 0; i < count; i++) {
+        JsonValue *files = jsonNewArray();
+        for (size_t f = 0; f < mods[i].fileCount; f++) {
+            jsonArrayAppend(files, jsonNewString(mods[i].files[f].path));
+        }
+
+        JsonValue *obj = jsonNewObject();
+        jsonObjectSetString(obj, "name", mods[i].name);
+        jsonObjectSet(obj, "files", files);
+        jsonArrayAppend(arr, obj);
+    }
+
+    JsonValue *root = jsonNewObject();
+    jsonObjectSetString(root, "folder", folder);
+    jsonObjectSet(root, "mods", arr);
+    respondJson(response, 200, root);
+}
+
+// Extracts a required string field, responding with 400 and returning NULL when absent.
+// The value points into `parsed`, which the caller keeps alive.
+static const char *requiredString(JsonValue *parsed, const char *key, const char **keys,
+                                  int keyCount, HttpResponse *response) {
+    if (jsonTypeOf(parsed) != JSON_OBJECT) {
+        respondError(response, 400, "INVALID_PARAM", "Expected a JSON object");
+        return NULL;
+    }
+    if (!hasOnlyKnownKeys(parsed, keys, keyCount)) {
+        respondError(response, 400, "INVALID_PARAM", "Unknown field");
+        return NULL;
+    }
+
+    JsonValue *field = jsonObjectGet(parsed, key);
+    if (jsonTypeOf(field) != JSON_STRING) {
+        char message[64];
+        snprintf(message, sizeof(message), "Expected string for %s", key);
+        respondError(response, 400, "INVALID_PARAM", message);
+        return NULL;
+    }
+    return jsonGetString(field, "");
+}
+
+static void handleGscModPost(Service *service, HttpResponse *response, const char *body) {
+    static const char *KEYS[] = { "name" };
+    JsonValue *parsed = jsonParse(body);
+    const char *name = requiredString(parsed, "name", KEYS, 1, response);
+    if (!name) { jsonFree(parsed); return; }
+
+    ServiceResult r = serviceGscModCreate(service, name);
+    if (r != SERVICE_OK) { jsonFree(parsed); respondServiceError(response, r); return; }
+
+    JsonValue *created = jsonNewObject();
+    jsonObjectSetString(created, "name", name);
+    jsonFree(parsed);
+    respondJson(response, 201, created);
+}
+
+static void handleGscDelete(Service *service, HttpResponse *response, const char *body) {
+    static const char *KEYS[] = { "path" };
+    JsonValue *parsed = jsonParse(body);
+    const char *path = requiredString(parsed, "path", KEYS, 1, response);
+    if (!path) { jsonFree(parsed); return; }
+
+    ServiceResult r = serviceGscRemove(service, path);
+    jsonFree(parsed);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    httpResponseStatus(response, 204);
+}
+
+static bool queryPath(const char *query, char *out, size_t size) {
+    const char *value = query ? strstr(query, "path=") : NULL;
+    if (!value) return false;
+    if (value != query && value[-1] != '&') return false;
+
+    value += 5;
+    size_t length = strcspn(value, "&");
+    if (length == 0 || length >= size) return false;
+
+    memcpy(out, value, length);
+    out[length] = '\0';
+    return true;
+}
+
+static void handleGscScriptGet(Service *service, HttpResponse *response, const char *query) {
+    char path[GSC_SCRIPT_PATH_SIZE];
+    if (!queryPath(query, path, sizeof(path))) {
+        respondError(response, 400, "INVALID_PARAM", "Expected string for path");
+        return;
+    }
+
+    char *content = serviceGscScriptRead(service, path);
+    if (!content) { respondError(response, 404, "NOT_FOUND", "Script not found"); return; }
+
+    JsonValue *root = jsonNewObject();
+    jsonObjectSetString(root, "path", path);
+    jsonObjectSetString(root, "content", content);
+    free(content);
+    respondJson(response, 200, root);
+}
+
+static void handleGscScriptPut(Service *service, HttpResponse *response, const char *body) {
+    static const char *KEYS[] = { "path", "content" };
+    JsonValue *parsed = jsonParse(body);
+    const char *path = requiredString(parsed, "path", KEYS, 2, response);
+    if (!path) { jsonFree(parsed); return; }
+
+    JsonValue *content = jsonObjectGet(parsed, "content");
+    if (jsonTypeOf(content) != JSON_STRING) {
+        jsonFree(parsed);
+        respondError(response, 400, "INVALID_PARAM", "Expected string for content");
+        return;
+    }
+
+    ServiceResult r = serviceGscScriptWrite(service, path, jsonGetString(content, ""));
+    jsonFree(parsed);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    httpResponseStatus(response, 204);
+}
+
+static void handleGscScriptPost(Service *service, HttpResponse *response, const char *body) {
+    static const char *KEYS[] = { "path" };
+    JsonValue *parsed = jsonParse(body);
+    const char *path = requiredString(parsed, "path", KEYS, 1, response);
+    if (!path) { jsonFree(parsed); return; }
+
+    ServiceResult r = serviceGscScriptCreate(service, path);
+    if (r != SERVICE_OK) { jsonFree(parsed); respondServiceError(response, r); return; }
+
+    JsonValue *created = jsonNewObject();
+    jsonObjectSetString(created, "path", path);
+    jsonFree(parsed);
+    respondJson(response, 201, created);
+}
+
 static bool isExact(const char *sub, const char *seg) {
     return strcmp(sub, seg) == 0;
 }
@@ -1770,6 +1916,22 @@ static void route(Service *service, const HttpRequest *request, HttpResponse *re
     if (isExact(sub, "/binds/reset")) {
         if (strcmp(method, "POST") != 0) { respondNotFound(response); return; }
         handleBindsReset(service, response);
+        return;
+    }
+
+    // --- gsc injector ---
+    if (isExact(sub, "/gsc-mods")) {
+        if (strcmp(method, "GET") == 0) handleGscModList(service, response);
+        else if (strcmp(method, "POST") == 0) handleGscModPost(service, response, body);
+        else if (strcmp(method, "DELETE") == 0) handleGscDelete(service, response, body);
+        else respondNotFound(response);
+        return;
+    }
+    if (isExact(sub, "/gsc-mods/script")) {
+        if (strcmp(method, "GET") == 0) handleGscScriptGet(service, response, request->query);
+        else if (strcmp(method, "PUT") == 0) handleGscScriptPut(service, response, body);
+        else if (strcmp(method, "POST") == 0) handleGscScriptPost(service, response, body);
+        else respondNotFound(response);
         return;
     }
 
