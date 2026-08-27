@@ -176,6 +176,11 @@ extern HRESULT uiprivWICToGDI(IWICBitmap *b, HDC dc, int width, int height, HBIT
 extern HRESULT uiprivWICBitmapFromData(const void *data, size_t size, IWICBitmap **b);
 extern HRESULT uiprivWICBitmapFromResource(int resourceId, IWICBitmap **b);
 
+// menu.cpp
+extern HMENU uiprivMenuBarMake(uiMenuBar *mb);
+extern void uiprivMenuBarForgetHMENU(uiMenuBar *mb, HMENU menubar);
+extern void uiprivMenuBarRunEvent(uiMenuBar *mb, WORD id, uiWindow *w);
+
 // statusbar.cpp
 extern void uiprivStatusBarDestroy(uiStatusBar *sb);
 extern void uiprivStatusBarSetParent(uiStatusBar *sb, HWND parent);

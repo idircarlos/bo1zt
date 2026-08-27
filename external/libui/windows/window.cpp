@@ -6,7 +6,8 @@
 struct uiWindow {
 	uiWindowsControl c;
 	HWND hwnd;
-	HMENU menubar;
+	uiMenuBar *menuBar;
+	HMENU hmenu;
 	uiControl *child;
 	uiStatusBar *statusBar;
 	BOOL shownOnce;
@@ -103,7 +104,8 @@ static LRESULT CALLBACK windowWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARA
 		// TODO fix the root cause somehow
 		if (HIWORD(wParam) != 0 || LOWORD(wParam) <= IDCANCEL)
 			break;
-		runMenuEvent(LOWORD(wParam), uiWindow(w));
+		if (w->menuBar != NULL)
+			uiprivMenuBarRunEvent(w->menuBar, LOWORD(wParam), uiWindow(w));
 		return 0;
 	case WM_WINDOWPOSCHANGED:
 		if ((wp->flags & SWP_NOMOVE) == 0)
@@ -191,9 +193,9 @@ static void uiWindowDestroy(uiControl *c)
 	// now free the status bar, if any
 	if (w->statusBar != NULL)
 		uiprivStatusBarDestroy(w->statusBar);
-	// now free the menubar, if any
-	if (w->menubar != NULL)
-		freeMenubar(w->menubar);
+	// now detach the menu bar, if any
+	if (w->menuBar != NULL)
+		uiprivMenuBarForgetHMENU(w->menuBar, w->hmenu);
 	// and finally free ourselves
 	windows.erase(w);
 	uiWindowsEnsureDestroyWindow(w->hwnd);
@@ -500,6 +502,26 @@ void uiWindowSetChild(uiWindow *w, uiControl *child)
 	}
 }
 
+void uiWindowSetMenuBar(uiWindow *w, uiMenuBar *mb)
+{
+	HMENU prev = w->hmenu;
+
+	if (w->menuBar != NULL)
+		uiprivMenuBarForgetHMENU(w->menuBar, prev);
+	w->menuBar = mb;
+	w->hmenu = NULL;
+	if (w->menuBar != NULL)
+		w->hmenu = uiprivMenuBarMake(w->menuBar);
+	if (SetMenu(w->hwnd, w->hmenu) == 0)
+		logLastError(L"error giving menu to window");
+	DrawMenuBar(w->hwnd);
+	if (prev != NULL)
+		DestroyMenu(prev);
+	w->hasMenubar = w->hmenu != NULL;
+	uiWindowsControlMinimumSizeChanged(uiWindowsControl(w));
+	windowRelayout(w);
+}
+
 void uiWindowSetStatusBar(uiWindow *w, uiStatusBar *sb)
 {
 	if (w->statusBar != NULL)
@@ -591,12 +613,6 @@ uiWindow *uiNewWindow(const char *title, int width, int height, int hasMenubar)
 	if (w->hwnd == NULL)
 		logLastError(L"error creating window");
 	uiprivFree(wtitle);
-
-	if (hasMenubar) {
-		w->menubar = makeMenubar();
-		if (SetMenu(w->hwnd, w->menubar) == 0)
-			logLastError(L"error giving menu to window");
-	}
 
 	// and use the proper size
 	setClientSize(w, width, height, hasMenubarBOOL, style, exstyle);

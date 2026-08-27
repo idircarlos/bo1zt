@@ -1875,29 +1875,7 @@ _UI_EXTERN int uiMenuItemChecked(uiMenuItem *m);
 _UI_EXTERN void uiMenuItemSetChecked(uiMenuItem *m, int checked);
 
 /**
- * An application level menu bar.
- *
- * The various operating systems impose different requirements on the
- * creation and placement of menu bar items, hence the abstraction of the
- * items `Quit`, `Preferences` and `About`.
- *
- * An exemplary, cross platform menu bar:
- *
- * - File
- *   * New
- *   * Open
- *   * Save
- *   * Quit, _use uiMenuAppendQuitItem()_
- * - Edit
- *   * Undo
- *   * Redo
- *   * Cut
- *   * Copy
- *   * Paste
- *   * Select All
- *   * Preferences, _use uiMenuAppendPreferencesItem()_
- * - Help
- *   * About, _use uiMenuAppendAboutItem()_
+ * A single drop down of a uiMenuBar, holding uiMenuItem entries.
  *
  * @struct uiMenu
  * @ingroup static menu
@@ -1968,17 +1946,71 @@ _UI_EXTERN uiMenuItem *uiMenuAppendAboutItem(uiMenu *m);
 _UI_EXTERN void uiMenuAppendSeparator(uiMenu *m);
 
 /**
- * Creates a new menu.
+ * A menu bar holding the drop downs of a uiWindow.
+ *
+ * The various operating systems impose different requirements on the
+ * creation and placement of menu bar items, hence the abstraction of the
+ * items `Quit`, `Preferences` and `About`.
+ *
+ * An exemplary, cross platform menu bar:
+ *
+ * - File
+ *   * New
+ *   * Open
+ *   * Save
+ *   * Quit, _use uiMenuAppendQuitItem()_
+ * - Edit
+ *   * Undo
+ *   * Redo
+ *   * Cut
+ *   * Copy
+ *   * Paste
+ *   * Select All
+ *   * Preferences, _use uiMenuAppendPreferencesItem()_
+ * - Help
+ *   * About, _use uiMenuAppendAboutItem()_
+ *
+ * @struct uiMenuBar
+ * @ingroup static menu
+ */
+typedef struct uiMenuBar uiMenuBar;
+#define uiMenuBar(this) ((uiMenuBar *) (this))
+
+/**
+ * Creates a new menu bar.
+ *
+ * @returns A new uiMenuBar instance.
+ * @memberof uiMenuBar @static
+ */
+_UI_EXTERN uiMenuBar *uiNewMenuBar(void);
+
+/**
+ * Appends a menu to the menu bar.
  *
  * Typical values are `File`, `Edit`, `Help`.
  *
+ * @param mb uiMenuBar instance.
  * @param name Menu label.\n
  *             A `NUL` terminated UTF-8 string.\n
  *             Data is copied internally. Ownership is not transferred.
  * @returns A new uiMenu instance.
- * @memberof uiMenu @static
+ * @warning Menus and their items can only be appended before the menu bar is
+ *          attached to a window.
+ * @memberof uiMenuBar
  */
-_UI_EXTERN uiMenu *uiNewMenu(const char *name);
+_UI_EXTERN uiMenu *uiMenuBarAppendMenu(uiMenuBar *mb, const char *name);
+
+/**
+ * Sets the window's menu bar.
+ *
+ * The same menu bar can be shared by several windows; it is freed on
+ * uiUninit().
+ *
+ * @param w uiWindow instance.
+ * @param mb Menu bar to attach, `NULL` to remove the current one.
+ * @memberof uiWindow
+ */
+_UI_EXTERN void uiWindowSetMenuBar(uiWindow *w, uiMenuBar *mb);
 
 
 /**
@@ -4800,6 +4832,14 @@ _UI_EXTERN void uiTreeClear(uiTree *t);
  * @memberof uiTree
  */
 _UI_EXTERN void uiTreeExpandAll(uiTree *t);
+
+/**
+ * Collapses every item of the tree.
+ *
+ * @param t uiTree instance.
+ * @memberof uiTree
+ */
+_UI_EXTERN void uiTreeCollapseAll(uiTree *t);
 
 /**
  * Returns the selected item.
