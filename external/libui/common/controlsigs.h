@@ -21,6 +21,7 @@
 #define uiMultilineEntrySignature 0x4D6C6E45
 #define uiProgressBarSignature 0x50426172
 #define uiRadioButtonsSignature 0x5264696F
+#define uiScintillaSignature 0x5363696E
 #define uiSeparatorSignature 0x53657061
 #define uiSliderSignature 0x536C6964
 #define uiSpinboxSignature 0x5370696E

@@ -4720,6 +4720,54 @@ _UI_EXTERN void uiStatusBarSetItemImage(uiStatusBar *sb, int item, uiImage *imag
  */
 _UI_EXTERN void uiStatusBarClearItemIcon(uiStatusBar *sb, int item);
 
+/**
+ * A source code editing control backed by the Scintilla component.
+ *
+ * The control is driven by sending it Scintilla messages, so including
+ * `Scintilla.h` is required to do anything useful with it.
+ *
+ * @struct uiScintilla
+ * @extends uiControl
+ * @ingroup dataEntry
+ */
+typedef struct uiScintilla uiScintilla;
+#define uiScintilla(this) ((uiScintilla *) (this))
+
+/**
+ * Creates a new empty editor.
+ *
+ * @returns A new uiScintilla instance.
+ * @memberof uiScintilla @static
+ */
+_UI_EXTERN uiScintilla *uiNewScintilla(void);
+
+/**
+ * Sends a Scintilla message to the editor.
+ *
+ * @param s uiScintilla instance.
+ * @param message A `SCI_*` message as declared by `Scintilla.h`.
+ * @param wParam First message parameter.
+ * @param lParam Second message parameter.
+ * @returns The value returned by Scintilla for this message.
+ * @memberof uiScintilla
+ */
+_UI_EXTERN intptr_t uiScintillaSend(uiScintilla *s, unsigned int message, uintptr_t wParam,
+	intptr_t lParam);
+
+/**
+ * Registers a callback for the notifications sent by the editor.
+ *
+ * @param s uiScintilla instance.
+ * @param f Callback function.\n
+ *          @p s Back reference to the instance that triggered the callback.\n
+ *          @p notification A `SCNotification` as declared by `Scintilla.h`.\n
+ *          @p data User data registered with the sender instance.
+ * @param data User data to be passed to the callback.
+ * @memberof uiScintilla
+ */
+_UI_EXTERN void uiScintillaOnNotify(uiScintilla *s,
+	void (*f)(uiScintilla *s, void *notification, void *data), void *data);
+
 #ifdef __cplusplus
 }
 #endif
