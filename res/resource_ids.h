@@ -36,6 +36,7 @@
 // Markdown documents
 #define IDR_MARKDOWN_CAMO_MANAGER      900
 #define IDR_MARKDOWN_TWITCH_INTEGRATION 901
+#define IDR_MARKDOWN_GSC_MODS          902
 
 // GSC mod tree icons
 #define IDR_PNG_MOD    1000

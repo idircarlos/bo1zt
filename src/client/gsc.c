@@ -5,21 +5,36 @@
 #include <stdio.h>
 #include <string.h>
 
-static void parseFiles(const JsonValue *item, ClientGscMod *mod) {
-    JsonValue *arr = jsonObjectGet(item, "files");
-    if (jsonTypeOf(arr) != JSON_ARRAY) return;
+static int arrayCountOf(const JsonValue *item, const char *key, JsonValue **out) {
+    *out = jsonObjectGet(item, key);
+    if (jsonTypeOf(*out) != JSON_ARRAY) return 0;
 
-    int count = jsonArrayCount(arr);
-    if (count <= 0) return;
+    int count = jsonArrayCount(*out);
+    return count > 0 ? count : 0;
+}
 
-    ClientGscFile *files = (ClientGscFile *)calloc((size_t)count, sizeof(ClientGscFile));
-    if (!files) return;
-
+static void appendEntries(ClientGscMod *mod, const JsonValue *arr, int count, bool folder) {
     for (int i = 0; i < count; i++) {
-        snprintf(files[i].path, sizeof(files[i].path), "%s", jsonGetString(jsonArrayAt(arr, i), ""));
+        ClientGscEntry *entry = &mod->entries[mod->entryCount++];
+        snprintf(entry->path, sizeof(entry->path), "%s", jsonGetString(jsonArrayAt(arr, i), ""));
+        entry->folder = folder;
     }
-    mod->files = files;
-    mod->fileCount = (size_t)count;
+}
+
+static void parseEntries(const JsonValue *item, ClientGscMod *mod) {
+    JsonValue *files = NULL;
+    JsonValue *folders = NULL;
+    int fileCount = arrayCountOf(item, "files", &files);
+    int folderCount = arrayCountOf(item, "folders", &folders);
+
+    int count = fileCount + folderCount;
+    if (count == 0) return;
+
+    mod->entries = (ClientGscEntry *)calloc((size_t)count, sizeof(ClientGscEntry));
+    if (!mod->entries) return;
+
+    appendEntries(mod, folders, folderCount, true);
+    appendEntries(mod, files, fileCount, false);
 }
 
 ClientResult clientGetGscMods(Client *client, ClientGscMods *out) {
@@ -52,7 +67,7 @@ ClientResult clientGetGscMods(Client *client, ClientGscMods *out) {
             const JsonValue *item = jsonArrayAt(arr, i);
             snprintf(mods[i].name, sizeof(mods[i].name), "%s",
                      jsonObjectGetString(item, "name", ""));
-            parseFiles(item, &mods[i]);
+            parseEntries(item, &mods[i]);
         }
         out->mods = mods;
         out->modCount = (size_t)count;
@@ -64,7 +79,7 @@ ClientResult clientGetGscMods(Client *client, ClientGscMods *out) {
 
 void clientFreeGscMods(ClientGscMods *mods) {
     if (!mods) return;
-    for (size_t i = 0; i < mods->modCount; i++) free(mods->mods[i].files);
+    for (size_t i = 0; i < mods->modCount; i++) free(mods->mods[i].entries);
     free(mods->mods);
     mods->mods = NULL;
     mods->modCount = 0;
@@ -133,7 +148,7 @@ ClientResult clientWriteGscScript(Client *client, const char *path, const char *
     return result;
 }
 
-ClientResult clientCreateGscScript(Client *client, const char *path) {
+static ClientResult postGscPath(Client *client, const char *url, const char *path) {
     if (!path || !path[0]) return CLIENT_ERR_INVALID_PARAM;
 
     JsonValue *obj = jsonNewObject();
@@ -142,8 +157,15 @@ ClientResult clientCreateGscScript(Client *client, const char *path) {
     jsonFree(obj);
     if (!body) return CLIENT_ERR_PROTOCOL;
 
-    ClientResult result = clientRequest(client, "POST", CLIENT_API_BASE "/gsc-mods/script",
-                                        body, NULL);
+    ClientResult result = clientRequest(client, "POST", url, body, NULL);
     free(body);
     return result;
+}
+
+ClientResult clientCreateGscScript(Client *client, const char *path) {
+    return postGscPath(client, CLIENT_API_BASE "/gsc-mods/script", path);
+}
+
+ClientResult clientCreateGscFolder(Client *client, const char *path) {
+    return postGscPath(client, CLIENT_API_BASE "/gsc-mods/folder", path);
 }

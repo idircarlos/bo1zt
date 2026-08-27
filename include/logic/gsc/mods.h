@@ -7,17 +7,18 @@
 #define GSC_MOD_NAME_SIZE 64
 #define GSC_SCRIPT_PATH_SIZE 128
 #define GSC_MOD_MAX 32
-#define GSC_MOD_FILE_MAX 32
+#define GSC_MOD_ENTRY_MAX 64
 #define GSC_SCRIPT_SIZE_MAX (256 * 1024)
 
 typedef struct {
     char path[GSC_SCRIPT_PATH_SIZE];
-} GSCScript;
+    bool folder;
+} GSCEntry;
 
 typedef struct {
     char name[GSC_MOD_NAME_SIZE];
-    GSCScript files[GSC_MOD_FILE_MAX];
-    size_t fileCount;
+    GSCEntry entries[GSC_MOD_ENTRY_MAX];
+    size_t entryCount;
 } GSCMod;
 
 bool gscModsDir(char *out, size_t size);
@@ -25,6 +26,7 @@ void gscModsReload(void);
 size_t gscModsCount(void);
 const GSCMod *gscModsAt(size_t index);
 bool gscModsCreate(const char *name);
+bool gscModsCreateFolder(const char *path);
 bool gscModsRemove(const char *path);
 char *gscModsReadScript(const char *path, size_t *outSize);
 bool gscModsWriteScript(const char *path, const char *content, size_t size);

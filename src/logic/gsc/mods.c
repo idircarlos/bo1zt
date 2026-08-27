@@ -37,11 +37,14 @@ static bool isRelativePath(const char *path) {
     return true;
 }
 
-static bool isScriptPath(const char *path) {
+static bool isModPath(const char *path) {
     if (!isRelativePath(path)) return false;
     if (strlen(path) >= GSC_SCRIPT_PATH_SIZE) return false;
-    if (!strpbrk(path, "/\\")) return false;
-    return hasScriptExtension(path);
+    return strpbrk(path, "/\\") != NULL;
+}
+
+static bool isScriptPath(const char *path) {
+    return isModPath(path) && hasScriptExtension(path);
 }
 
 static bool isModName(const char *name) {
@@ -63,9 +66,12 @@ static bool modPath(const char *relative, char *out, size_t size) {
     return true;
 }
 
-static void addFile(GSCMod *mod, const char *relative) {
-    if (mod->fileCount >= GSC_MOD_FILE_MAX) return;
-    snprintf(mod->files[mod->fileCount++].path, GSC_SCRIPT_PATH_SIZE, "%s", relative);
+static void addEntry(GSCMod *mod, const char *relative, bool folder) {
+    if (mod->entryCount >= GSC_MOD_ENTRY_MAX) return;
+
+    GSCEntry *entry = &mod->entries[mod->entryCount++];
+    snprintf(entry->path, sizeof(entry->path), "%s", relative);
+    entry->folder = folder;
 }
 
 static void scanMod(GSCMod *mod, const char *dir, const char *prefix) {
@@ -84,9 +90,11 @@ static void scanMod(GSCMod *mod, const char *dir, const char *prefix) {
         if (n < 0 || (size_t)n >= sizeof(relative)) continue;
 
         if (!(found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-            if (hasScriptExtension(found.cFileName)) addFile(mod, relative);
+            if (hasScriptExtension(found.cFileName)) addEntry(mod, relative, false);
             continue;
         }
+
+        addEntry(mod, relative, true);
 
         char child[MAX_PATH];
         char childPrefix[GSC_SCRIPT_PATH_SIZE];
@@ -119,7 +127,7 @@ static void scanMods(const char *modsDir) {
 
         GSCMod *mod = &mods[modCount++];
         snprintf(mod->name, sizeof(mod->name), "%s", found.cFileName);
-        mod->fileCount = 0;
+        mod->entryCount = 0;
         scanMod(mod, dir, "");
     } while (FindNextFileA(handle, &found));
 
@@ -180,6 +188,25 @@ bool gscModsCreate(const char *name) {
 
     gscModsReload();
     LOG_INFO("GSC Mods: created mod %s", name);
+    return true;
+}
+
+bool gscModsCreateFolder(const char *path) {
+    if (!isModPath(path)) return false;
+
+    char full[MAX_PATH];
+    if (!modPath(path, full, sizeof(full))) return false;
+    if (fileExists(full)) {
+        LOG_WARN("GSC Mods: folder already exists: %s", path);
+        return false;
+    }
+    if (!fileCreateFolder(full)) {
+        LOG_ERROR("GSC Mods: could not create %s", full);
+        return false;
+    }
+
+    gscModsReload();
+    LOG_INFO("GSC Mods: created folder %s", path);
     return true;
 }
 

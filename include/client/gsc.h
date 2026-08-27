@@ -9,12 +9,13 @@
 
 typedef struct {
     char path[CLIENT_GSC_PATH_SIZE];
-} ClientGscFile;
+    bool folder;
+} ClientGscEntry;
 
 typedef struct {
     char name[CLIENT_GSC_NAME_SIZE];
-    ClientGscFile *files;
-    size_t fileCount;
+    ClientGscEntry *entries;
+    size_t entryCount;
 } ClientGscMod;
 
 typedef struct {
@@ -26,6 +27,7 @@ typedef struct {
 ClientResult clientGetGscMods(Client *client, ClientGscMods *out);
 void clientFreeGscMods(ClientGscMods *mods);
 ClientResult clientCreateGscMod(Client *client, const char *name);
+ClientResult clientCreateGscFolder(Client *client, const char *path);
 ClientResult clientDeleteGscPath(Client *client, const char *path);
 ClientResult clientReadGscScript(Client *client, const char *path, char **out);
 ClientResult clientWriteGscScript(Client *client, const char *path, const char *content);

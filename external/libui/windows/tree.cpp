@@ -139,6 +139,12 @@ void uiTreeExpandAll(uiTree *t)
 		SendMessageW(t->hwnd, TVM_EXPAND, (WPARAM) TVE_EXPAND, (LPARAM) (item->handle));
 }
 
+void uiTreeCollapseAll(uiTree *t)
+{
+	for (uiTreeItem *item : *(t->items))
+		SendMessageW(t->hwnd, TVM_EXPAND, (WPARAM) TVE_COLLAPSE, (LPARAM) (item->handle));
+}
+
 uiTreeItem *uiTreeSelected(uiTree *t)
 {
 	HTREEITEM handle;

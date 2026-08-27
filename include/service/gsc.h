@@ -10,6 +10,7 @@
 
 const GSCMod *serviceGscModList(Service *service, size_t *count);
 ServiceResult serviceGscModCreate(Service *service, const char *name);
+ServiceResult serviceGscFolderCreate(Service *service, const char *path);
 ServiceResult serviceGscRemove(Service *service, const char *path);
 ServiceResult serviceGscFolder(Service *service, char *out, size_t size);
 char *serviceGscScriptRead(Service *service, const char *path);

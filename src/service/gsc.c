@@ -20,6 +20,14 @@ ServiceResult serviceGscModCreate(Service *service, const char *name) {
     return gscModsCreate(name) ? SERVICE_OK : SERVICE_INVALID_PARAM;
 }
 
+ServiceResult serviceGscFolderCreate(Service *service, const char *path) {
+    if (!service || !path) return SERVICE_INVALID_PARAM;
+
+    gscModsReload();
+
+    return gscModsCreateFolder(path) ? SERVICE_OK : SERVICE_INVALID_PARAM;
+}
+
 ServiceResult serviceGscRemove(Service *service, const char *path) {
     if (!service || !path) return SERVICE_INVALID_PARAM;
 

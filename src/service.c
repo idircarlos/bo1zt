@@ -1576,13 +1576,16 @@ static void handleGscModList(Service *service, HttpResponse *response) {
     JsonValue *arr = jsonNewArray();
     for (size_t i = 0; i < count; i++) {
         JsonValue *files = jsonNewArray();
-        for (size_t f = 0; f < mods[i].fileCount; f++) {
-            jsonArrayAppend(files, jsonNewString(mods[i].files[f].path));
+        JsonValue *folders = jsonNewArray();
+        for (size_t e = 0; e < mods[i].entryCount; e++) {
+            const GSCEntry *entry = &mods[i].entries[e];
+            jsonArrayAppend(entry->folder ? folders : files, jsonNewString(entry->path));
         }
 
         JsonValue *obj = jsonNewObject();
         jsonObjectSetString(obj, "name", mods[i].name);
         jsonObjectSet(obj, "files", files);
+        jsonObjectSet(obj, "folders", folders);
         jsonArrayAppend(arr, obj);
     }
 
@@ -1699,6 +1702,21 @@ static void handleGscScriptPost(Service *service, HttpResponse *response, const 
     if (!path) { jsonFree(parsed); return; }
 
     ServiceResult r = serviceGscScriptCreate(service, path);
+    if (r != SERVICE_OK) { jsonFree(parsed); respondServiceError(response, r); return; }
+
+    JsonValue *created = jsonNewObject();
+    jsonObjectSetString(created, "path", path);
+    jsonFree(parsed);
+    respondJson(response, 201, created);
+}
+
+static void handleGscFolderPost(Service *service, HttpResponse *response, const char *body) {
+    static const char *KEYS[] = { "path" };
+    JsonValue *parsed = jsonParse(body);
+    const char *path = requiredString(parsed, "path", KEYS, 1, response);
+    if (!path) { jsonFree(parsed); return; }
+
+    ServiceResult r = serviceGscFolderCreate(service, path);
     if (r != SERVICE_OK) { jsonFree(parsed); respondServiceError(response, r); return; }
 
     JsonValue *created = jsonNewObject();
@@ -1931,6 +1949,11 @@ static void route(Service *service, const HttpRequest *request, HttpResponse *re
         if (strcmp(method, "GET") == 0) handleGscScriptGet(service, response, request->query);
         else if (strcmp(method, "PUT") == 0) handleGscScriptPut(service, response, body);
         else if (strcmp(method, "POST") == 0) handleGscScriptPost(service, response, body);
+        else respondNotFound(response);
+        return;
+    }
+    if (isExact(sub, "/gsc-mods/folder")) {
+        if (strcmp(method, "POST") == 0) handleGscFolderPost(service, response, body);
         else respondNotFound(response);
         return;
     }
