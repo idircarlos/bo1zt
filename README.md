@@ -102,4 +102,4 @@ I would like to extend my gratitude to:
 - [Flaticon](https://www.flaticon.com/):
   - [Open-folder icon](https://www.flaticon.com/free-icons/open-folder) created by NajmunNahar
   - [Paper icon](https://www.flaticon.com/free-icons/paper) created by judanna
-  - [Box icon](https://www.flaticon.com/free-icons/open-folder) icons created by Good Ware
+  - [Box icon](https://www.flaticon.com/free-icons/box) icons created by Good Ware

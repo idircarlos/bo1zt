@@ -4,10 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define GSC_PATH_ROOT "bo1zt"
-#define GSC_PATH_DUMP GSC_PATH_ROOT "/cache"
-#define GSC_FILE_OFFSET 0x8
-
 typedef struct RawFileData {
     int32_t deflatedSize;
     int32_t compressedSize;

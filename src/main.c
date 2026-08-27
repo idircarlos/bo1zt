@@ -8,6 +8,7 @@
 #include "win/process.h"
 #include "controller.h"
 #include "logic/config.h"
+#include "win/file.h"
 #include "win/thread.h"
 #include "logic/event.h"
 #include "win/resources.h"
@@ -59,14 +60,15 @@ int processRunningThread(void *data) {
         LOG_INFO("Game ready!");
         Process *process = controllerGetProcess(controller);
         GameConfig gameConfig = controllerGetGameConfig(controller);
+
+        char gscPath[MAX_PATH];
+        if (fileAppDataPath(gscPath, sizeof(gscPath), "bo1zt\\gsc")) {
+            resourcesExtractZip(IDR_GSC_ZIP, gscPath);
+        }
+
         if (strlen(gameConfig.location) == 0) {
             LOG_WARN("Game location not configured. DLL injection skipped. Use 'Launch Game' button to configure.");
         } else {
-            // Extract GSC scripts to game directory
-            char gscPath[MAX_PATH + 16];
-            snprintf(gscPath, sizeof(gscPath), "%s\\bo1zt\\gsc", gameConfig.location);
-            resourcesExtractZip(IDR_GSC_ZIP, gscPath);
-            
             // Inject DLL. Add some delay to let the game completly load and avoid random crashes
             threadSleep(1000);
             if (!processInjectDll(process, DLL_NAME, gameConfig.location)) {
