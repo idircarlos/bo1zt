@@ -37,3 +37,8 @@ IDR_SHADER_CAMO_VIEWER_FRAG RCDATA "shaders/camo_viewer.frag"
 // Markdown documents
 IDR_MARKDOWN_CAMO_MANAGER       RCDATA "markdown/camo_manager.md"
 IDR_MARKDOWN_TWITCH_INTEGRATION RCDATA "markdown/twitch_integration.md"
+
+// GSC mod tree icons
+IDR_PNG_MOD    RCDATA "mods/package.png"
+IDR_PNG_FOLDER RCDATA "mods/folder.png"
+IDR_PNG_FILE   RCDATA "mods/file.png"

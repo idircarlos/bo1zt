@@ -99,3 +99,7 @@ You can join the [Discord Community](https://discord.gg/zcFkKheNfG). Feel free t
 I would like to extend my gratitude to:
 - [magicbennie](https://github.com/magicbennie), creator of TIM, for being an inspiration while creating this tool.
 - [Lunar RF Labs](https://lunar.sh), from whom I took the idea of GSC loading based on [one of their journal entries](https://journal.lunar.sh/2023/gsctool.html).
+- [Flaticon](https://www.flaticon.com/):
+  - [Open-folder icon](https://www.flaticon.com/free-icons/open-folder) created by NajmunNahar
+  - [Paper icon](https://www.flaticon.com/free-icons/paper) created by judanna
+  - [Box icon](https://www.flaticon.com/free-icons/open-folder) icons created by Good Ware

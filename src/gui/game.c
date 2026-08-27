@@ -3,6 +3,7 @@
 #include "gui/widgets.h"
 #include "gui/binds.h"
 #include "gui/camo.h"
+#include "gui/gsc.h"
 #include "gui/twitch.h"
 #include "client/cheats.h"
 #include "client/game.h"
@@ -37,6 +38,8 @@ static uiButton *bindsButton = NULL;
 static uiButton *widgetsButton = NULL;
 static uiButton *camoButton = NULL;
 static uiButton *twitchButton = NULL;
+static uiButton *gscButton = NULL;
+static uiButton *logsButton = NULL;
 static uiButton *launchButton = NULL;
 static uiButton *closeButton = NULL;
 
@@ -227,6 +230,12 @@ static void onTwitchButtonClick(uiButton *button, void *data) {
     uiTwitchShow(client, parent);
 }
 
+static void onGscButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    uiGscShow(client);
+}
+
 static void onCloseButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
@@ -286,12 +295,15 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
     widgetsButton = uiNewButton("Add Widgets");
     camoButton = uiNewButton("Camo Manager");
     twitchButton = uiNewButton("Twitch Integration");
+    gscButton = uiNewButton("GSC Mods");
+    logsButton = uiNewButton("Logs (soon)");
     launchButton = uiNewButton("Launch Game");
     closeButton = uiNewButton("Close Game");
     locationEntry = uiNewEntry();
 
     uiControlDisable(uiControl(closeButton));
     uiControlDisable(uiControl(changeRoundButton));
+    uiControlDisable(uiControl(logsButton));
     uiControlHide(uiControl(locationEntry));
 
     uiEntrySetPlaceholder(hostnameEntry, "I am below scoreboard!");
@@ -309,6 +321,7 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
     uiButtonOnClicked(widgetsButton, onWidgetsButtonClick, NULL);
     uiButtonOnClicked(camoButton, onCamoButtonClick, NULL);
     uiButtonOnClicked(twitchButton, onTwitchButtonClick, NULL);
+    uiButtonOnClicked(gscButton, onGscButtonClick, NULL);
     uiButtonOnClicked(launchButton, onLaunchButtonClick, NULL);
     uiButtonOnClicked(closeButton, onCloseButtonClick, NULL);
 
@@ -322,8 +335,10 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
     uiGridAppend(grid, uiControl(widgetsButton),            1, 3, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(camoButton),               0, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
     uiGridAppend(grid, uiControl(twitchButton),             1, 4, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(launchButton),             0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
-    uiGridAppend(grid, uiControl(closeButton),              1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(gscButton),                0, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(logsButton),               1, 5, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(launchButton),             0, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
+    uiGridAppend(grid, uiControl(closeButton),              1, 6, 1, 1, 1, uiAlignFill, 1, uiAlignFill);
 
     uiBoxAppend(gameBox, uiControl(grid), 1);
 

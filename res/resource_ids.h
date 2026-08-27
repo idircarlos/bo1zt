@@ -37,4 +37,9 @@
 #define IDR_MARKDOWN_CAMO_MANAGER      900
 #define IDR_MARKDOWN_TWITCH_INTEGRATION 901
 
+// GSC mod tree icons
+#define IDR_PNG_MOD    1000
+#define IDR_PNG_FOLDER 1001
+#define IDR_PNG_FILE   1002
+
 #endif // RESOURCE_IDS_H_
