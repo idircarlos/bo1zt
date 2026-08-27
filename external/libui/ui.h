@@ -4721,6 +4721,142 @@ _UI_EXTERN void uiStatusBarSetItemImage(uiStatusBar *sb, int item, uiImage *imag
 _UI_EXTERN void uiStatusBarClearItemIcon(uiStatusBar *sb, int item);
 
 /**
+ * A control showing a hierarchy of items of arbitrary depth.
+ *
+ * Items are inserted one by one, in display order, under the parent of your
+ * choice, and each one can carry a pointer to your own data.
+ *
+ * @struct uiTree
+ * @extends uiControl
+ * @ingroup dataEntry
+ */
+typedef struct uiTree uiTree;
+#define uiTree(this) ((uiTree *) (this))
+
+/**
+ * An item of a uiTree.
+ *
+ * Items are owned by the tree that created them and stay valid until they are
+ * removed with `uiTreeClear()` or the tree is destroyed.
+ *
+ * @struct uiTreeItem
+ * @ingroup dataEntry
+ */
+typedef struct uiTreeItem uiTreeItem;
+
+/**
+ * Creates a new empty tree.
+ *
+ * @returns A new uiTree instance.
+ * @memberof uiTree @static
+ */
+_UI_EXTERN uiTree *uiNewTree(void);
+
+/**
+ * Appends an item as the last child of another item.
+ *
+ * @param t uiTree instance.
+ * @param parent Item to append to, `NULL` to append a root item.
+ * @param text Item text.\n
+ *             A valid, `NUL` terminated UTF-8 string.\n
+ *             Data is copied internally. Ownership is not transferred.
+ * @returns The appended item, `NULL` on failure.
+ * @memberof uiTree
+ */
+_UI_EXTERN uiTreeItem *uiTreeAppend(uiTree *t, uiTreeItem *parent, const char *text);
+
+/**
+ * Removes all items from the tree.
+ *
+ * @param t uiTree instance.
+ * @memberof uiTree
+ */
+_UI_EXTERN void uiTreeClear(uiTree *t);
+
+/**
+ * Expands every item of the tree.
+ *
+ * @param t uiTree instance.
+ * @memberof uiTree
+ */
+_UI_EXTERN void uiTreeExpandAll(uiTree *t);
+
+/**
+ * Returns the selected item.
+ *
+ * @param t uiTree instance.
+ * @returns The selected item, `NULL` when nothing is selected.
+ * @memberof uiTree
+ */
+_UI_EXTERN uiTreeItem *uiTreeSelected(uiTree *t);
+
+/**
+ * Registers an icon that items of the tree can display.
+ *
+ * All icons are scaled to the system small icon size.
+ *
+ * @param t uiTree instance.
+ * @param image Icon to register. Ownership is not transferred, the image can be
+ *              freed as soon as this call returns.
+ * @returns The icon index to pass to `uiTreeItemSetIcon()`, `-1` on failure.
+ * @memberof uiTree
+ */
+_UI_EXTERN int uiTreeAppendIcon(uiTree *t, uiImage *image);
+
+
+/**
+ * Sets the icon displayed next to an item.
+ *
+ * @param item uiTreeItem instance.
+ * @param icon Icon index returned by `uiTreeAppendIcon()`.
+ * @memberof uiTreeItem
+ */
+_UI_EXTERN void uiTreeItemSetIcon(uiTreeItem *item, int icon);
+
+
+/**
+ * Sets the data carried by an item.
+ *
+ * @param item uiTreeItem instance.
+ * @param data User data. Ownership is not transferred.
+ * @memberof uiTreeItem
+ */
+_UI_EXTERN void uiTreeItemSetData(uiTreeItem *item, void *data);
+
+/**
+ * Returns the data carried by an item.
+ *
+ * @param item uiTreeItem instance.
+ * @returns The data set with `uiTreeItemSetData()`, `NULL` when unset.
+ * @memberof uiTreeItem
+ */
+_UI_EXTERN void *uiTreeItemData(uiTreeItem *item);
+
+/**
+ * Registers a callback for when the selected item changes.
+ *
+ * @param t uiTree instance.
+ * @param f Callback function.\n
+ *          @p t Back reference to the instance that triggered the callback.\n
+ *          @p data User data registered with the sender instance.
+ * @param data User data to be passed to the callback.
+ * @memberof uiTree
+ */
+_UI_EXTERN void uiTreeOnSelectionChanged(uiTree *t, void (*f)(uiTree *t, void *data), void *data);
+
+/**
+ * Registers a callback for when an item is activated by double clicking it.
+ *
+ * @param t uiTree instance.
+ * @param f Callback function.\n
+ *          @p t Back reference to the instance that triggered the callback.\n
+ *          @p data User data registered with the sender instance.
+ * @param data User data to be passed to the callback.
+ * @memberof uiTree
+ */
+_UI_EXTERN void uiTreeOnItemActivated(uiTree *t, void (*f)(uiTree *t, void *data), void *data);
+
+/**
  * A source code editing control backed by the Scintilla component.
  *
  * The control is driven by sending it Scintilla messages, so including

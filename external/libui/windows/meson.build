@@ -68,6 +68,7 @@ libui_sources += [
 	'windows/tablemetrics.cpp',
 	'windows/tabpage.cpp',
 	'windows/text.cpp',
+	'windows/tree.cpp',
 	'windows/utf16.cpp',
 	'windows/utilwin.cpp',
 	'windows/window.cpp',

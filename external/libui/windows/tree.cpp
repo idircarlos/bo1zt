@@ -1,0 +1,246 @@
+// uiTree - Hierarchical list of items inserted imperatively, each one carrying user data
+#include "uipriv_windows.hpp"
+
+struct uiTreeItem {
+	uiTree *t;
+	HTREEITEM handle;
+	void *data;
+};
+
+struct uiTree {
+	uiWindowsControl c;
+	HWND hwnd;
+	HIMAGELIST icons;
+	std::vector<uiTreeItem *> *items;
+	void (*onSelectionChanged)(uiTree *, void *);
+	void *onSelectionChangedData;
+	void (*onItemActivated)(uiTree *, void *);
+	void *onItemActivatedData;
+};
+
+static BOOL onWM_NOTIFY(uiControl *c, HWND hwnd, NMHDR *nmhdr, LRESULT *lResult)
+{
+	uiTree *t = uiTree(c);
+
+	switch (nmhdr->code) {
+	case TVN_SELCHANGEDW:
+		(*(t->onSelectionChanged))(t, t->onSelectionChangedData);
+		*lResult = 0;
+		return TRUE;
+	case NM_DBLCLK:
+		(*(t->onItemActivated))(t, t->onItemActivatedData);
+		*lResult = 0;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static void treeFreeItems(uiTree *t)
+{
+	for (uiTreeItem *item : *(t->items))
+		uiprivFree(item);
+	t->items->clear();
+}
+
+static void uiTreeDestroy(uiControl *c)
+{
+	uiTree *t = uiTree(c);
+
+	uiWindowsUnregisterWM_NOTIFYHandler(t->hwnd);
+	uiWindowsEnsureDestroyWindow(t->hwnd);
+	treeFreeItems(t);
+	delete t->items;
+	if (t->icons != NULL)
+		ImageList_Destroy(t->icons);
+	uiFreeControl(uiControl(t));
+}
+
+uiWindowsControlAllDefaultsExceptDestroy(uiTree)
+
+#define treeMinWidth 107		/* in line with other controls */
+#define treeMinHeight (14 * 5)	/* roughly five items */
+
+static void uiTreeMinimumSize(uiWindowsControl *c, int *width, int *height)
+{
+	uiTree *t = uiTree(c);
+	uiWindowsSizing sizing;
+	int x, y;
+
+	x = treeMinWidth;
+	y = treeMinHeight;
+	uiWindowsGetSizing(t->hwnd, &sizing);
+	uiWindowsSizingDlgUnitsToPixels(&sizing, &x, &y);
+	*width = x;
+	*height = y;
+}
+
+static void defaultOnSelectionChanged(uiTree *t, void *data)
+{
+	// do nothing
+}
+
+static void defaultOnItemActivated(uiTree *t, void *data)
+{
+	// do nothing
+}
+
+void uiTreeOnSelectionChanged(uiTree *t, void (*f)(uiTree *t, void *data), void *data)
+{
+	t->onSelectionChanged = f;
+	t->onSelectionChangedData = data;
+}
+
+void uiTreeOnItemActivated(uiTree *t, void (*f)(uiTree *t, void *data), void *data)
+{
+	t->onItemActivated = f;
+	t->onItemActivatedData = data;
+}
+
+uiTreeItem *uiTreeAppend(uiTree *t, uiTreeItem *parent, const char *text)
+{
+	uiTreeItem *item;
+	TVINSERTSTRUCTW insert;
+	WCHAR *wtext;
+
+	item = uiprivNew(uiTreeItem);
+	item->t = t;
+	wtext = toUTF16(text);
+
+	ZeroMemory(&insert, sizeof (TVINSERTSTRUCTW));
+	insert.hParent = parent != NULL ? parent->handle : TVI_ROOT;
+	insert.hInsertAfter = TVI_LAST;
+	insert.item.mask = TVIF_TEXT | TVIF_PARAM;
+	insert.item.pszText = wtext;
+	insert.item.lParam = (LPARAM) item;
+
+	item->handle = (HTREEITEM) SendMessageW(t->hwnd, TVM_INSERTITEMW, 0, (LPARAM) (&insert));
+	uiprivFree(wtext);
+
+	if (item->handle == NULL) {
+		logLastError(L"error calling TVM_INSERTITEMW in uiTreeAppend()");
+		uiprivFree(item);
+		return NULL;
+	}
+
+	t->items->push_back(item);
+	return item;
+}
+
+void uiTreeClear(uiTree *t)
+{
+	if (SendMessageW(t->hwnd, TVM_DELETEITEM, 0, (LPARAM) TVI_ROOT) == FALSE)
+		logLastError(L"error calling TVM_DELETEITEM in uiTreeClear()");
+	treeFreeItems(t);
+}
+
+void uiTreeExpandAll(uiTree *t)
+{
+	for (uiTreeItem *item : *(t->items))
+		SendMessageW(t->hwnd, TVM_EXPAND, (WPARAM) TVE_EXPAND, (LPARAM) (item->handle));
+}
+
+uiTreeItem *uiTreeSelected(uiTree *t)
+{
+	HTREEITEM handle;
+	TVITEMW item;
+
+	handle = (HTREEITEM) SendMessageW(t->hwnd, TVM_GETNEXTITEM, (WPARAM) TVGN_CARET, 0);
+	if (handle == NULL)
+		return NULL;
+
+	ZeroMemory(&item, sizeof (TVITEMW));
+	item.mask = TVIF_PARAM;
+	item.hItem = handle;
+	if (SendMessageW(t->hwnd, TVM_GETITEMW, 0, (LPARAM) (&item)) == FALSE)
+		return NULL;
+
+	return (uiTreeItem *) (item.lParam);
+}
+
+static bool treeEnsureIcons(uiTree *t)
+{
+	if (t->icons != NULL)
+		return true;
+
+	t->icons = ImageList_Create(GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON),
+		ILC_COLOR32, 0, 4);
+	if (t->icons == NULL) {
+		logLastError(L"error creating the uiTree image list");
+		return false;
+	}
+	SendMessageW(t->hwnd, TVM_SETIMAGELIST, (WPARAM) TVSIL_NORMAL, (LPARAM) (t->icons));
+	return true;
+}
+
+int uiTreeAppendIcon(uiTree *t, uiImage *image)
+{
+	IWICBitmap *source;
+	HBITMAP bitmap;
+	HDC dc;
+	int index;
+
+	if (!treeEnsureIcons(t))
+		return -1;
+
+	dc = GetDC(t->hwnd);
+	source = uiprivImageAppropriateForDC(image, dc);
+	if (source == NULL || uiprivWICToGDI(source, dc,
+		GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), &bitmap) != S_OK) {
+		ReleaseDC(t->hwnd, dc);
+		return -1;
+	}
+	ReleaseDC(t->hwnd, dc);
+
+	index = ImageList_Add(t->icons, bitmap, NULL);
+	DeleteObject(bitmap);
+	if (index < 0)
+		logLastError(L"error adding an icon to the uiTree image list");
+	return index;
+}
+
+void uiTreeItemSetIcon(uiTreeItem *item, int icon)
+{
+	TVITEMW tv;
+
+	ZeroMemory(&tv, sizeof (TVITEMW));
+	tv.mask = TVIF_IMAGE | TVIF_SELECTEDIMAGE;
+	tv.hItem = item->handle;
+	tv.iImage = icon;
+	tv.iSelectedImage = icon;
+	if (SendMessageW(item->t->hwnd, TVM_SETITEMW, 0, (LPARAM) (&tv)) == FALSE)
+		logLastError(L"error calling TVM_SETITEMW in uiTreeItemSetIcon()");
+}
+
+void uiTreeItemSetData(uiTreeItem *item, void *data)
+{
+	item->data = data;
+}
+
+void *uiTreeItemData(uiTreeItem *item)
+{
+	return item->data;
+}
+
+uiTree *uiNewTree(void)
+{
+	uiTree *t;
+
+	uiWindowsNewControl(uiTree, t);
+
+	t->icons = NULL;
+	t->items = new std::vector<uiTreeItem *>;
+	t->hwnd = uiWindowsEnsureCreateControlHWND(WS_EX_CLIENTEDGE,
+		WC_TREEVIEWW, L"",
+		TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS | WS_TABSTOP | WS_HSCROLL | WS_VSCROLL,
+		hInstance, NULL,
+		TRUE);
+
+	// the chevrons of the Explorer theme instead of the legacy +/- boxes
+	SetWindowTheme(t->hwnd, L"Explorer", NULL);
+
+	uiWindowsRegisterWM_NOTIFYHandler(t->hwnd, onWM_NOTIFY, uiControl(t));
+	uiTreeOnSelectionChanged(t, defaultOnSelectionChanged, NULL);
+	uiTreeOnItemActivated(t, defaultOnItemActivated, NULL);
+
+	return t;
+}
