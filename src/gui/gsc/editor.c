@@ -22,12 +22,30 @@ typedef struct {
     bool dirty;
 } GscTab;
 
+static const unsigned int GSC_EDIT_MESSAGE[] = {
+    SCI_UNDO,
+    SCI_REDO,
+    SCI_CUT,
+    SCI_COPY,
+    SCI_PASTE,
+    SCI_SELECTALL,
+};
+
 static Client *client = NULL;
 static uiWindow *host = NULL;
 static uiTab *tabs = NULL;
 
 static GscTab openTabs[GSC_TAB_MAX];
 static size_t tabCount = 0;
+
+static bool wordWrap = false;
+static bool lineNumbers = true;
+
+static GscTab *activeTab(void) {
+    int index = uiTabSelected(tabs);
+    if (index < 0 || (size_t)index >= tabCount) return NULL;
+    return &openTabs[index];
+}
 
 static GscTab *tabOf(uiScintilla *editor) {
     for (size_t i = 0; i < tabCount; i++) {
@@ -72,15 +90,23 @@ static void onNotify(uiScintilla *editor, void *notification, void *data) {
     }
 }
 
+static void applyViewOptions(uiScintilla *editor) {
+    intptr_t marginWidth = 0;
+    if (lineNumbers)
+        marginWidth = uiScintillaSend(editor, SCI_TEXTWIDTH, STYLE_LINENUMBER,
+                                      (intptr_t)"_9999");
+
+    uiScintillaSend(editor, SCI_SETMARGINWIDTHN, 0, marginWidth);
+    uiScintillaSend(editor, SCI_SETWRAPMODE, wordWrap ? SC_WRAP_WORD : SC_WRAP_NONE, 0);
+}
+
 static void configureEditor(uiScintilla *editor) {
     uiScintillaSend(editor, SCI_STYLESETFONT, STYLE_DEFAULT, (intptr_t)GSC_EDITOR_FONT);
     uiScintillaSend(editor, SCI_STYLESETSIZE, STYLE_DEFAULT, GSC_EDITOR_FONT_SIZE);
     uiScintillaSend(editor, SCI_STYLECLEARALL, 0, 0);
 
-    intptr_t marginWidth = uiScintillaSend(editor, SCI_TEXTWIDTH, STYLE_LINENUMBER,
-                                           (intptr_t)"_9999");
     uiScintillaSend(editor, SCI_SETMARGINTYPEN, 0, SC_MARGIN_NUMBER);
-    uiScintillaSend(editor, SCI_SETMARGINWIDTHN, 0, marginWidth);
+    applyViewOptions(editor);
 
     uiScintillaSend(editor, SCI_SETTABWIDTH, GSC_EDITOR_TAB_WIDTH, 0);
     uiScintillaSend(editor, SCI_SETEOLMODE, SC_EOL_CRLF, 0);
@@ -173,4 +199,19 @@ void gscEditorFlush(void) {
     for (size_t i = 0; i < tabCount; i++) {
         if (openTabs[i].dirty) saveTab(&openTabs[i]);
     }
+}
+
+void gscEditorEdit(GscEditAction action) {
+    GscTab *tab = activeTab();
+    if (tab) uiScintillaSend(tab->editor, GSC_EDIT_MESSAGE[action], 0, 0);
+}
+
+void gscEditorSetWordWrap(bool enabled) {
+    wordWrap = enabled;
+    for (size_t i = 0; i < tabCount; i++) applyViewOptions(openTabs[i].editor);
+}
+
+void gscEditorSetLineNumbers(bool enabled) {
+    lineNumbers = enabled;
+    for (size_t i = 0; i < tabCount; i++) applyViewOptions(openTabs[i].editor);
 }

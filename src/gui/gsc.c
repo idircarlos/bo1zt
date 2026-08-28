@@ -12,6 +12,7 @@
 #include "gui.h"
 #include "client/gsc.h"
 #include "gui/gsc/editor.h"
+#include "gui/gsc/help.h"
 #include "resource_ids.h"
 #include "win/resources.h"
 
@@ -48,6 +49,25 @@ typedef struct {
     uiTreeItem *item;
 } GscNode;
 
+typedef struct {
+    const char *name;
+    GscEditAction action;
+    int key;
+} GscEditItem;
+
+static const GscEditItem GSC_EDIT_ITEM[] = {
+    {"Undo", GSC_EDIT_UNDO, 'Z'},
+    {"Redo", GSC_EDIT_REDO, 'Y'},
+    {NULL, GSC_EDIT_UNDO, 0},
+    {"Cut", GSC_EDIT_CUT, 'X'},
+    {"Copy", GSC_EDIT_COPY, 'C'},
+    {"Paste", GSC_EDIT_PASTE, 'V'},
+    {NULL, GSC_EDIT_UNDO, 0},
+    {"Select All", GSC_EDIT_SELECT_ALL, 'A'},
+};
+
+#define GSC_EDIT_ITEM_COUNT (sizeof(GSC_EDIT_ITEM) / sizeof(*GSC_EDIT_ITEM))
+
 static Client *client = NULL;
 static uiWindow *gscWindow = NULL;
 static uiTree *modTree = NULL;
@@ -57,8 +77,9 @@ static GscNode nodes[GSC_NODE_MAX];
 static size_t nodeCount = 0;
 static int treeIcons[GSC_ICON_COUNT];
 
-static uiButton *newFileButton = NULL;
-static uiButton *removeButton = NULL;
+static uiMenuItem *newFileItem = NULL;
+static uiMenuItem *newFolderItem = NULL;
+static uiMenuItem *deleteItem = NULL;
 static uiLabel *hintLabel = NULL;
 
 typedef struct {
@@ -148,16 +169,16 @@ static void loadTreeIcons(void) {
     }
 }
 
-static const char *selectedMod(void) {
-    const GscNode *node = selectedNode();
+static const char *nodeFolder(const GscNode *node) {
     if (!node) return NULL;
+    if (nodeIsFolder(node)) return node->path;
 
-    const char *slash = strchr(node->path, '/');
+    const char *slash = strrchr(node->path, '/');
     if (!slash) return node->path;
 
-    static char name[GSC_NODE_PATH_SIZE];
-    snprintf(name, sizeof(name), "%.*s", (int)(slash - node->path), node->path);
-    return name;
+    static char folder[GSC_NODE_PATH_SIZE];
+    snprintf(folder, sizeof(folder), "%.*s", (int)(slash - node->path), node->path);
+    return folder;
 }
 
 static void updateHint(void) {
@@ -166,13 +187,15 @@ static void updateHint(void) {
     uiLabelSetText(hintLabel, ongoing ? GSC_HINT_ONGOING : GSC_HINT_IDLE);
 }
 
-static void updateButtons(void) {
+static void updateMenuItems(void) {
     if (selectedNode()) {
-        uiControlEnable(uiControl(newFileButton));
-        uiControlEnable(uiControl(removeButton));
+        uiMenuItemEnable(newFileItem);
+        uiMenuItemEnable(newFolderItem);
+        uiMenuItemEnable(deleteItem);
     } else {
-        uiControlDisable(uiControl(newFileButton));
-        uiControlDisable(uiControl(removeButton));
+        uiMenuItemDisable(newFileItem);
+        uiMenuItemDisable(newFolderItem);
+        uiMenuItemDisable(deleteItem);
     }
 }
 
@@ -199,7 +222,7 @@ static GscNode *addNode(uiTreeItem *parent, const char *path, const char *text, 
     return node;
 }
 
-static void addModFile(const GscNode *mod, const char *relative) {
+static void addModEntry(const GscNode *mod, const char *relative, bool folder) {
     char path[GSC_NODE_PATH_SIZE];
     uiTreeItem *parent = mod->item;
 
@@ -215,10 +238,12 @@ static void addModFile(const GscNode *mod, const char *relative) {
         memcpy(path + used + 1, segment, length);
         path[used + 1 + length] = '\0';
 
+        bool leafFile = slash == NULL && !folder;
+
         GscNode *node = findNode(path);
         if (!node)
             node = addNode(parent, path, path + used + 1,
-                           slash != NULL ? GSC_ICON_FOLDER : GSC_ICON_FILE);
+                           leafFile ? GSC_ICON_FILE : GSC_ICON_FOLDER);
         if (!node) return;
 
         parent = node->item;
@@ -240,27 +265,27 @@ static void reloadMods(void) {
         GscNode *node = addNode(NULL, mod->name, mod->name, GSC_ICON_MOD);
         if (!node) break;
 
-        for (size_t f = 0; f < mod->fileCount; f++) {
-            addModFile(node, mod->files[f].path);
+        for (size_t e = 0; e < mod->entryCount; e++) {
+            addModEntry(node, mod->entries[e].path, mod->entries[e].folder);
         }
     }
 
     uiTreeExpandAll(modTree);
-    updateButtons();
+    updateMenuItems();
     updateHint();
 }
 
 static void onSelectionChanged(uiTree *tree, void *data) {
     (void)tree; (void)data;
 
-    updateButtons();
+    updateMenuItems();
 
     const GscNode *node = selectedNode();
     if (node && !nodeIsFolder(node)) gscEditorOpen(node->path);
 }
 
-static void onNewModClicked(uiButton *button, void *data) {
-    (void)button; (void)data;
+static void onNewModClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window; (void)data;
 
     char *name = promptText("New Mod", "Mod name:");
     if (!name) return;
@@ -285,20 +310,18 @@ static void onNewModClicked(uiButton *button, void *data) {
     if (n > 0 && (size_t)n < sizeof(relative)) gscEditorOpen(relative);
 }
 
-static void onNewFileClicked(uiButton *button, void *data) {
-    (void)button; (void)data;
-
-    const char *mod = selectedMod();
-    if (!mod) return;
+static void createFile(const GscNode *node) {
+    const char *folder = nodeFolder(node);
+    if (!folder) return;
 
     char label[GSC_NODE_PATH_SIZE + 32];
-    snprintf(label, sizeof(label), "File name, relative to %s:", mod);
+    snprintf(label, sizeof(label), "File name, relative to %s:", folder);
 
     char *name = promptText("New File", label);
     if (!name) return;
 
     char relative[GSC_NODE_PATH_SIZE];
-    int n = snprintf(relative, sizeof(relative), "%s/%s", mod, name);
+    int n = snprintf(relative, sizeof(relative), "%s/%s", folder, name);
     free(name);
     if (n <= 0 || (size_t)n >= sizeof(relative)) return;
 
@@ -311,35 +334,251 @@ static void onNewFileClicked(uiButton *button, void *data) {
     gscEditorOpen(relative);
 }
 
-static void onRemoveClicked(uiButton *button, void *data) {
-    (void)button; (void)data;
+static void createFolder(const GscNode *node) {
+    const char *folder = nodeFolder(node);
+    if (!folder) return;
 
-    GscNode *node = selectedNode();
+    char label[GSC_NODE_PATH_SIZE + 32];
+    snprintf(label, sizeof(label), "Folder name, relative to %s:", folder);
+
+    char *name = promptText("New Folder", label);
+    if (!name) return;
+
+    char relative[GSC_NODE_PATH_SIZE];
+    int n = snprintf(relative, sizeof(relative), "%s/%s", folder, name);
+    free(name);
+    if (n <= 0 || (size_t)n >= sizeof(relative)) return;
+
+    if (clientCreateGscFolder(client, relative) != CLIENT_OK) {
+        uiMsgBoxError(gscWindow, "New folder", "Could not create the folder.");
+        return;
+    }
+
+    reloadMods();
+}
+
+static void deleteNode(const GscNode *node) {
     if (!node) return;
 
     char message[GSC_NODE_PATH_SIZE + 64];
     snprintf(message, sizeof(message),
              nodeIsFolder(node) ? "Delete \"%s\" and everything inside it?" : "Delete \"%s\"?",
              node->path);
-    if (uiMsgBoxOkCancel(gscWindow, "Remove", message) != 1) return;
+    if (uiMsgBoxOkCancel(gscWindow, "Delete", message) != 1) return;
 
     gscEditorClose(node->path);
 
     if (clientDeleteGscPath(client, node->path) != CLIENT_OK) {
-        uiMsgBoxError(gscWindow, "Remove", clientLastErrorMessage(client));
+        uiMsgBoxError(gscWindow, "Delete", clientLastErrorMessage(client));
     }
     reloadMods();
 }
 
-static void onOpenFolderClicked(uiButton *button, void *data) {
-    (void)button; (void)data;
+static void revealNode(const GscNode *node) {
+    if (!node || mods.folder[0] == '\0') return;
+
+    char path[MAX_PATH];
+    int n = snprintf(path, sizeof(path), "%s\\%s", mods.folder, node->path);
+    if (n <= 0 || (size_t)n >= sizeof(path)) return;
+
+    for (char *c = path; *c; c++) {
+        if (*c == '/') *c = '\\';
+    }
+
+    char select[MAX_PATH + 16];
+    snprintf(select, sizeof(select), "/select,\"%s\"", path);
+    ShellExecuteA(NULL, "open", "explorer.exe", select, NULL, SW_SHOWNORMAL);
+}
+
+static void onNewFileClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window; (void)data;
+    createFile(selectedNode());
+}
+
+static void onNewFolderClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window; (void)data;
+    createFolder(selectedNode());
+}
+
+static void onDeleteClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window; (void)data;
+    deleteNode(selectedNode());
+}
+
+static void onSaveClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window; (void)data;
+    gscEditorFlush();
+}
+
+static void onOpenFolderClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window; (void)data;
     if (mods.folder[0] == '\0') return;
     ShellExecuteA(NULL, "open", mods.folder, NULL, NULL, SW_SHOWNORMAL);
 }
 
-static void onRefreshClicked(uiButton *button, void *data) {
-    (void)button; (void)data;
+static void onEditClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window;
+    gscEditorEdit((GscEditAction)(intptr_t)data);
+}
+
+static void onRefreshClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window; (void)data;
     reloadMods();
+}
+
+static void onExpandAllClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window; (void)data;
+    uiTreeExpandAll(modTree);
+}
+
+static void onCollapseAllClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window; (void)data;
+    uiTreeCollapseAll(modTree);
+}
+
+static void onWordWrapClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)window; (void)data;
+    gscEditorSetWordWrap(uiMenuItemChecked(item) != 0);
+}
+
+static void onLineNumbersClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)window; (void)data;
+    gscEditorSetLineNumbers(uiMenuItemChecked(item) != 0);
+}
+
+static void onHelpClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)data;
+    uiGscHelpShow(window);
+}
+
+typedef struct {
+    const char *name;
+    void (*action)(const GscNode *);
+} GscContextItem;
+
+static const GscContextItem GSC_CONTEXT_ITEM[] = {
+    {"New File...", createFile},
+    {"New Folder...", createFolder},
+    {NULL, NULL},
+    {"Delete", deleteNode},
+    {NULL, NULL},
+    {"Reveal in Explorer", revealNode},
+};
+
+#define GSC_CONTEXT_ITEM_COUNT (sizeof(GSC_CONTEXT_ITEM) / sizeof(*GSC_CONTEXT_ITEM))
+#define GSC_CONTEXT_ID_FIRST 1
+
+static void onTreeContextMenu(uiTree *tree, uiTreeItem *item, void *data) {
+    (void)tree; (void)data;
+
+    const GscNode *node = (const GscNode *)uiTreeItemData(item);
+    if (!node) return;
+
+    POINT cursor;
+    if (!GetCursorPos(&cursor)) return;
+
+    HMENU menu = CreatePopupMenu();
+    if (!menu) return;
+
+    for (size_t i = 0; i < GSC_CONTEXT_ITEM_COUNT; i++) {
+        if (GSC_CONTEXT_ITEM[i].name == NULL) {
+            AppendMenuA(menu, MF_SEPARATOR, 0, NULL);
+            continue;
+        }
+        AppendMenuA(menu, MF_STRING, GSC_CONTEXT_ID_FIRST + i, GSC_CONTEXT_ITEM[i].name);
+    }
+
+    int id = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_NONOTIFY,
+                            cursor.x, cursor.y, 0,
+                            (HWND)uiControlHandle(uiControl(gscWindow)), NULL);
+    DestroyMenu(menu);
+
+    size_t index = (size_t)(id - GSC_CONTEXT_ID_FIRST);
+    if (id >= GSC_CONTEXT_ID_FIRST && index < GSC_CONTEXT_ITEM_COUNT)
+        GSC_CONTEXT_ITEM[index].action(node);
+}
+
+static uiMenuItem *appendItem(uiMenu *menu, const char *name,
+                              void (*onClicked)(uiMenuItem *, uiWindow *, void *)) {
+    uiMenuItem *item = uiMenuAppendItem(menu, name);
+    uiMenuItemOnClicked(item, onClicked, NULL);
+    return item;
+}
+
+static void buildFileMenu(uiMenuBar *bar) {
+    uiMenu *menu = uiMenuBarAppendMenu(bar, "File");
+
+    uiMenuItem *newMod = appendItem(menu, "New Mod...", onNewModClicked);
+    uiMenuItemSetShortcut(newMod, uiModifierCtrl, 'M');
+
+    newFileItem = appendItem(menu, "New File...", onNewFileClicked);
+    uiMenuItemSetShortcut(newFileItem, uiModifierCtrl, 'N');
+
+    newFolderItem = appendItem(menu, "New Folder...", onNewFolderClicked);
+    uiMenuItemSetShortcut(newFolderItem, uiModifierCtrl | uiModifierShift, 'N');
+
+    deleteItem = appendItem(menu, "Delete", onDeleteClicked);
+
+    uiMenuAppendSeparator(menu);
+    uiMenuItem *save = appendItem(menu, "Save", onSaveClicked);
+    uiMenuItemSetShortcut(save, uiModifierCtrl, 'S');
+
+    uiMenuAppendSeparator(menu);
+    uiMenuItem *openFolder = appendItem(menu, "Open Mods Folder", onOpenFolderClicked);
+    uiMenuItemSetShortcut(openFolder, uiModifierCtrl | uiModifierShift, 'O');
+}
+
+static void buildEditMenu(uiMenuBar *bar) {
+    uiMenu *menu = uiMenuBarAppendMenu(bar, "Edit");
+
+    for (size_t i = 0; i < GSC_EDIT_ITEM_COUNT; i++) {
+        if (GSC_EDIT_ITEM[i].name == NULL) {
+            uiMenuAppendSeparator(menu);
+            continue;
+        }
+
+        uiMenuItem *item = uiMenuAppendItem(menu, GSC_EDIT_ITEM[i].name);
+        uiMenuItemOnClicked(item, onEditClicked, (void *)(intptr_t)GSC_EDIT_ITEM[i].action);
+        uiMenuItemSetShortcut(item, uiModifierCtrl, GSC_EDIT_ITEM[i].key);
+    }
+}
+
+static void buildViewMenu(uiMenuBar *bar) {
+    uiMenu *menu = uiMenuBarAppendMenu(bar, "View");
+
+    uiMenuItem *refresh = appendItem(menu, "Refresh", onRefreshClicked);
+    uiMenuItemSetShortcut(refresh, 0, uiExtKeyF5);
+
+    uiMenuAppendSeparator(menu);
+    appendItem(menu, "Expand All Mods", onExpandAllClicked);
+    appendItem(menu, "Collapse All Mods", onCollapseAllClicked);
+
+    uiMenuAppendSeparator(menu);
+    uiMenuItem *wordWrap = uiMenuAppendCheckItem(menu, "Word Wrap");
+    uiMenuItemOnClicked(wordWrap, onWordWrapClicked, NULL);
+    uiMenuItemSetShortcut(wordWrap, uiModifierAlt, 'Z');
+
+    uiMenuItem *lineNumbers = uiMenuAppendCheckItem(menu, "Line Numbers");
+    uiMenuItemOnClicked(lineNumbers, onLineNumbersClicked, NULL);
+    uiMenuItemSetChecked(lineNumbers, 1);
+}
+
+static void buildHelpMenu(uiMenuBar *bar) {
+    uiMenu *menu = uiMenuBarAppendMenu(bar, "Help");
+
+    uiMenuItem *help = appendItem(menu, "GSC Mods Help", onHelpClicked);
+    uiMenuItemSetShortcut(help, 0, uiExtKeyF1);
+}
+
+static uiMenuBar *buildMenuBar(void) {
+    uiMenuBar *bar = uiNewMenuBar();
+
+    buildFileMenu(bar);
+    buildEditMenu(bar);
+    buildViewMenu(bar);
+    buildHelpMenu(bar);
+
+    return bar;
 }
 
 static uiControl *buildSidebar(void) {
@@ -349,34 +588,9 @@ static uiControl *buildSidebar(void) {
 
     modTree = uiNewTree();
     uiTreeOnSelectionChanged(modTree, onSelectionChanged, NULL);
+    uiTreeOnItemContextMenu(modTree, onTreeContextMenu, NULL);
     loadTreeIcons();
     uiBoxAppend(box, uiControl(modTree), 1);
-
-    uiButton *newModButton = uiNewButton("New Mod...");
-    newFileButton = uiNewButton("New File...");
-    removeButton = uiNewButton("Remove");
-    uiButton *openFolderButton = uiNewButton("Open Folder");
-    uiButton *refreshButton = uiNewButton("Refresh");
-
-    uiButtonOnClicked(newModButton, onNewModClicked, NULL);
-    uiButtonOnClicked(newFileButton, onNewFileClicked, NULL);
-    uiButtonOnClicked(removeButton, onRemoveClicked, NULL);
-    uiButtonOnClicked(openFolderButton, onOpenFolderClicked, NULL);
-    uiButtonOnClicked(refreshButton, onRefreshClicked, NULL);
-
-    uiBox *creation = uiNewHorizontalBox();
-    uiBoxSetPadded(creation, 1);
-    uiBoxAppend(creation, uiControl(newModButton), 1);
-    uiBoxAppend(creation, uiControl(newFileButton), 1);
-    uiBoxAppend(box, uiControl(creation), 0);
-
-    uiBox *maintenance = uiNewHorizontalBox();
-    uiBoxSetPadded(maintenance, 1);
-    uiBoxAppend(maintenance, uiControl(removeButton), 1);
-    uiBoxAppend(maintenance, uiControl(refreshButton), 1);
-    uiBoxAppend(box, uiControl(maintenance), 0);
-
-    uiBoxAppend(box, uiControl(openFolderButton), 0);
 
     return uiControl(box);
 }
@@ -409,6 +623,7 @@ static void buildGscWindow(void) {
     uiWindowOnClosing(gscWindow, onWindowClose, NULL);
     uiWindowSetMargined(gscWindow, 1);
     uiWindowSetChild(gscWindow, buildContent());
+    uiWindowSetMenuBar(gscWindow, buildMenuBar());
     uiWindowSetIcon(gscWindow, IDI_ICON1);
 }
 
