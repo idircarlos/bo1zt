@@ -110,15 +110,20 @@ lib/libscintilla.a: $(SCINTILLA_OBJ)
 	@echo "Archiving $@"
 	@ar rcs $@ $^
 
-lib/libui.a: external/libui/build/meson-out/libui.a
+LIBUI_DIR := external/libui
+LIBUI_SRC := $(wildcard $(LIBUI_DIR)/common/*.c) $(wildcard $(LIBUI_DIR)/common/*.h) \
+             $(wildcard $(LIBUI_DIR)/windows/*.cpp) $(wildcard $(LIBUI_DIR)/windows/*.hpp) \
+             $(LIBUI_DIR)/ui.h $(LIBUI_DIR)/ui_windows.h $(LIBUI_DIR)/windows/meson.build
+
+lib/libui.a: $(LIBUI_DIR)/build/meson-out/libui.a
 	@mkdir -p lib
 	@cp $< $@
 
-external/libui/build/meson-out/libui.a:
-	cd external/libui && rm -rf build && \
+$(LIBUI_DIR)/build/meson-out/libui.a: $(LIBUI_SRC)
+	cd $(LIBUI_DIR) && if [ ! -d build ]; then \
 		CC=$(CC) CXX=$(CXX) CFLAGS="$(ARCH)" CXXFLAGS="$(ARCH)" LDFLAGS="$(ARCH)" \
-		meson setup build --default-library=static
-	cd external/libui && meson compile -C build
+		meson setup build --default-library=static; fi
+	cd $(LIBUI_DIR) && meson compile -C build
 
 lib/libiniparser.a: external/iniparser/build/libiniparser.a
 	@mkdir -p lib
