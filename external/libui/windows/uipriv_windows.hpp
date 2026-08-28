@@ -125,6 +125,7 @@ extern void unregisterArea(void);
 extern BOOL areaFilter(MSG *);
 
 // window.cpp
+extern HACCEL uiprivWindowAccelerators(HWND hwnd);
 extern ATOM registerWindowClass(HICON, HCURSOR);
 extern void unregisterWindowClass(void);
 extern void ensureMinimumWindowSize(uiWindow *);
@@ -178,6 +179,7 @@ extern HRESULT uiprivWICBitmapFromResource(int resourceId, IWICBitmap **b);
 
 // menu.cpp
 extern HMENU uiprivMenuBarMake(uiMenuBar *mb);
+extern HACCEL uiprivMenuBarMakeAccelerators(uiMenuBar *mb);
 extern void uiprivMenuBarForgetHMENU(uiMenuBar *mb, HMENU menubar);
 extern void uiprivMenuBarRunEvent(uiMenuBar *mb, WORD id, uiWindow *w);
 

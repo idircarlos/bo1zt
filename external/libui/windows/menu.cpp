@@ -16,7 +16,10 @@ struct uiMenu {
 };
 
 struct uiMenuItem {
+	uiMenuBar *menuBar;
 	WCHAR *name;
+	WCHAR *shortcut;
+	ACCEL accel;
 	int type;
 	WORD id;
 	void (*onClicked)(uiMenuItem *, uiWindow *, void *);
@@ -100,6 +103,119 @@ void uiMenuItemSetChecked(uiMenuItem *i, int checked)
 	sync(i);
 }
 
+typedef struct {
+	int key;
+	WORD virtualKey;
+	const WCHAR *name;
+} shortcutKey;
+
+static const shortcutKey shortcutKeys[] = {
+	{ uiExtKeyEscape,	VK_ESCAPE,	L"Esc" },
+	{ uiExtKeyInsert,	VK_INSERT,	L"Ins" },
+	{ uiExtKeyDelete,	VK_DELETE,	L"Del" },
+	{ uiExtKeyHome,		VK_HOME,	L"Home" },
+	{ uiExtKeyEnd,		VK_END,		L"End" },
+	{ uiExtKeyPageUp,	VK_PRIOR,	L"PgUp" },
+	{ uiExtKeyPageDown,	VK_NEXT,	L"PgDn" },
+	{ uiExtKeyUp,		VK_UP,		L"Up" },
+	{ uiExtKeyDown,		VK_DOWN,	L"Down" },
+	{ uiExtKeyLeft,		VK_LEFT,	L"Left" },
+	{ uiExtKeyRight,	VK_RIGHT,	L"Right" },
+};
+
+#define shortcutKeyCount (sizeof (shortcutKeys) / sizeof (*shortcutKeys))
+
+static BOOL isFunctionKey(int key)
+{
+	return key >= uiExtKeyF1 && key <= uiExtKeyF12;
+}
+
+static BOOL isAlphanumericKey(int key)
+{
+	return (key >= '0' && key <= '9') ||
+		(key >= 'A' && key <= 'Z') ||
+		(key >= 'a' && key <= 'z');
+}
+
+static WCHAR upperKey(int key)
+{
+	if (key >= 'a' && key <= 'z')
+		return (WCHAR) (key - 'a' + 'A');
+	return (WCHAR) key;
+}
+
+static const shortcutKey *lookupShortcutKey(int key)
+{
+	for (size_t i = 0; i < shortcutKeyCount; i++)
+		if (shortcutKeys[i].key == key)
+			return &shortcutKeys[i];
+	return NULL;
+}
+
+static BOOL isShortcutKey(int key)
+{
+	return isAlphanumericKey(key) || isFunctionKey(key) || lookupShortcutKey(key) != NULL;
+}
+
+static WORD shortcutVirtualKey(int key)
+{
+	if (isAlphanumericKey(key))
+		return (WORD) upperKey(key);
+	if (isFunctionKey(key))
+		return (WORD) (VK_F1 + (key - uiExtKeyF1));
+	return lookupShortcutKey(key)->virtualKey;
+}
+
+static WCHAR *shortcutKeyName(int key)
+{
+	if (isAlphanumericKey(key))
+		return strf(L"%c", upperKey(key));
+	if (isFunctionKey(key))
+		return strf(L"F%d", key - uiExtKeyF1 + 1);
+	return utf16dup(lookupShortcutKey(key)->name);
+}
+
+static WCHAR *shortcutName(int modifiers, int key)
+{
+	WCHAR *keyName;
+	WCHAR *name;
+
+	keyName = shortcutKeyName(key);
+	name = strf(L"%s%s%s%s",
+		(modifiers & uiModifierCtrl) != 0 ? L"Ctrl+" : L"",
+		(modifiers & uiModifierAlt) != 0 ? L"Alt+" : L"",
+		(modifiers & uiModifierShift) != 0 ? L"Shift+" : L"",
+		keyName);
+	uiprivFree(keyName);
+	return name;
+}
+
+void uiMenuItemSetShortcut(uiMenuItem *i, int modifiers, int key)
+{
+	if (i->menuBar->finalized)
+		uiprivUserBug("You can not set a menu item shortcut after the menu bar has been attached to a window.");
+	if (i->type == typeSeparator)
+		uiprivUserBug("You can not set a shortcut on a separator.");
+	if ((modifiers & uiModifierSuper) != 0)
+		uiprivUserBug("Windows does not support the Super key in menu item shortcuts.");
+	if (!isShortcutKey(key))
+		uiprivUserBug("Unsupported menu item shortcut key %d.", key);
+
+	if (i->shortcut != NULL)
+		uiprivFree(i->shortcut);
+	i->shortcut = shortcutName(modifiers, key);
+
+	i->accel.fVirt = FVIRTKEY;
+	if ((modifiers & uiModifierCtrl) != 0)
+		i->accel.fVirt |= FCONTROL;
+	if ((modifiers & uiModifierAlt) != 0)
+		i->accel.fVirt |= FALT;
+	if ((modifiers & uiModifierShift) != 0)
+		i->accel.fVirt |= FSHIFT;
+	i->accel.key = shortcutVirtualKey(key);
+	i->accel.cmd = i->id;
+}
+
 static uiMenuItem *newItem(uiMenu *m, int type, const char *name)
 {
 	uiMenuItem *item;
@@ -108,6 +224,7 @@ static uiMenuItem *newItem(uiMenu *m, int type, const char *name)
 		uiprivUserBug("You can not create a new menu item after the menu bar has been attached to a window.");
 
 	item = uiprivNew(uiMenuItem);
+	item->menuBar = m->menuBar;
 	item->hmenus = new std::vector<HMENU>;
 	m->items->push_back(item);
 
@@ -215,6 +332,7 @@ uiMenu *uiMenuBarAppendMenu(uiMenuBar *mb, const char *name)
 static void appendMenuItem(HMENU menu, uiMenuItem *item)
 {
 	UINT uFlags;
+	WCHAR *text;
 
 	uFlags = MF_SEPARATOR;
 	if (item->type != typeSeparator) {
@@ -224,8 +342,13 @@ static void appendMenuItem(HMENU menu, uiMenuItem *item)
 		if (item->checked)
 			uFlags |= MF_CHECKED;
 	}
-	if (AppendMenuW(menu, uFlags, item->id, item->name) == 0)
+	text = item->name;
+	if (item->shortcut != NULL)
+		text = strf(L"%s\t%s", item->name, item->shortcut);
+	if (AppendMenuW(menu, uFlags, item->id, text) == 0)
 		logLastError(L"error appending menu item");
+	if (text != item->name)
+		uiprivFree(text);
 
 	item->hmenus->push_back(menu);
 }
@@ -260,6 +383,24 @@ HMENU uiprivMenuBarMake(uiMenuBar *mb)
 	}
 
 	return menubar;
+}
+
+HACCEL uiprivMenuBarMakeAccelerators(uiMenuBar *mb)
+{
+	std::vector<ACCEL> accels;
+	HACCEL table;
+
+	for (uiMenu *m : *(mb->menus))
+		for (uiMenuItem *item : *(m->items))
+			if (item->accel.key != 0)
+				accels.push_back(item->accel);
+	if (accels.empty())
+		return NULL;
+
+	table = CreateAcceleratorTableW(accels.data(), (int) accels.size());
+	if (table == NULL)
+		logLastError(L"error creating accelerator table");
+	return table;
 }
 
 void uiprivMenuBarRunEvent(uiMenuBar *mb, WORD id, uiWindow *w)
@@ -307,6 +448,8 @@ static void freeMenu(uiMenu *m)
 	for (uiMenuItem *item : *(m->items)) {
 		if (item->name != NULL)
 			uiprivFree(item->name);
+		if (item->shortcut != NULL)
+			uiprivFree(item->shortcut);
 		delete item->hmenus;
 		uiprivFree(item);
 	}

@@ -8,6 +8,7 @@ struct uiWindow {
 	HWND hwnd;
 	uiMenuBar *menuBar;
 	HMENU hmenu;
+	HACCEL haccel;
 	uiControl *child;
 	uiStatusBar *statusBar;
 	BOOL shownOnce;
@@ -102,7 +103,8 @@ static LRESULT CALLBACK windowWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARA
 		// IsDialogMessage() will also generate IDOK and IDCANCEL when pressing Enter and Escape (respectively) on some controls, like EDIT controls
 		// swallow those too; they'll cause runMenuEvent() to panic
 		// TODO fix the root cause somehow
-		if (HIWORD(wParam) != 0 || LOWORD(wParam) <= IDCANCEL)
+		// HIWORD() is 0 for menus and 1 for accelerators
+		if (HIWORD(wParam) > 1 || LOWORD(wParam) <= IDCANCEL)
 			break;
 		if (w->menuBar != NULL)
 			uiprivMenuBarRunEvent(w->menuBar, LOWORD(wParam), uiWindow(w));
@@ -140,6 +142,18 @@ static LRESULT CALLBACK windowWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARA
 		return 0;		// we destroyed it already
 	}
 	return DefWindowProcW(hwnd, uMsg, wParam, lParam);
+}
+
+HACCEL uiprivWindowAccelerators(HWND hwnd)
+{
+	LONG_PTR ww;
+
+	if (windowClassOf(hwnd, windowClass, NULL) != 0)
+		return NULL;
+	ww = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+	if (ww == 0)
+		return NULL;
+	return uiWindow((void *) ww)->haccel;
 }
 
 ATOM registerWindowClass(HICON hDefaultIcon, HCURSOR hDefaultCursor)
@@ -196,6 +210,8 @@ static void uiWindowDestroy(uiControl *c)
 	// now detach the menu bar, if any
 	if (w->menuBar != NULL)
 		uiprivMenuBarForgetHMENU(w->menuBar, w->hmenu);
+	if (w->haccel != NULL)
+		DestroyAcceleratorTable(w->haccel);
 	// and finally free ourselves
 	windows.erase(w);
 	uiWindowsEnsureDestroyWindow(w->hwnd);
@@ -508,10 +524,15 @@ void uiWindowSetMenuBar(uiWindow *w, uiMenuBar *mb)
 
 	if (w->menuBar != NULL)
 		uiprivMenuBarForgetHMENU(w->menuBar, prev);
+	if (w->haccel != NULL)
+		DestroyAcceleratorTable(w->haccel);
 	w->menuBar = mb;
 	w->hmenu = NULL;
-	if (w->menuBar != NULL)
+	w->haccel = NULL;
+	if (w->menuBar != NULL) {
 		w->hmenu = uiprivMenuBarMake(w->menuBar);
+		w->haccel = uiprivMenuBarMakeAccelerators(w->menuBar);
+	}
 	if (SetMenu(w->hwnd, w->hmenu) == 0)
 		logLastError(L"error giving menu to window");
 	DrawMenuBar(w->hwnd);

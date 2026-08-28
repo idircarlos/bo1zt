@@ -1875,6 +1875,24 @@ _UI_EXTERN int uiMenuItemChecked(uiMenuItem *m);
 _UI_EXTERN void uiMenuItemSetChecked(uiMenuItem *m, int checked);
 
 /**
+ * Sets the keyboard shortcut of the menu item.
+ *
+ * The shortcut is shown next to the item text and triggers the item from any
+ * window the menu bar is attached to, taking precedence over the shortcuts of
+ * the focused control.
+ *
+ * @param m uiMenuItem instance.
+ * @param modifiers Bitmask of uiModifiers values, `0` for none.\n
+ *                  `uiModifierSuper` is not supported.
+ * @param key Letter or digit, or a uiExtKey value for `F1` to `F12` and the
+ *            navigation keys.
+ * @warning Shortcuts can only be set before the menu bar is attached to a
+ *          window.
+ * @memberof uiMenuItem
+ */
+_UI_EXTERN void uiMenuItemSetShortcut(uiMenuItem *m, int modifiers, int key);
+
+/**
  * A single drop down of a uiMenuBar, holding uiMenuItem entries.
  *
  * @struct uiMenu
@@ -4915,6 +4933,22 @@ _UI_EXTERN void uiTreeOnSelectionChanged(uiTree *t, void (*f)(uiTree *t, void *d
  * @memberof uiTree
  */
 _UI_EXTERN void uiTreeOnItemActivated(uiTree *t, void (*f)(uiTree *t, void *data), void *data);
+
+/**
+ * Registers a callback for when an item is right clicked.
+ *
+ * The clicked item becomes the selected one before the callback runs, without
+ * raising the selection changed callback.
+ *
+ * @param t uiTree instance.
+ * @param f Callback function.\n
+ *          @p t Back reference to the instance that triggered the callback.\n
+ *          @p item The right clicked item.\n
+ *          @p data User data registered with the sender instance.
+ * @param data User data to be passed to the callback.
+ * @memberof uiTree
+ */
+_UI_EXTERN void uiTreeOnItemContextMenu(uiTree *t, void (*f)(uiTree *t, uiTreeItem *item, void *data), void *data);
 
 /**
  * A source code editing control backed by the Scintilla component.

@@ -41,20 +41,25 @@ void unregisterMessageFilter(void)
 		logLastError(L"error unregistering libui message filter");
 }
 
-// LONGTERM http://blogs.msdn.com/b/oldnewthing/archive/2005/04/08/406509.aspx when adding accelerators, TranslateAccelerators() before IsDialogMessage()
-
 static void processMessage(MSG *msg)
 {
 	HWND correctParent;
+	HACCEL accelerators;
 
 	if (msg->hwnd != NULL)
 		correctParent = parentToplevel(msg->hwnd);
 	else		// just to be safe
 		correctParent = GetActiveWindow();
-	if (correctParent != NULL)
+	if (correctParent != NULL) {
+		// see http://blogs.msdn.com/b/oldnewthing/archive/2005/04/08/406509.aspx for why this comes first
+		accelerators = uiprivWindowAccelerators(correctParent);
+		if (accelerators != NULL)
+			if (TranslateAcceleratorW(correctParent, accelerators, msg) != 0)
+				return;
 		// this calls our mesage filter above for us
 		if (IsDialogMessage(correctParent, msg) != 0)
 			return;
+	}
 	TranslateMessage(msg);
 	DispatchMessageW(msg);
 }
