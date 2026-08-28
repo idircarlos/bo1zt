@@ -16,7 +16,27 @@ struct uiTree {
 	void *onSelectionChangedData;
 	void (*onItemActivated)(uiTree *, void *);
 	void *onItemActivatedData;
+	void (*onItemContextMenu)(uiTree *, uiTreeItem *, void *);
+	void *onItemContextMenuData;
+	uiTreeItem *rightClicked;
+	BOOL inhibitSelectionChanged;
 };
+
+static uiTreeItem *treeItemFromHandle(uiTree *t, HTREEITEM handle)
+{
+	TVITEMW item;
+
+	if (handle == NULL)
+		return NULL;
+
+	ZeroMemory(&item, sizeof (TVITEMW));
+	item.mask = TVIF_PARAM;
+	item.hItem = handle;
+	if (SendMessageW(t->hwnd, TVM_GETITEMW, 0, (LPARAM) (&item)) == FALSE)
+		return NULL;
+
+	return (uiTreeItem *) (item.lParam);
+}
 
 static BOOL onWM_NOTIFY(uiControl *c, HWND hwnd, NMHDR *nmhdr, LRESULT *lResult)
 {
@@ -24,6 +44,8 @@ static BOOL onWM_NOTIFY(uiControl *c, HWND hwnd, NMHDR *nmhdr, LRESULT *lResult)
 
 	switch (nmhdr->code) {
 	case TVN_SELCHANGEDW:
+		if (t->inhibitSelectionChanged)
+			return FALSE;
 		(*(t->onSelectionChanged))(t, t->onSelectionChangedData);
 		*lResult = 0;
 		return TRUE;
@@ -31,8 +53,58 @@ static BOOL onWM_NOTIFY(uiControl *c, HWND hwnd, NMHDR *nmhdr, LRESULT *lResult)
 		(*(t->onItemActivated))(t, t->onItemActivatedData);
 		*lResult = 0;
 		return TRUE;
+	case NM_RCLICK:
+		if (t->rightClicked == NULL)
+			return FALSE;
+		(*(t->onItemContextMenu))(t, t->rightClicked, t->onItemContextMenuData);
+		t->rightClicked = NULL;
+		*lResult = 1;
+		return TRUE;
 	}
 	return FALSE;
+}
+
+static uiTreeItem *treeItemAt(uiTree *t, int x, int y)
+{
+	TVHITTESTINFO hit;
+
+	ZeroMemory(&hit, sizeof (TVHITTESTINFO));
+	hit.pt.x = x;
+	hit.pt.y = y;
+	SendMessageW(t->hwnd, TVM_HITTEST, 0, (LPARAM) (&hit));
+	if ((hit.flags & TVHT_ONITEM) == 0)
+		return NULL;
+
+	return treeItemFromHandle(t, hit.hItem);
+}
+
+// the treeview selects its first item when it gains the focus without a
+// selection, so the right clicked item has to be selected before that happens
+static void treeSelectRightClicked(uiTree *t, LPARAM pos)
+{
+	t->rightClicked = treeItemAt(t, GET_X_LPARAM(pos), GET_Y_LPARAM(pos));
+	if (t->rightClicked == NULL)
+		return;
+
+	t->inhibitSelectionChanged = TRUE;
+	SendMessageW(t->hwnd, TVM_SELECTITEM, (WPARAM) TVGN_CARET, (LPARAM) (t->rightClicked->handle));
+	t->inhibitSelectionChanged = FALSE;
+}
+
+static LRESULT CALLBACK treeSubProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	uiTree *t = uiTree(dwRefData);
+
+	switch (uMsg) {
+	case WM_RBUTTONDOWN:
+		treeSelectRightClicked(t, lParam);
+		break;
+	case WM_NCDESTROY:
+		if (RemoveWindowSubclass(hwnd, treeSubProc, uIdSubclass) == FALSE)
+			logLastError(L"error removing uiTree subclass");
+		break;
+	}
+	return DefSubclassProc(hwnd, uMsg, wParam, lParam);
 }
 
 static void treeFreeItems(uiTree *t)
@@ -84,6 +156,11 @@ static void defaultOnItemActivated(uiTree *t, void *data)
 	// do nothing
 }
 
+static void defaultOnItemContextMenu(uiTree *t, uiTreeItem *item, void *data)
+{
+	// do nothing
+}
+
 void uiTreeOnSelectionChanged(uiTree *t, void (*f)(uiTree *t, void *data), void *data)
 {
 	t->onSelectionChanged = f;
@@ -94,6 +171,12 @@ void uiTreeOnItemActivated(uiTree *t, void (*f)(uiTree *t, void *data), void *da
 {
 	t->onItemActivated = f;
 	t->onItemActivatedData = data;
+}
+
+void uiTreeOnItemContextMenu(uiTree *t, void (*f)(uiTree *t, uiTreeItem *item, void *data), void *data)
+{
+	t->onItemContextMenu = f;
+	t->onItemContextMenuData = data;
 }
 
 uiTreeItem *uiTreeAppend(uiTree *t, uiTreeItem *parent, const char *text)
@@ -148,19 +231,9 @@ void uiTreeCollapseAll(uiTree *t)
 uiTreeItem *uiTreeSelected(uiTree *t)
 {
 	HTREEITEM handle;
-	TVITEMW item;
 
 	handle = (HTREEITEM) SendMessageW(t->hwnd, TVM_GETNEXTITEM, (WPARAM) TVGN_CARET, 0);
-	if (handle == NULL)
-		return NULL;
-
-	ZeroMemory(&item, sizeof (TVITEMW));
-	item.mask = TVIF_PARAM;
-	item.hItem = handle;
-	if (SendMessageW(t->hwnd, TVM_GETITEMW, 0, (LPARAM) (&item)) == FALSE)
-		return NULL;
-
-	return (uiTreeItem *) (item.lParam);
+	return treeItemFromHandle(t, handle);
 }
 
 static bool treeEnsureIcons(uiTree *t)
@@ -244,9 +317,13 @@ uiTree *uiNewTree(void)
 	// the chevrons of the Explorer theme instead of the legacy +/- boxes
 	SetWindowTheme(t->hwnd, L"Explorer", NULL);
 
+	if (SetWindowSubclass(t->hwnd, treeSubProc, 0, (DWORD_PTR) t) == FALSE)
+		logLastError(L"error subclassing treeview to handle context menus");
+
 	uiWindowsRegisterWM_NOTIFYHandler(t->hwnd, onWM_NOTIFY, uiControl(t));
 	uiTreeOnSelectionChanged(t, defaultOnSelectionChanged, NULL);
 	uiTreeOnItemActivated(t, defaultOnItemActivated, NULL);
+	uiTreeOnItemContextMenu(t, defaultOnItemContextMenu, NULL);
 
 	return t;
 }
