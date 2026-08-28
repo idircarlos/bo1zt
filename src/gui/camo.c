@@ -91,22 +91,6 @@ static bool weaponModelPath(const ClientCamoWeapon *weapon, char *out, size_t si
     return n > 0 && (size_t)n < size;
 }
 
-static bool weaponDefaultFilePath(const ClientCamoWeaponFile *files, size_t fileCount,
-                                  CamoFileType type, char *out, size_t size) {
-    const char *fileName = NULL;
-    for (size_t i = 0; i < fileCount; ++i) {
-        if (files[i].type != type || files[i].number != 0) continue;
-        fileName = files[i].fileName;
-        break;
-    }
-    if (!fileName || fileName[0] == '\0') return false;
-
-    char imageDir[MAX_PATH];
-    if (!assetsImageDir(imageDir, sizeof(imageDir))) return false;
-    int n = snprintf(out, size, "%s\\%s", imageDir, fileName);
-    return n > 0 && (size_t)n < size;
-}
-
 static const char *slotLabels[CAMO_FILE_TYPE_COUNT] = {
     "Spec",
     "Col",
@@ -1494,28 +1478,16 @@ static void refreshViewer(void) {
     }
 
     const ClientCamo *camo = selectedCamo();
-    ClientCamoWeaponFile *defaults = NULL;
-    size_t defaultCount = 0;
-    if (!camo && weapon) {
-        clientGetCamoWeaponFiles(client, weapon->id, &defaults, &defaultCount);
-    }
 
     char paths[CAMO_FILE_TYPE_COUNT][MAX_PATH];
-    for (int i = 0; i < CAMO_FILE_TYPE_COUNT; ++i) {
+    for (int i = 0; camo && i < CAMO_FILE_TYPE_COUNT; ++i) {
         CamoFileType type = (CamoFileType)i;
-        const char **slot = requestSlot(&request, type);
-        if (camo) {
-            if (camoHasBaseFile(camo, type) &&
-                camoPersistenceCamoFilePath(paths[i], MAX_PATH, camo->id, type, 0)) {
-                *slot = paths[i];
-            }
-        } else if (weaponDefaultFilePath(defaults, defaultCount, type, paths[i], MAX_PATH)) {
-            *slot = paths[i];
-        }
+        if (!camoHasBaseFile(camo, type)) continue;
+        if (!camoPersistenceCamoFilePath(paths[i], MAX_PATH, camo->id, type, 0)) continue;
+        *requestSlot(&request, type) = paths[i];
     }
 
     camoViewerSetCamo(viewer, &request);
-    clientFreeCamoWeaponFiles(defaults);
 }
 
 static void onViewerAutoRotateToggled(uiCheckbox *checkbox, void *data) {
