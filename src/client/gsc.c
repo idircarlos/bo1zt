@@ -108,6 +108,21 @@ ClientResult clientDeleteGscPath(Client *client, const char *path) {
     return sendGscRequest(client, "DELETE", "path", path);
 }
 
+ClientResult clientRenameGscPath(Client *client, const char *path, const char *name) {
+    if (!path || !path[0] || !name || !name[0]) return CLIENT_ERR_INVALID_PARAM;
+
+    JsonValue *obj = jsonNewObject();
+    jsonObjectSetString(obj, "path", path);
+    jsonObjectSetString(obj, "name", name);
+    char *body = jsonSerialize(obj);
+    jsonFree(obj);
+    if (!body) return CLIENT_ERR_PROTOCOL;
+
+    ClientResult result = clientRequest(client, "PATCH", CLIENT_API_BASE "/gsc-mods", body, NULL);
+    free(body);
+    return result;
+}
+
 ClientResult clientReadGscScript(Client *client, const char *path, char **out) {
     if (!path || !path[0] || !out) return CLIENT_ERR_INVALID_PARAM;
     *out = NULL;

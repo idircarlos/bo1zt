@@ -27,6 +27,7 @@ size_t gscModsCount(void);
 const GSCMod *gscModsAt(size_t index);
 bool gscModsCreate(const char *name);
 bool gscModsCreateFolder(const char *path);
+bool gscModsRename(const char *path, const char *name);
 bool gscModsRemove(const char *path);
 char *gscModsReadScript(const char *path, size_t *outSize);
 bool gscModsWriteScript(const char *path, const char *content, size_t size);

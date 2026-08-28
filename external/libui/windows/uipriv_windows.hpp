@@ -124,6 +124,9 @@ extern void unregisterArea(void);
 // areaevents.cpp
 extern BOOL areaFilter(MSG *);
 
+// tree.cpp
+extern BOOL uiprivTreeEditingLabel(HWND hwnd);
+
 // window.cpp
 extern HACCEL uiprivWindowAccelerators(HWND hwnd);
 extern ATOM registerWindowClass(HICON, HCURSOR);

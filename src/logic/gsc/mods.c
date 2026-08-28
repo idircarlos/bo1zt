@@ -47,6 +47,12 @@ static bool isScriptPath(const char *path) {
     return isModPath(path) && hasScriptExtension(path);
 }
 
+static bool isLeafName(const char *name) {
+    if (!name || name[0] == '\0') return false;
+    if (strpbrk(name, "/\\:")) return false;
+    return strcmp(name, ".") != 0 && strcmp(name, "..") != 0;
+}
+
 static bool isModName(const char *name) {
     if (!isRelativePath(name)) return false;
     if (strlen(name) >= GSC_MOD_NAME_SIZE) return false;
@@ -257,6 +263,46 @@ bool gscModsCreateScript(const char *path) {
 
     gscModsReload();
     LOG_INFO("GSC Mods: created script %s", path);
+    return true;
+}
+
+static bool renamedPath(const char *path, const char *name, char *out, size_t size) {
+    const char *leaf = strrchr(path, '/');
+
+    int n = leaf ? snprintf(out, size, "%.*s/%s", (int)(leaf - path), path, name)
+                 : snprintf(out, size, "%s", name);
+    return n > 0 && (size_t)n < size;
+}
+
+bool gscModsRename(const char *path, const char *name) {
+    if (!isRelativePath(path) || !isLeafName(name)) return false;
+
+    char renamed[GSC_SCRIPT_PATH_SIZE];
+    if (!renamedPath(path, name, renamed, sizeof(renamed))) return false;
+
+    if (strpbrk(path, "/\\") == NULL) {
+        if (!isModName(name)) return false;
+    } else if (hasScriptExtension(path) ? !isScriptPath(renamed) : !isModPath(renamed)) {
+        return false;
+    }
+
+    char from[MAX_PATH];
+    char to[MAX_PATH];
+    if (!modPath(path, from, sizeof(from))) return false;
+    if (!modPath(renamed, to, sizeof(to))) return false;
+    if (!fileExists(from)) return false;
+    if (_stricmp(from, to) != 0 && fileExists(to)) {
+        LOG_WARN("GSC Mods: %s already exists", renamed);
+        return false;
+    }
+
+    if (!fileMove(from, to, false)) {
+        LOG_ERROR("GSC Mods: could not rename %s to %s", path, renamed);
+        return false;
+    }
+
+    gscModsReload();
+    LOG_INFO("GSC Mods: renamed %s to %s", path, renamed);
     return true;
 }
 

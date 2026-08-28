@@ -28,6 +28,14 @@ ServiceResult serviceGscFolderCreate(Service *service, const char *path) {
     return gscModsCreateFolder(path) ? SERVICE_OK : SERVICE_INVALID_PARAM;
 }
 
+ServiceResult serviceGscRename(Service *service, const char *path, const char *name) {
+    if (!service || !path || !name) return SERVICE_INVALID_PARAM;
+
+    gscModsReload();
+
+    return gscModsRename(path, name) ? SERVICE_OK : SERVICE_INVALID_PARAM;
+}
+
 ServiceResult serviceGscRemove(Service *service, const char *path) {
     if (!service || !path) return SERVICE_INVALID_PARAM;
 

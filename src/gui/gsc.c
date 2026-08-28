@@ -6,7 +6,6 @@
 #include <ui_windows.h>
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "gui.h"
@@ -79,70 +78,26 @@ static int treeIcons[GSC_ICON_COUNT];
 
 static uiMenuItem *newFileItem = NULL;
 static uiMenuItem *newFolderItem = NULL;
+static uiMenuItem *renameItem = NULL;
 static uiMenuItem *deleteItem = NULL;
 static uiLabel *hintLabel = NULL;
 
+typedef enum {
+    GSC_PENDING_NONE,
+    GSC_PENDING_MOD,
+    GSC_PENDING_FILE,
+    GSC_PENDING_FOLDER,
+    GSC_PENDING_RENAME
+} GscPendingKind;
+
 typedef struct {
-    uiWindow *win;
-    uiEntry *entry;
-    char *result;
-    int done;
-} TextPrompt;
+    GscPendingKind kind;
+    char target[GSC_NODE_PATH_SIZE];
+    char name[GSC_NODE_PATH_SIZE];
+    GscNode *node;
+} GscPendingEdit;
 
-static void textPromptOk(uiButton *b, void *data) {
-    (void)b;
-    TextPrompt *p = (TextPrompt *)data;
-    char *t = uiEntryText(p->entry);
-    p->result = _strdup(t ? t : "");
-    if (t) uiFreeText(t);
-    p->done = 1;
-}
-
-static void textPromptCancel(uiButton *b, void *data) {
-    (void)b;
-    ((TextPrompt *)data)->done = 1;
-}
-
-static int textPromptClosing(uiWindow *w, void *data) {
-    (void)w;
-    ((TextPrompt *)data)->done = 1;
-    return 0;
-}
-
-static char *promptText(const char *title, const char *label) {
-    TextPrompt p;
-    memset(&p, 0, sizeof(p));
-
-    p.win = uiNewWindow(title, 340, 120, 0);
-    uiWindowSetMargined(p.win, 1);
-    uiWindowOnClosing(p.win, textPromptClosing, &p);
-
-    uiBox *box = uiNewVerticalBox();
-    uiBoxSetPadded(box, 1);
-    uiBoxAppend(box, uiControl(uiNewLabel(label)), 0);
-
-    p.entry = uiNewEntry();
-    uiBoxAppend(box, uiControl(p.entry), 0);
-
-    uiBox *row = uiNewHorizontalBox();
-    uiBoxSetPadded(row, 1);
-    uiButton *ok = uiNewButton("OK");
-    uiButton *cancel = uiNewButton("Cancel");
-    uiButtonOnClicked(ok, textPromptOk, &p);
-    uiButtonOnClicked(cancel, textPromptCancel, &p);
-    uiBoxAppend(row, uiControl(ok), 1);
-    uiBoxAppend(row, uiControl(cancel), 1);
-    uiBoxAppend(box, uiControl(row), 0);
-
-    uiWindowSetChild(p.win, uiControl(box));
-
-    if (gscWindow) uiControlDisable(uiControl(gscWindow));
-    uiControlShow(uiControl(p.win));
-    while (!p.done) uiMainStep(1);
-    if (gscWindow) uiControlEnable(uiControl(gscWindow));
-    uiControlDestroy(uiControl(p.win));
-    return p.result;
-}
+static GscPendingEdit pending;
 
 static GscNode *selectedNode(void) {
     uiTreeItem *item = uiTreeSelected(modTree);
@@ -191,10 +146,12 @@ static void updateMenuItems(void) {
     if (selectedNode()) {
         uiMenuItemEnable(newFileItem);
         uiMenuItemEnable(newFolderItem);
+        uiMenuItemEnable(renameItem);
         uiMenuItemEnable(deleteItem);
     } else {
         uiMenuItemDisable(newFileItem);
         uiMenuItemDisable(newFolderItem);
+        uiMenuItemDisable(renameItem);
         uiMenuItemDisable(deleteItem);
     }
 }
@@ -275,8 +232,156 @@ static void reloadMods(void) {
     updateHint();
 }
 
+static bool joinPath(char *out, size_t size, const char *folder, const char *name) {
+    int n = snprintf(out, size, "%s/%s", folder, name);
+    return n > 0 && (size_t)n < size;
+}
+
+static bool renamedPath(char *out, size_t size, const char *path, const char *name) {
+    const char *leaf = strrchr(path, '/');
+
+    int n = leaf ? snprintf(out, size, "%.*s/%s", (int)(leaf - path), path, name)
+                 : snprintf(out, size, "%s", name);
+    return n > 0 && (size_t)n < size;
+}
+
+static bool isScriptName(const char *path) {
+    size_t length = strlen(path);
+    return length > 4 && _stricmp(path + length - 4, ".gsc") == 0;
+}
+
+static GscIcon pendingIcon(void) {
+    if (pending.kind == GSC_PENDING_MOD) return GSC_ICON_MOD;
+    if (pending.kind == GSC_PENDING_FOLDER) return GSC_ICON_FOLDER;
+    return GSC_ICON_FILE;
+}
+
+// runs outside the tree notification that ended the edit, where the tree cannot be touched
+static void beginPendingEdit(void *data) {
+    (void)data;
+
+    if (pending.kind == GSC_PENDING_RENAME) {
+        pending.node = findNode(pending.target);
+        if (!pending.node) {
+            pending.kind = GSC_PENDING_NONE;
+            return;
+        }
+        uiTreeItemRename(pending.node->item);
+        return;
+    }
+
+    GscNode *parent = pending.target[0] ? findNode(pending.target) : NULL;
+    if (pending.target[0] && !parent) {
+        pending.kind = GSC_PENDING_NONE;
+        return;
+    }
+
+    pending.node = addNode(parent ? parent->item : NULL, "", "", pendingIcon());
+    if (!pending.node) {
+        pending.kind = GSC_PENDING_NONE;
+        return;
+    }
+
+    uiTreeItemRename(pending.node->item);
+}
+
+static void removePlaceholder(GscNode *node) {
+    uiTreeItemRemove(node->item);
+    if (node == &nodes[nodeCount - 1]) nodeCount--;
+}
+
+static void applyRename(const GscPendingEdit *edit) {
+    bool script = isScriptName(edit->target);
+
+    gscEditorClose(edit->target);
+
+    if (clientRenameGscPath(client, edit->target, edit->name) != CLIENT_OK) {
+        uiMsgBoxError(gscWindow, "Rename", clientLastErrorMessage(client));
+        if (script) gscEditorOpen(edit->target);
+        return;
+    }
+
+    char relative[GSC_NODE_PATH_SIZE];
+    bool reopen = script && renamedPath(relative, sizeof(relative), edit->target, edit->name);
+
+    reloadMods();
+    if (reopen) gscEditorOpen(relative);
+}
+
+static void applyCreate(const GscPendingEdit *edit) {
+    char relative[GSC_NODE_PATH_SIZE];
+
+    if (edit->kind == GSC_PENDING_MOD) {
+        if (clientCreateGscMod(client, edit->name) != CLIENT_OK) {
+            uiMsgBoxError(gscWindow, "New mod", "Could not create the mod.");
+            return;
+        }
+        reloadMods();
+        if (joinPath(relative, sizeof(relative), edit->name, GSC_MOD_ENTRY))
+            gscEditorOpen(relative);
+        return;
+    }
+
+    if (!joinPath(relative, sizeof(relative), edit->target, edit->name)) return;
+
+    if (edit->kind == GSC_PENDING_FOLDER) {
+        if (clientCreateGscFolder(client, relative) != CLIENT_OK) {
+            uiMsgBoxError(gscWindow, "New folder", "Could not create the folder.");
+            return;
+        }
+        reloadMods();
+        return;
+    }
+
+    if (clientCreateGscScript(client, relative) != CLIENT_OK) {
+        uiMsgBoxError(gscWindow, "New file", "Could not create the script. Names must end in .gsc.");
+        return;
+    }
+    reloadMods();
+    gscEditorOpen(relative);
+}
+
+static void applyPendingEdit(void *data) {
+    (void)data;
+
+    GscPendingEdit edit = pending;
+
+    if (edit.kind != GSC_PENDING_RENAME && edit.node) removePlaceholder(edit.node);
+    pending.kind = GSC_PENDING_NONE;
+    pending.node = NULL;
+
+    if (edit.name[0] == '\0') return;
+
+    if (edit.kind == GSC_PENDING_RENAME)
+        applyRename(&edit);
+    else
+        applyCreate(&edit);
+}
+
+static int onItemRenamed(uiTree *tree, uiTreeItem *item, const char *text, void *data) {
+    (void)tree; (void)item; (void)data;
+
+    if (pending.kind == GSC_PENDING_NONE) return 0;
+
+    snprintf(pending.name, sizeof(pending.name), "%s", text ? text : "");
+    uiQueueMain(applyPendingEdit, NULL);
+    return 0;
+}
+
+static void scheduleEdit(GscPendingKind kind, const char *target) {
+    if (pending.kind != GSC_PENDING_NONE) return;
+
+    pending.kind = kind;
+    pending.node = NULL;
+    pending.name[0] = '\0';
+    snprintf(pending.target, sizeof(pending.target), "%s", target ? target : "");
+    uiQueueMain(beginPendingEdit, NULL);
+}
+
 static void onSelectionChanged(uiTree *tree, void *data) {
     (void)tree; (void)data;
+
+    if (pending.kind != GSC_PENDING_NONE) return;
 
     updateMenuItems();
 
@@ -284,77 +389,21 @@ static void onSelectionChanged(uiTree *tree, void *data) {
     if (node && !nodeIsFolder(node)) gscEditorOpen(node->path);
 }
 
-static void onNewModClicked(uiMenuItem *item, uiWindow *window, void *data) {
-    (void)item; (void)window; (void)data;
-
-    char *name = promptText("New Mod", "Mod name:");
-    if (!name) return;
-    if (name[0] == '\0') {
-        uiMsgBoxError(gscWindow, "New mod", "Enter a name for the mod.");
-        free(name);
-        return;
-    }
-
-    if (clientCreateGscMod(client, name) != CLIENT_OK) {
-        uiMsgBoxError(gscWindow, "New mod", "Could not create the mod.");
-        free(name);
-        return;
-    }
-
-    char relative[GSC_NODE_PATH_SIZE];
-    int n = snprintf(relative, sizeof(relative), "%s/" GSC_MOD_ENTRY, name);
-    free(name);
-
-    reloadMods();
-
-    if (n > 0 && (size_t)n < sizeof(relative)) gscEditorOpen(relative);
-}
-
 static void createFile(const GscNode *node) {
-    const char *folder = nodeFolder(node);
-    if (!folder) return;
-
-    char label[GSC_NODE_PATH_SIZE + 32];
-    snprintf(label, sizeof(label), "File name, relative to %s:", folder);
-
-    char *name = promptText("New File", label);
-    if (!name) return;
-
-    char relative[GSC_NODE_PATH_SIZE];
-    int n = snprintf(relative, sizeof(relative), "%s/%s", folder, name);
-    free(name);
-    if (n <= 0 || (size_t)n >= sizeof(relative)) return;
-
-    if (clientCreateGscScript(client, relative) != CLIENT_OK) {
-        uiMsgBoxError(gscWindow, "New file", "Could not create the script. Names must end in .gsc.");
-        return;
-    }
-
-    reloadMods();
-    gscEditorOpen(relative);
+    if (node) scheduleEdit(GSC_PENDING_FILE, nodeFolder(node));
 }
 
 static void createFolder(const GscNode *node) {
-    const char *folder = nodeFolder(node);
-    if (!folder) return;
+    if (node) scheduleEdit(GSC_PENDING_FOLDER, nodeFolder(node));
+}
 
-    char label[GSC_NODE_PATH_SIZE + 32];
-    snprintf(label, sizeof(label), "Folder name, relative to %s:", folder);
+static void renameNode(const GscNode *node) {
+    if (node) scheduleEdit(GSC_PENDING_RENAME, node->path);
+}
 
-    char *name = promptText("New Folder", label);
-    if (!name) return;
-
-    char relative[GSC_NODE_PATH_SIZE];
-    int n = snprintf(relative, sizeof(relative), "%s/%s", folder, name);
-    free(name);
-    if (n <= 0 || (size_t)n >= sizeof(relative)) return;
-
-    if (clientCreateGscFolder(client, relative) != CLIENT_OK) {
-        uiMsgBoxError(gscWindow, "New folder", "Could not create the folder.");
-        return;
-    }
-
-    reloadMods();
+static void onNewModClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window; (void)data;
+    scheduleEdit(GSC_PENDING_MOD, NULL);
 }
 
 static void deleteNode(const GscNode *node) {
@@ -398,6 +447,11 @@ static void onNewFileClicked(uiMenuItem *item, uiWindow *window, void *data) {
 static void onNewFolderClicked(uiMenuItem *item, uiWindow *window, void *data) {
     (void)item; (void)window; (void)data;
     createFolder(selectedNode());
+}
+
+static void onRenameClicked(uiMenuItem *item, uiWindow *window, void *data) {
+    (void)item; (void)window; (void)data;
+    renameNode(selectedNode());
 }
 
 static void onDeleteClicked(uiMenuItem *item, uiWindow *window, void *data) {
@@ -451,18 +505,21 @@ static void onHelpClicked(uiMenuItem *item, uiWindow *window, void *data) {
     uiGscHelpShow(window);
 }
 
+// the shortcut is only a hint: the accelerators live in the menu bar
 typedef struct {
     const char *name;
+    const char *shortcut;
     void (*action)(const GscNode *);
 } GscContextItem;
 
 static const GscContextItem GSC_CONTEXT_ITEM[] = {
-    {"New File...", createFile},
-    {"New Folder...", createFolder},
-    {NULL, NULL},
-    {"Delete", deleteNode},
-    {NULL, NULL},
-    {"Reveal in Explorer", revealNode},
+    {"New File", "Ctrl+N", createFile},
+    {"New Folder", "Ctrl+Shift+N", createFolder},
+    {NULL, NULL, NULL},
+    {"Rename", "F2", renameNode},
+    {"Delete", NULL, deleteNode},
+    {NULL, NULL, NULL},
+    {"Reveal in Explorer", NULL, revealNode},
 };
 
 #define GSC_CONTEXT_ITEM_COUNT (sizeof(GSC_CONTEXT_ITEM) / sizeof(*GSC_CONTEXT_ITEM))
@@ -481,11 +538,19 @@ static void onTreeContextMenu(uiTree *tree, uiTreeItem *item, void *data) {
     if (!menu) return;
 
     for (size_t i = 0; i < GSC_CONTEXT_ITEM_COUNT; i++) {
-        if (GSC_CONTEXT_ITEM[i].name == NULL) {
+        const GscContextItem *entry = &GSC_CONTEXT_ITEM[i];
+        if (entry->name == NULL) {
             AppendMenuA(menu, MF_SEPARATOR, 0, NULL);
             continue;
         }
-        AppendMenuA(menu, MF_STRING, GSC_CONTEXT_ID_FIRST + i, GSC_CONTEXT_ITEM[i].name);
+
+        char label[64];
+        if (entry->shortcut)
+            snprintf(label, sizeof(label), "%s\t%s", entry->name, entry->shortcut);
+        else
+            snprintf(label, sizeof(label), "%s", entry->name);
+
+        AppendMenuA(menu, MF_STRING, GSC_CONTEXT_ID_FIRST + i, label);
     }
 
     int id = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_NONOTIFY,
@@ -508,14 +573,17 @@ static uiMenuItem *appendItem(uiMenu *menu, const char *name,
 static void buildFileMenu(uiMenuBar *bar) {
     uiMenu *menu = uiMenuBarAppendMenu(bar, "File");
 
-    uiMenuItem *newMod = appendItem(menu, "New Mod...", onNewModClicked);
+    uiMenuItem *newMod = appendItem(menu, "New Mod", onNewModClicked);
     uiMenuItemSetShortcut(newMod, uiModifierCtrl, 'M');
 
-    newFileItem = appendItem(menu, "New File...", onNewFileClicked);
+    newFileItem = appendItem(menu, "New File", onNewFileClicked);
     uiMenuItemSetShortcut(newFileItem, uiModifierCtrl, 'N');
 
-    newFolderItem = appendItem(menu, "New Folder...", onNewFolderClicked);
+    newFolderItem = appendItem(menu, "New Folder", onNewFolderClicked);
     uiMenuItemSetShortcut(newFolderItem, uiModifierCtrl | uiModifierShift, 'N');
+
+    renameItem = appendItem(menu, "Rename", onRenameClicked);
+    uiMenuItemSetShortcut(renameItem, 0, uiExtKeyF2);
 
     deleteItem = appendItem(menu, "Delete", onDeleteClicked);
 
@@ -589,6 +657,7 @@ static uiControl *buildSidebar(void) {
     modTree = uiNewTree();
     uiTreeOnSelectionChanged(modTree, onSelectionChanged, NULL);
     uiTreeOnItemContextMenu(modTree, onTreeContextMenu, NULL);
+    uiTreeOnItemRenamed(modTree, onItemRenamed, NULL);
     loadTreeIcons();
     uiBoxAppend(box, uiControl(modTree), 1);
 

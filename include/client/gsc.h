@@ -28,6 +28,7 @@ ClientResult clientGetGscMods(Client *client, ClientGscMods *out);
 void clientFreeGscMods(ClientGscMods *mods);
 ClientResult clientCreateGscMod(Client *client, const char *name);
 ClientResult clientCreateGscFolder(Client *client, const char *path);
+ClientResult clientRenameGscPath(Client *client, const char *path, const char *name);
 ClientResult clientDeleteGscPath(Client *client, const char *path);
 ClientResult clientReadGscScript(Client *client, const char *path, char **out);
 ClientResult clientWriteGscScript(Client *client, const char *path, const char *content);

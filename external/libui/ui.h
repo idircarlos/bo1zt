@@ -4951,6 +4951,43 @@ _UI_EXTERN void uiTreeOnItemActivated(uiTree *t, void (*f)(uiTree *t, void *data
 _UI_EXTERN void uiTreeOnItemContextMenu(uiTree *t, void (*f)(uiTree *t, uiTreeItem *item, void *data), void *data);
 
 /**
+ * Removes an item and every item below it.
+ *
+ * @param item uiTreeItem instance. Invalid once this call returns.
+ * @memberof uiTreeItem
+ */
+_UI_EXTERN void uiTreeItemRemove(uiTreeItem *item);
+
+/**
+ * Starts editing the text of an item in place.
+ *
+ * The item is scrolled into view, selected and replaced by an entry holding its
+ * current text. Editing ends when the user presses Enter or Escape, or when the
+ * entry loses the focus, raising the item renamed callback.
+ *
+ * @param item uiTreeItem instance.
+ * @memberof uiTreeItem
+ */
+_UI_EXTERN void uiTreeItemRename(uiTreeItem *item);
+
+/**
+ * Registers a callback for when an in place edit started by
+ * `uiTreeItemRename()` ends.
+ *
+ * @param t uiTree instance.
+ * @param f Callback function.\n
+ *          @p t Back reference to the instance that triggered the callback.\n
+ *          @p item The edited item.\n
+ *          @p text The text typed by the user, `NULL` when the edit was cancelled.\n
+ *          @p data User data registered with the sender instance.\n
+ *          Return nonzero to display @p text as the new item text, zero to keep
+ *          the previous one.
+ * @param data User data to be passed to the callback.
+ * @memberof uiTree
+ */
+_UI_EXTERN void uiTreeOnItemRenamed(uiTree *t, int (*f)(uiTree *t, uiTreeItem *item, const char *text, void *data), void *data);
+
+/**
  * A source code editing control backed by the Scintilla component.
  *
  * The control is driven by sending it Scintilla messages, so including

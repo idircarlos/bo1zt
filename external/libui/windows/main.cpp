@@ -46,6 +46,14 @@ static void processMessage(MSG *msg)
 	HWND correctParent;
 	HACCEL accelerators;
 
+	// the treeview label editor needs Enter, Escape and plain keystrokes itself,
+	// so neither the accelerators nor the dialog manager may see them
+	if (uiprivTreeEditingLabel(msg->hwnd)) {
+		TranslateMessage(msg);
+		DispatchMessageW(msg);
+		return;
+	}
+
 	if (msg->hwnd != NULL)
 		correctParent = parentToplevel(msg->hwnd);
 	else		// just to be safe

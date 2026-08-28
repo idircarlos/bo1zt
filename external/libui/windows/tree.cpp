@@ -18,9 +18,16 @@ struct uiTree {
 	void *onItemActivatedData;
 	void (*onItemContextMenu)(uiTree *, uiTreeItem *, void *);
 	void *onItemContextMenuData;
+	int (*onItemRenamed)(uiTree *, uiTreeItem *, const char *, void *);
+	void *onItemRenamedData;
 	uiTreeItem *rightClicked;
 	BOOL inhibitSelectionChanged;
+	BOOL renameRequested;
 };
+
+// only one label edit can be active at a time, and the message loop needs to
+// reach it without the dialog manager eating Enter, Escape and the accelerators
+static uiTree *editingTree = NULL;
 
 static uiTreeItem *treeItemFromHandle(uiTree *t, HTREEITEM handle)
 {
@@ -36,6 +43,28 @@ static uiTreeItem *treeItemFromHandle(uiTree *t, HTREEITEM handle)
 		return NULL;
 
 	return (uiTreeItem *) (item.lParam);
+}
+
+static LRESULT treeEndLabelEdit(uiTree *t, NMTVDISPINFOW *info)
+{
+	uiTreeItem *item;
+	char *text;
+	LRESULT accepted;
+
+	item = treeItemFromHandle(t, info->item.hItem);
+	if (item == NULL)
+		return FALSE;
+
+	// a NULL text means the edit was cancelled
+	if (info->item.pszText == NULL) {
+		(*(t->onItemRenamed))(t, item, NULL, t->onItemRenamedData);
+		return FALSE;
+	}
+
+	text = toUTF8(info->item.pszText);
+	accepted = (*(t->onItemRenamed))(t, item, text, t->onItemRenamedData) != 0 ? TRUE : FALSE;
+	uiprivFree(text);
+	return accepted;
 }
 
 static BOOL onWM_NOTIFY(uiControl *c, HWND hwnd, NMHDR *nmhdr, LRESULT *lResult)
@@ -59,6 +88,20 @@ static BOOL onWM_NOTIFY(uiControl *c, HWND hwnd, NMHDR *nmhdr, LRESULT *lResult)
 		(*(t->onItemContextMenu))(t, t->rightClicked, t->onItemContextMenuData);
 		t->rightClicked = NULL;
 		*lResult = 1;
+		return TRUE;
+	case TVN_BEGINLABELEDITW:
+		// clicking a selected label also starts an edit; only honor uiTreeItemRename()
+		if (!t->renameRequested) {
+			*lResult = TRUE;
+			return TRUE;
+		}
+		t->renameRequested = FALSE;
+		editingTree = t;
+		*lResult = FALSE;
+		return TRUE;
+	case TVN_ENDLABELEDITW:
+		editingTree = NULL;
+		*lResult = treeEndLabelEdit(t, (NMTVDISPINFOW *) nmhdr);
 		return TRUE;
 	}
 	return FALSE;
@@ -118,6 +161,8 @@ static void uiTreeDestroy(uiControl *c)
 {
 	uiTree *t = uiTree(c);
 
+	if (editingTree == t)
+		editingTree = NULL;
 	uiWindowsUnregisterWM_NOTIFYHandler(t->hwnd);
 	uiWindowsEnsureDestroyWindow(t->hwnd);
 	treeFreeItems(t);
@@ -161,6 +206,11 @@ static void defaultOnItemContextMenu(uiTree *t, uiTreeItem *item, void *data)
 	// do nothing
 }
 
+static int defaultOnItemRenamed(uiTree *t, uiTreeItem *item, const char *text, void *data)
+{
+	return 0;
+}
+
 void uiTreeOnSelectionChanged(uiTree *t, void (*f)(uiTree *t, void *data), void *data)
 {
 	t->onSelectionChanged = f;
@@ -177,6 +227,12 @@ void uiTreeOnItemContextMenu(uiTree *t, void (*f)(uiTree *t, uiTreeItem *item, v
 {
 	t->onItemContextMenu = f;
 	t->onItemContextMenuData = data;
+}
+
+void uiTreeOnItemRenamed(uiTree *t, int (*f)(uiTree *t, uiTreeItem *item, const char *text, void *data), void *data)
+{
+	t->onItemRenamed = f;
+	t->onItemRenamedData = data;
 }
 
 uiTreeItem *uiTreeAppend(uiTree *t, uiTreeItem *parent, const char *text)
@@ -207,6 +263,67 @@ uiTreeItem *uiTreeAppend(uiTree *t, uiTreeItem *parent, const char *text)
 
 	t->items->push_back(item);
 	return item;
+}
+
+// the treeview deletes the whole subtree, so every descendant has to be dropped too
+static void treeForgetSubtree(uiTree *t, HTREEITEM handle)
+{
+	HTREEITEM child;
+	uiTreeItem *item;
+
+	child = (HTREEITEM) SendMessageW(t->hwnd, TVM_GETNEXTITEM, (WPARAM) TVGN_CHILD, (LPARAM) handle);
+	while (child != NULL) {
+		HTREEITEM next = (HTREEITEM) SendMessageW(t->hwnd, TVM_GETNEXTITEM, (WPARAM) TVGN_NEXT, (LPARAM) child);
+		treeForgetSubtree(t, child);
+		child = next;
+	}
+
+	item = treeItemFromHandle(t, handle);
+	if (item == NULL)
+		return;
+	for (auto it = t->items->begin(); it != t->items->end(); ++it)
+		if (*it == item) {
+			t->items->erase(it);
+			break;
+		}
+	uiprivFree(item);
+}
+
+void uiTreeItemRemove(uiTreeItem *item)
+{
+	uiTree *t = item->t;
+	HTREEITEM handle = item->handle;
+
+	treeForgetSubtree(t, handle);
+	if (SendMessageW(t->hwnd, TVM_DELETEITEM, 0, (LPARAM) handle) == FALSE)
+		logLastError(L"error calling TVM_DELETEITEM in uiTreeItemRemove()");
+}
+
+void uiTreeItemRename(uiTreeItem *item)
+{
+	uiTree *t = item->t;
+
+	SendMessageW(t->hwnd, TVM_ENSUREVISIBLE, 0, (LPARAM) (item->handle));
+	SetFocus(t->hwnd);
+
+	t->renameRequested = TRUE;
+	if (SendMessageW(t->hwnd, TVM_EDITLABELW, 0, (LPARAM) (item->handle)) == 0) {
+		t->renameRequested = FALSE;
+		logLastError(L"error calling TVM_EDITLABELW in uiTreeItemRename()");
+	}
+}
+
+BOOL uiprivTreeEditingLabel(HWND hwnd)
+{
+	HWND edit;
+
+	if (editingTree == NULL || hwnd == NULL)
+		return FALSE;
+	if (hwnd == editingTree->hwnd)
+		return TRUE;
+
+	edit = (HWND) SendMessageW(editingTree->hwnd, TVM_GETEDITCONTROL, 0, 0);
+	return edit != NULL && hwnd == edit;
 }
 
 void uiTreeClear(uiTree *t)
@@ -310,7 +427,7 @@ uiTree *uiNewTree(void)
 	t->items = new std::vector<uiTreeItem *>;
 	t->hwnd = uiWindowsEnsureCreateControlHWND(WS_EX_CLIENTEDGE,
 		WC_TREEVIEWW, L"",
-		TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS | WS_TABSTOP | WS_HSCROLL | WS_VSCROLL,
+		TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS | TVS_EDITLABELS | WS_TABSTOP | WS_HSCROLL | WS_VSCROLL,
 		hInstance, NULL,
 		TRUE);
 
@@ -324,6 +441,7 @@ uiTree *uiNewTree(void)
 	uiTreeOnSelectionChanged(t, defaultOnSelectionChanged, NULL);
 	uiTreeOnItemActivated(t, defaultOnItemActivated, NULL);
 	uiTreeOnItemContextMenu(t, defaultOnItemContextMenu, NULL);
+	uiTreeOnItemRenamed(t, defaultOnItemRenamed, NULL);
 
 	return t;
 }

@@ -1633,6 +1633,25 @@ static void handleGscModPost(Service *service, HttpResponse *response, const cha
     respondJson(response, 201, created);
 }
 
+static void handleGscPatch(Service *service, HttpResponse *response, const char *body) {
+    static const char *KEYS[] = { "path", "name" };
+    JsonValue *parsed = jsonParse(body);
+    const char *path = requiredString(parsed, "path", KEYS, 2, response);
+    if (!path) { jsonFree(parsed); return; }
+
+    JsonValue *name = jsonObjectGet(parsed, "name");
+    if (jsonTypeOf(name) != JSON_STRING) {
+        jsonFree(parsed);
+        respondError(response, 400, "INVALID_PARAM", "Expected string for name");
+        return;
+    }
+
+    ServiceResult r = serviceGscRename(service, path, jsonGetString(name, ""));
+    jsonFree(parsed);
+    if (r != SERVICE_OK) { respondServiceError(response, r); return; }
+    httpResponseStatus(response, 204);
+}
+
 static void handleGscDelete(Service *service, HttpResponse *response, const char *body) {
     static const char *KEYS[] = { "path" };
     JsonValue *parsed = jsonParse(body);
@@ -1941,6 +1960,7 @@ static void route(Service *service, const HttpRequest *request, HttpResponse *re
     if (isExact(sub, "/gsc-mods")) {
         if (strcmp(method, "GET") == 0) handleGscModList(service, response);
         else if (strcmp(method, "POST") == 0) handleGscModPost(service, response, body);
+        else if (strcmp(method, "PATCH") == 0) handleGscPatch(service, response, body);
         else if (strcmp(method, "DELETE") == 0) handleGscDelete(service, response, body);
         else respondNotFound(response);
         return;
