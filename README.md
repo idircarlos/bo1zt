@@ -14,6 +14,8 @@
 [![libui](https://img.shields.io/badge/Library-libui-blue)](https://github.com/libui-ng/libui-ng)
 [![OpenGL](https://img.shields.io/badge/Library-OpenGL-blue)](https://www.opengl.org/)
 [![iniparser](https://img.shields.io/badge/Library-iniparser-blue)](https://gitlab.com/iniparser/iniparser)
+[![Scintilla](https://img.shields.io/badge/Library-Scintilla-blue)](https://www.scintilla.org/)
+[![OpenAssetTools](https://img.shields.io/badge/Library-OpenAssetTools-blue)](https://github.com/Laupetin/OpenAssetTools)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/idircarlos/bo1zt/fork)
 
 **Black Ops 1 Zombies Trainer**
@@ -21,23 +23,22 @@
 A trainer for *Black Ops 1 Zombies* written in C.
 This tool is being created just for fun while learning reverse engineering fundamentals. This tool is still under development. Main features:
 
-|    Player       |  Hacks                 |  Graphics                   |  Misc                                  |
-| --------------- | ---------------------- | --------------------------- | -------------------------------------- |
-|   Change name   |   God Mode             |   Set FOV                   |   Give weapons                         |
-|   Set Health    |   No Clip              |   Set FOV Scale             |   Give ammo                            |
-|   Set Points    |   Invisible            |   Set FPS Cap / Unlimit FPS |   Teleport to any location (save/load) |
-|   Set Speed     |   No Recoil            |   Make Borderless           |   Change to any round                  |
-|   Set Kills     |   Infinite Ammo        |   Disable HUD               |   Play easter egg music any time       |
-|   Set Headshots |   Box Never Moves      |   Disable FOG               |   Fix Movement Speed PC Issue          |
-|                 |   Instant Kill         |   Colorized mode            |   Show FPS                             |
-|                 |   Small Crosshair      |   Fullbright mode           |   Commands                             |
-|                 |   Fast Gameplay        |   Customize UI              |   Bind Manager                         |
-|                 |   Third Person         |                             |   Character Selection                  |
-|                 |   No Shellshock        |                             |   Add Floating Widgets                 |
-|                 |   Increase Knife Range |                             |   Open/Close Game                      |
-|                 |                        |                             |   Game resets                          |
-|                 |                        |                             |   Persisted Settings                   |
+|    Player       |  Hacks                 |  Graphics                   |  Misc                                  |  Tools                    |
+| --------------- | ---------------------- | --------------------------- | -------------------------------------- | ------------------------- |
+|   Change name   |   God Mode             |   Set FOV                   |   Give weapons                         |   Twitch Integration      |
+|   Set Health    |   No Clip              |   Set FOV Scale             |   Give ammo                            |   GSC Mods and Editor     |
+|   Set Points    |   Invisible            |   Set FPS Cap / Unlimit FPS |   Teleport to any location (save/load) |   Camo Manager and Viewer |
+|   Set Speed     |   No Recoil            |   Make Borderless           |   Change to any round                  |   Bind Manager            |
+|   Set Kills     |   Infinite Ammo        |   Disable HUD               |   Play easter egg music any time       |   Floating Widgets        |
+|   Set Headshots |   Box Never Moves      |   Disable FOG               |   Fix Movement Speed PC Issue          |                           |
+|                 |   Instant Kill         |   Colorized mode            |   Show FPS                             |                           |
+|                 |   Small Crosshair      |   Fullbright mode           |   Commands                             |                           |
+|                 |   Fast Gameplay        |   Customize UI              |   Character Selection                  |                           |
+|                 |   Third Person         |                             |   Open/Close Game                      |                           |
+|                 |   No Shellshock        |                             |   Game resets                          |                           |
+|                 |   Increase Knife Range |                             |   Persisted Settings                   |                           |
 
+Twitch Integration bridges your channel chat into the game, GSC Mods lets you write and load your own scripts from a built-in editor, and the Camo Manager builds weapon camos out of `.iwi` textures and installs them into the game, with a 3D viewer to preview them first.
 
 ## Differences between others mods
 This tool allows injecting any GSC script into the game without using any external mod tool. Because of this, I was able to set up bidirectional communication between bo1zt and GSC scripts via DVars (bo1zt → GSC) and VM notifications (GSC → bo1zt).
@@ -59,9 +60,12 @@ To build and run this project, you’ll need:
 * **Meson** (version **0.58.0** - I didn't test it with newer versions) - required to build the [libui]([https://github.com/libui-ng/libui-ng](https://github.com/libui-ng/libui-ng)) library.
 * **CMake** (version **3.18.0** - I didn't test it with newer versions) - required to build the [iniparser]([https://github.com/libui-ng/libui-ng](https://gitlab.com/iniparser/iniparser)) library.
 
+[OpenAssetTools](https://github.com/Laupetin/OpenAssetTools) comes in as a git submodule and is built as a static library. Its build system, premake5, is downloaded automatically the first time.
+
 ## Build and Run
 
 ```bash
+git clone --recursive https://github.com/idircarlos/bo1zt.git
 make -j8
 make run
 ```
@@ -99,6 +103,8 @@ You can join the [Discord Community](https://discord.gg/zcFkKheNfG). Feel free t
 I would like to extend my gratitude to:
 - [magicbennie](https://github.com/magicbennie), creator of TIM, for being an inspiration while creating this tool.
 - [Lunar RF Labs](https://lunar.sh), from whom I took the idea of GSC loading based on [one of their journal entries](https://journal.lunar.sh/2023/gsctool.html).
+- [Laupetin](https://github.com/Laupetin), with [OpenAssetTools](https://github.com/Laupetin/OpenAssetTools), which is what makes the Camo Manager able to read the game's own assets.
+- [Scintilla](https://www.scintilla.org/), the editing UI Component behind the GSC editor.
 - [Flaticon](https://www.flaticon.com/):
   - [Open-folder icon](https://www.flaticon.com/free-icons/open-folder) created by NajmunNahar
   - [Paper icon](https://www.flaticon.com/free-icons/paper) created by judanna
