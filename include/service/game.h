@@ -8,6 +8,7 @@ typedef struct {
     bool running;
     bool ready;
     bool windowFocused;
+    bool dllInjected;
 } ServiceGameStatus;
 
 ServiceGameStatus serviceGameStatus(Service *service);

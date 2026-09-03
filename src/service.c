@@ -346,6 +346,7 @@ static void handleGameStatus(Service *service, HttpResponse *response) {
     jsonObjectSetBool(obj, "running", status.running);
     jsonObjectSetBool(obj, "ready", status.ready);
     jsonObjectSetBool(obj, "window-focused", status.windowFocused);
+    jsonObjectSetBool(obj, "dll-injected", status.dllInjected);
     respondJson(response, 200, obj);
 }
 

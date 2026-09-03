@@ -53,11 +53,11 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
     uiBox *characterBox = uiNewVerticalBox();
     uiBoxSetPadded(characterBox, 1);
 
-    radioButton1 = uiNewRadioButtons();
-    radioButton2 = uiNewRadioButtons();
-    radioButton3 = uiNewRadioButtons();
-    radioButton4 = uiNewRadioButtons();
-    radioButton5 = uiNewRadioButtons();
+    radioButton1 = uiNewRadioButtons(0);
+    radioButton2 = uiNewRadioButtons(0);
+    radioButton3 = uiNewRadioButtons(0);
+    radioButton4 = uiNewRadioButtons(0);
+    radioButton5 = uiNewRadioButtons(0);
 
     uiRadioButtonsAppend(radioButton1, "Dempsey");
     uiRadioButtonsAppend(radioButton2, "Nikolai");

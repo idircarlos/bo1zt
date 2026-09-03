@@ -4,6 +4,7 @@
 #include "gui/binds.h"
 #include "gui/camo.h"
 #include "gui/gsc.h"
+#include "gui/logs.h"
 #include "gui/twitch.h"
 #include "client/cheats.h"
 #include "client/game.h"
@@ -236,6 +237,12 @@ static void onGscButtonClick(uiButton *button, void *data) {
     uiGscShow(client);
 }
 
+static void onLogsButtonClick(uiButton *button, void *data) {
+    (void)button;
+    (void)data;
+    uiLogsShow();
+}
+
 static void onCloseButtonClick(uiButton *button, void *data) {
     (void)button;
     (void)data;
@@ -296,14 +303,13 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
     camoButton = uiNewButton("Camo Manager");
     twitchButton = uiNewButton("Twitch Integration");
     gscButton = uiNewButton("GSC Mods");
-    logsButton = uiNewButton("Logs (soon)");
+    logsButton = uiNewButton("Logs");
     launchButton = uiNewButton("Launch Game");
     closeButton = uiNewButton("Close Game");
     locationEntry = uiNewEntry();
 
     uiControlDisable(uiControl(closeButton));
     uiControlDisable(uiControl(changeRoundButton));
-    uiControlDisable(uiControl(logsButton));
     uiControlHide(uiControl(locationEntry));
 
     uiEntrySetPlaceholder(hostnameEntry, "I am below scoreboard!");
@@ -322,6 +328,7 @@ static uiControl *build(Client *clientInstance, uiWindow *parentInstance) {
     uiButtonOnClicked(camoButton, onCamoButtonClick, NULL);
     uiButtonOnClicked(twitchButton, onTwitchButtonClick, NULL);
     uiButtonOnClicked(gscButton, onGscButtonClick, NULL);
+    uiButtonOnClicked(logsButton, onLogsButtonClick, NULL);
     uiButtonOnClicked(launchButton, onLaunchButtonClick, NULL);
     uiButtonOnClicked(closeButton, onCloseButtonClick, NULL);
 

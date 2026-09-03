@@ -19,6 +19,7 @@ struct Process {
     DWORD pid;
     char executableName[256];
     WindowInfo windowInfo;
+    bool dllInjected;
 };
 
 HANDLE _processGetHandle(Process *process);

@@ -34,6 +34,7 @@ Process *processOpen(const char *executableName) {
                 process->pipe.readEvent = NULL;
                 process->pipe.writeEvent = NULL;
                 process->pipe.connected = false;
+                process->dllInjected = false;
                 strcpy(process->executableName, executableName);
                 WindowInfo windowInfo = { .hwnd = NULL, .windowTitle = NULL, .originalStyle = 0, .originalExStyle = 0, .hasSavedStyle = false };
                 process->windowInfo = windowInfo;
@@ -330,6 +331,7 @@ bool processInjectDll(Process *process, const char *dllName, const char *executa
 
     if (processHasDll(process, dllName)) {
         LOG_INFO("DLL already injected in process %lu", (unsigned long)process->pid);
+        process->dllInjected = true;
         return true;
     }
 
@@ -417,7 +419,12 @@ bool processInjectDll(Process *process, const char *dllName, const char *executa
     }
     
     LOG_INFO("DLL successfully injected");
+    process->dllInjected = true;
     return true;
+}
+
+bool processIsDllInjected(Process *process) {
+    return process && process->dllInjected;
 }
 
 bool processHasDll(Process *process, const char *dllName) {

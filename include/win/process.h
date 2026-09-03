@@ -28,6 +28,7 @@ bool processVirtualProtect(Process *process, uint32_t address, size_t size, uint
 bool processFindPattern(Process *process, uintptr_t startAddress, size_t regionSize, const uint8_t *pattern, size_t patternSize, uintptr_t *outAddress);
 bool processInjectDll(Process *process, const char *dllName, const char *executablePath);
 bool processHasDll(Process *process, const char *dllName);
+bool processIsDllInjected(Process *process);
 void processConnectPipe(Process *process);
 bool processIsPipeConnected(Process *process);
 Event processPollFromPipe(Process *process);

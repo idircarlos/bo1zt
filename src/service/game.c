@@ -9,13 +9,14 @@
 #include <string.h>
 
 ServiceGameStatus serviceGameStatus(Service *service) {
-    ServiceGameStatus status = { false, false, false, false };
+    ServiceGameStatus status = { false, false, false, false, false };
     if (!service) return status;
     Controller *c = service->controller;
     status.attached = controllerIsGameAttached(c);
     status.running = controllerIsGameRunning(c);
     status.ready = controllerIsGameReady(c);
     status.windowFocused = controllerIsGameWindowFocused(c);
+    status.dllInjected = controllerIsDllInjected(c);
     return status;
 }
 

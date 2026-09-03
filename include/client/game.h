@@ -8,6 +8,7 @@ typedef struct {
     bool running;
     bool ready;
     bool windowFocused;
+    bool dllInjected;
 } GameStatus;
 
 ClientResult clientGetGameStatus(Client *client, GameStatus *out);

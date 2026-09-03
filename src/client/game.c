@@ -15,6 +15,7 @@ ClientResult clientGetGameStatus(Client *client, GameStatus *out) {
     out->running = jsonObjectGetBool(body, "running", false);
     out->ready = jsonObjectGetBool(body, "ready", false);
     out->windowFocused = jsonObjectGetBool(body, "window-focused", false);
+    out->dllInjected = jsonObjectGetBool(body, "dll-injected", false);
     jsonFree(body);
     return CLIENT_OK;
 }

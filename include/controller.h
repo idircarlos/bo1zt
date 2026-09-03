@@ -19,6 +19,7 @@ Process* controllerGetProcess(Controller *controller);
 bool controllerLaunchGame(Controller *controller);
 bool controllerCloseGame(Controller *controller);
 bool controllerIsGameAttached(Controller *controller);
+bool controllerIsDllInjected(Controller *controller);
 bool controllerAttachGame(Controller *controller);
 bool controllerDetachGame(Controller *controller);
 bool controllerIsGameRunning(Controller *controller);

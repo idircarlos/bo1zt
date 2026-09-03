@@ -97,6 +97,10 @@ bool controllerIsGameAttached(Controller *controller) {
     return controller != NULL && controller->process != NULL;
 }
 
+bool controllerIsDllInjected(Controller *controller) {
+    return controller != NULL && processIsDllInjected(controller->process);
+}
+
 bool controllerLaunchGame(Controller *controller) {
     if (!controller) return false;
     char execPath[MAX_PATH];
