@@ -1624,10 +1624,11 @@ _UI_EXTERN void uiRadioButtonsOnSelected(uiRadioButtons *r,
 /**
  * Creates a new radio buttons instance.
  *
+ * @param horizontal `TRUE` to lay the buttons out in a single row instead of a column.
  * @returns A new uiRadioButtons instance.
  * @memberof uiRadioButtons @static
  */
-_UI_EXTERN uiRadioButtons *uiNewRadioButtons(void);
+_UI_EXTERN uiRadioButtons *uiNewRadioButtons(int horizontal);
 
 struct tm;
 /**

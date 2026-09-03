@@ -14,6 +14,7 @@ struct uiRadioButtons {
 	std::vector<HWND> *hwnds;		// of the buttons
 	void (*onSelected)(uiRadioButtons *, void *);
 	void *onSelectedData;
+	BOOL horizontal;
 };
 
 static BOOL onWM_COMMAND(uiControl *c, HWND clicked, WORD code, LRESULT *lResult)
@@ -67,8 +68,9 @@ uiWindowsControlAllDefaultsExceptDestroy(uiRadioButtons)
 static void uiRadioButtonsMinimumSize(uiWindowsControl *c, int *width, int *height)
 {
 	uiRadioButtons *r = uiRadioButtons(c);
-	int wid, maxwid;
+	int wid, maxwid, totalwid;
 	uiWindowsSizing sizing;
+	int padding;
 	int x, y;
 
 	if (r->hwnds->size() == 0) {
@@ -77,8 +79,10 @@ static void uiRadioButtonsMinimumSize(uiWindowsControl *c, int *width, int *heig
 		return;
 	}
 	maxwid = 0;
+	totalwid = 0;
 	for (const HWND &hwnd : *(r->hwnds)) {
 		wid = uiWindowsWindowTextWidth(hwnd);
+		totalwid += wid;
 		if (maxwid < wid)
 			maxwid = wid;
 	}
@@ -88,15 +92,24 @@ static void uiRadioButtonsMinimumSize(uiWindowsControl *c, int *width, int *heig
 	uiWindowsGetSizing((*(r->hwnds))[0], &sizing);
 	uiWindowsSizingDlgUnitsToPixels(&sizing, &x, &y);
 
-	*width = x + maxwid;
-	*height = y * r->hwnds->size();
+	if (!r->horizontal) {
+		*width = x + maxwid;
+		*height = y * r->hwnds->size();
+		return;
+	}
+
+	padding = 0;
+	uiWindowsSizingStandardPadding(&sizing, &padding, NULL);
+
+	*width = totalwid + (x + padding) * r->hwnds->size() - padding;
+	*height = y;
 }
 
 static void radiobuttonsRelayout(uiRadioButtons *r)
 {
 	RECT client;
 	int x, y, width, height;
-	int height1;
+	int height1, label, padding;
 	uiWindowsSizing sizing;
 
 	if (r->hwnds->size() == 0)
@@ -106,12 +119,20 @@ static void radiobuttonsRelayout(uiRadioButtons *r)
 	y = client.top;
 	width = client.right - client.left;
 	height1 = radiobuttonHeight;
+	label = radiobuttonXFromLeftOfBoxToLeftOfLabel;
 	uiWindowsGetSizing((*(r->hwnds))[0], &sizing);
-	uiWindowsSizingDlgUnitsToPixels(&sizing, NULL, &height1);
+	uiWindowsSizingDlgUnitsToPixels(&sizing, &label, &height1);
+	padding = 0;
+	uiWindowsSizingStandardPadding(&sizing, &padding, NULL);
 	height = height1;
 	for (const HWND &hwnd : *(r->hwnds)) {
+		if (r->horizontal)
+			width = label + uiWindowsWindowTextWidth(hwnd);
 		uiWindowsEnsureMoveWindowDuringResize(hwnd, x, y, width, height);
-		y += height;
+		if (r->horizontal)
+			x += width + padding;
+		else
+			y += height;
 	}
 }
 
@@ -184,12 +205,13 @@ static void onResize(uiWindowsControl *c)
 	radiobuttonsRelayout(uiRadioButtons(c));
 }
 
-uiRadioButtons *uiNewRadioButtons(void)
+uiRadioButtons *uiNewRadioButtons(int horizontal)
 {
 	uiRadioButtons *r;
 
 	uiWindowsNewControl(uiRadioButtons, r);
 
+	r->horizontal = horizontal ? TRUE : FALSE;
 	r->hwnd = uiWindowsMakeContainer(uiWindowsControl(r), onResize);
 
 	r->hwnds = new std::vector<HWND>;
