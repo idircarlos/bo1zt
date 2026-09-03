@@ -19,7 +19,7 @@ static Logger logger = {};
 
 void loggerInit(Controller *controller) {
     if (logger.initialized) return;
-    logger.level = L_INFO;
+    logger.level = L_TRACE;
     logger.initialized = 1;
     logger.controller = controller;
     logger.logFile = fopen(LOG_FILE, "a");

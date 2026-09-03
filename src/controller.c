@@ -116,7 +116,7 @@ bool controllerCloseGame(Controller *controller) {
 bool controllerAttachGame(Controller *controller) {
     if (!controller) return false;
     if (controller->process) {
-        LOG_WARN("Game is already attached. This souldn't happen. Omitting the operation");
+        LOG_WARN("Game is already attached; skipping attach");
         return true;
     }
     if (!controller->state) controller->state = stateCreate();
@@ -156,7 +156,7 @@ bool controllerAttachGame(Controller *controller) {
 
 bool controllerDetachGame(Controller *controller) {
     if (!controllerIsGameAttached(controller)) {
-        LOG_WARN("Cannot detach game since is not attached");
+        LOG_WARN("Game is not attached; skipping detach");
         return false;
     }
     LOG_INFO("Detaching game");
@@ -502,7 +502,7 @@ void controllerResetConfig(Controller *controller, ConfigType type) {
         case CONFIG_CUSTOMIZER:
             configResetCustomizer(controller->config); return;
         default:
-            LOG_ERROR("Unknown Config Type %d", type);
+            LOG_ERROR("Unknown configuration type %d", type);
     }
 }
 

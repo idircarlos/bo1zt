@@ -192,7 +192,7 @@ static char *decryptBlob(const char *path) {
     bool decrypted = dpapiUnprotect(encrypted, encryptedSize, &plain, &plainSize);
     free(encrypted);
     if (!decrypted) {
-        LOG_ERROR("Twitch: %s belongs to another Windows account or machine", path);
+        LOG_ERROR("Twitch: could not decrypt %s for the current Windows account", path);
         return NULL;
     }
 

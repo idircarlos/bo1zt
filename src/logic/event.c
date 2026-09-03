@@ -148,7 +148,7 @@ static bool eventHandleVMNotify(Event event) {
         int index;
         char response[256];
         if (sscanf(event.data.vmNotify.eventName, "bo1zt::Worker%d::%255s", &index, response) == 2) {
-            LOG_INFO("VM Notify Response = %s", response);
+            LOG_DEBUG("GSC response from worker %d: %s", index, response);
             gscWriteResponse(gsc, index, response);
         }
         return true;
@@ -174,10 +174,10 @@ static bool eventHandleIDUpdate(Event event) {
                 if (processRead(process, (uint32_t)pEventValue + 0x4, &eventValue, sizeof(int))) {
                     return gameSetQuickRevivesDrunk(game, eventValue);
                 }
-                LOG_WARN("Couldn't read IDUpdate Solo Lives Given event value");
+                LOG_WARN("Could not read Solo Lives Given value for IDUpdate event %d", eventId);
                 return false;
             }
-            LOG_WARN("Event IDUpdate %d pointer value is null. Weird.", eventId);
+            LOG_WARN("IDUpdate event %d has a null value pointer", eventId);
             return false;
         default:
             return true;

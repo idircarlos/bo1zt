@@ -74,13 +74,13 @@ static void *twitchIconDownload(const char *url, size_t *outSize) {
 
     if (!url || !url[0] || !outSize) return NULL;
     if (!splitUrl(url, host, sizeof(host), path, sizeof(path))) {
-        LOG_WARN("Twitch Icon: %s is not a usable url", url);
+        LOG_WARN("Twitch icon URL is invalid: %s", url);
         return NULL;
     }
 
     HttpClientResponse response = httpsClientRequest(host, 443, "GET", path, NULL, NULL);
     if (response.status != 200 || response.size == 0) {
-        LOG_WARN("Twitch Icon: %s could not be downloaded (%d)", url, response.status);
+        LOG_WARN("Twitch icon download failed with HTTP status %d", response.status);
         httpClientResponseFree(&response);
         return NULL;
     }
@@ -178,7 +178,7 @@ static void updateGameIcon(const GuiSnapshot *snapshot) {
 
     uiImage *icon = uiNewImageFromFileIcon(path);
     if (!icon) {
-        LOG_WARN("Status: no icon could be read from %s", path);
+        LOG_WARN("Could not load game icon from '%s'", path);
         return;
     }
     uiStatusBarSetItemImage(statusBar, gameItem, icon, false);

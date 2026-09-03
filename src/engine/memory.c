@@ -175,7 +175,7 @@ bool memoryBackendIsCheatEnabled(MemoryBackend *memoryBackend, CheatName cheatNa
             return _memoryBackendGetPatchChat(process);
         
         default:
-            LOG_WARN("Unknown cheatName %d", cheatName);
+            LOG_WARN("Unknown CheatName value %d", cheatName);
             return false;
     }
 }
@@ -236,7 +236,7 @@ bool memoryBackendSetCheatEnabled(MemoryBackend *memoryBackend, CheatName cheatN
         case CHEAT_NAME_PATCH_CHAT:
             return _memoryBackendSetPatchChat(process, enabled);
         default:
-            LOG_WARN("Unknown cheatName %d", cheatName);
+            LOG_WARN("Unknown CheatName value %d", cheatName);
             return false;
     }
 }
@@ -253,7 +253,7 @@ bool memoryBackendSetSimpleCheat(MemoryBackend *memoryBackend, SimpleCheatName s
         return false;
     }
 
-    LOG_DEBUG("Setting Simple Cheat %d with value %x", simpleCheatName, value);
+    LOG_DEBUG("Setting simple cheat %d from value at %p", simpleCheatName, value);
 
     switch(simpleCheatName) {
         case SIMPLE_CHEAT_NAME_CHANGE_NAME:
@@ -295,7 +295,7 @@ bool memoryBackendSetSimpleCheat(MemoryBackend *memoryBackend, SimpleCheatName s
         case SIMPLE_CHEAT_NAME_SET_HEADSHOTS:
             return _memoryBackendSetSimpleCheatIntValue(process, simpleCheatName, (uint32_t)(*(int*)value));
         default:
-            LOG_WARN("Unknown simpleCheatName %d", simpleCheatName);
+            LOG_WARN("Unknown SimpleCheatName value %d", simpleCheatName);
             return false;
     }
 }
@@ -338,7 +338,7 @@ bool memoryBackendSetRound(MemoryBackend *memoryBackend, int currentRound, int n
     uintptr_t addressFound;
     bool found = processFindPattern(process, ROUND_CHEAT.regionOffset, ROUND_CHEAT.regionSize, pattern, sizeof(pattern), &addressFound);
     if (!found) {
-        LOG_ERROR("Couldn't find Round Change memory pattern!");
+        LOG_ERROR("Could not find round-change memory pattern");
         return false;
     }
     bool success = processWrite(process, addressFound, &nextRound, sizeof(nextRound));
@@ -346,7 +346,7 @@ bool memoryBackendSetRound(MemoryBackend *memoryBackend, int currentRound, int n
         LOG_ERROR("Failed to write Next Round value");
         return false;
     }
-    LOG_DEBUG("Next round successfully changed. Finish the current round %d and next round will be %d", currentRound, nextRound);
+    LOG_DEBUG("Round change prepared. Finish round %d to advance to round %d", currentRound, nextRound + 1);
     return true;
 }
 
@@ -409,7 +409,7 @@ double memoryBackendGetLevelElapsedTime(MemoryBackend *memoryBackend) {
     uint32_t elapsed;
     bool success = processRead(process, GAME_CHEAT.levelElapsed, &elapsed, sizeof(elapsed));
     if (!success) {
-        LOG_ERROR("Failed to read Game Level Elapsed Time Ready value %d", GetLastError());
+        LOG_ERROR("Could not read game elapsed time. Error %lu", GetLastError());
         return 0;
     }
     return elapsed;
@@ -417,19 +417,19 @@ double memoryBackendGetLevelElapsedTime(MemoryBackend *memoryBackend) {
 
 float memoryBackendGetMovementSpeed(MemoryBackend *memoryBackend) {
     if (!memoryBackend || !memoryBackend->controller) {
-        LOG_ERROR("MemoryBackend or Controller is null");
+        LOG_ERROR("Cannot poll movement speed without a memory backend and controller");
         return false;
     }
     
     Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
-        LOG_ERROR("Process is null");
+        LOG_ERROR("Cannot poll movement speed without an attached process");
         return false;
     }
     float speed;
     bool success = processRead(process, GAME_CHEAT.movementSpeed, &speed, sizeof(speed));
     if (!success) {
-        LOG_ERROR("Failed to read Movement Speed value");
+        LOG_ERROR("Could not read movement speed");
         return false;
     }
     return speed;
@@ -487,7 +487,7 @@ bool memoryBackendIsZombiesGameOngoing(MemoryBackend *memoryBackend) {
     uint32_t active;
     bool success = processRead(process, GAME_CHEAT.isZombiesGameOngoingOffset, &active, sizeof(uint32_t));
     if (!success) {
-        LOG_ERROR("Failed to read Is Zombies Game Active value");
+        LOG_ERROR("Could not read active Zombies game state");
         return false;
     }
     return active == 1;
@@ -495,19 +495,19 @@ bool memoryBackendIsZombiesGameOngoing(MemoryBackend *memoryBackend) {
 
 bool memoryBackendIsZombiesGamePaused(MemoryBackend *memoryBackend) {
     if (!memoryBackend || !memoryBackend->controller) {
-        LOG_ERROR("MemoryBackend or Controller is null");
+        LOG_ERROR("Cannot poll pause state without a memory backend and controller");
         return false;
     }
     
     Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
-        LOG_ERROR("Process is null");
+        LOG_ERROR("Cannot poll pause state without an attached process");
         return false;
     }
     uint32_t active;
     bool success = processRead(process, GAME_CHEAT.isZombiesGamePausedOffset, &active, sizeof(uint32_t));
     if (!success) {
-        LOG_ERROR("Failed to read Is Game Paused value");
+        LOG_ERROR("Could not read game pause state");
         return false;
     }
     return active == 1;
@@ -515,19 +515,19 @@ bool memoryBackendIsZombiesGamePaused(MemoryBackend *memoryBackend) {
 
 int memoryBackendGetGameResets(MemoryBackend *memoryBackend) {
     if (!memoryBackend || !memoryBackend->controller) {
-        LOG_ERROR("MemoryBackend or Controller is null");
+        LOG_ERROR("Cannot poll game resets without a memory backend and controller");
         return 0;
     }
     
     Process *process = controllerGetProcess(memoryBackend->controller);
     if (!process) {
-        LOG_ERROR("Process is null");
+        LOG_ERROR("Cannot poll game resets without an attached process");
         return 0;
     }
     uint32_t resets;
     bool success = processRead(process, GAME_CHEAT.nResetsOffset, &resets, sizeof(uint32_t));
     if (!success) {
-        LOG_ERROR("Failed to read Game Resets value");
+        LOG_ERROR("Could not read game resets");
         return 0;
     }
     resets = resets == 0 ? resets : resets - 1;
@@ -571,7 +571,7 @@ bool memoryBackendSVSendServerCommand(MemoryBackend *memoryBackend, int commandT
     Thread *thread = threadCreateRemote(process, addr + 12, addr);
     bool success = true;
     if (!threadWait(thread, 100)) {
-        LOG_ERROR("Thread wait timed out! Could not execute remote SV_SendServerCommand for commands = [%s]", commands);
+        LOG_ERROR("SV_SendServerCommand timed out after 100 ms for command [%s]", commands);
         success = false;
     }
     threadClose(thread);
@@ -610,7 +610,7 @@ bool memoryBackendCBuffAddText(MemoryBackend *memoryBackend, const char *command
     Thread *thread = threadCreateRemote(process, addr, addr + asmSet.size + 1);
     bool success = true;
     if (!threadWait(thread, 100)) {
-        LOG_ERROR("Thread wait timed out! Could not execute remote Cbuf_AddText.");
+        LOG_ERROR("Cbuf_AddText timed out after 100 ms");
         success = false;
     }
     threadClose(thread);
@@ -641,7 +641,7 @@ uintptr_t memoryBackendGetDVarPointer(MemoryBackend *memoryBackend, const char *
     Thread *thread = threadCreateRemote(process, offset, addr);
     bool success = true;
     if (!threadWait(thread, 100)) {
-        LOG_ERROR("Thread wait timed out! Could not execute remote GetDVarPointer.");
+        LOG_ERROR("GetDVarPointer timed out after 100 ms for DVar '%s'", dVar);
         success = false;
     }
     int exitCode = success ? threadGetExitCode(thread) : 0;
@@ -903,7 +903,7 @@ bool _memoryBackendSetSmallCrosshair(Process *process, bool enabled) {
     }
     uint32_t address1 = 0;
     success = processRead(process, CHEAT_SMALL_CROSSHAIR.offset, &address1, sizeof(address1));
-    LOG_DEBUG("address1 %x", address1);
+    LOG_DEBUG("Small Crosshair pointer: 0x%08X", (unsigned)address1);
     if (!success) {
         LOG_ERROR("Failed to read Small Crosshair address");
         return false;
@@ -995,7 +995,8 @@ bool _memoryBackendSetDisableHud(Process *process, bool enabled) {
         LOG_ERROR("Failed to read Disable Hud address");
         return false;
     }
-    LOG_DEBUG("Reading Disable HUD pointer %x and inside is %x", CHEAT_DISABLE_HUD.offset, address1);
+    LOG_DEBUG("Disable HUD pointer: base=0x%08X target=0x%08X",
+              (unsigned)CHEAT_DISABLE_HUD.offset, (unsigned)address1);
     uint8_t value = enabled ? CHEAT_DISABLE_HUD.on.byte : CHEAT_DISABLE_HUD.off.byte;
     return processWrite(process, address1 + 0x18, &value, sizeof(value));
 }
@@ -1164,7 +1165,7 @@ bool _memoryBackendSetSpeed(Process *process, uint32_t value) {
         LOG_ERROR("Failed to read Speed address");
         return false;
     }
-    LOG_DEBUG("Writing %d in %x", value, cheat.offset);
+    LOG_DEBUG("Writing %u to 0x%08X", (unsigned)value, (unsigned)cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(uint32_t));
 }
 
@@ -1187,7 +1188,7 @@ bool _memoryBackendFov(Process *process, float value) {
         LOG_ERROR("Failed to read Fov address");
         return false;
     }
-    LOG_DEBUG("Writing %f in %x", value, cheat.offset);
+    LOG_DEBUG("Writing %.2f to 0x%08X", value, (unsigned)cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(float));
 }
 
@@ -1200,7 +1201,7 @@ bool _memoryBackendFovScale(Process *process, float value) {
         return false;
     }
     value = value/100;
-    LOG_DEBUG("Writing %f in %x", value, cheat.offset);
+    LOG_DEBUG("Writing %.2f to 0x%08X", value, (unsigned)cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(float));
 }
 
@@ -1212,7 +1213,7 @@ bool _memoryBackendFpsCap(Process *process, uint32_t value) {
         LOG_ERROR("Failed to read Fps Cap address");
         return false;
     }
-    LOG_DEBUG("Writing %d in %x", value, cheat.offset);
+    LOG_DEBUG("Writing %u to 0x%08X", (unsigned)value, (unsigned)cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(uint32_t));
 }
 
@@ -1250,7 +1251,7 @@ bool _memoryBackendCustomizerFloat(Process *process, SimpleCheatName cheatName, 
 
 bool _memoryBackendSetSimpleCheatIntValue(Process *process, SimpleCheatName simpleCheatName, uint32_t value) {
     SimpleCheat cheat = cheatGetSimpleCheat(simpleCheatName);
-    LOG_DEBUG("Writing %d in %x", value, cheat.offset);
+    LOG_DEBUG("Writing %u to 0x%08X", (unsigned)value, (unsigned)cheat.offset);
     return processWrite(process, cheat.offset, &value, sizeof(uint32_t));
 }
 
@@ -1361,7 +1362,7 @@ bool memoryBackendWriteToChatInput(MemoryBackend *memoryBackend, const char *tex
     }
 
     if (!memoryBackendIsChatOpen(memoryBackend)) {
-        LOG_WARN("Writing to Chat Input when chat is not open shouldn't happen!");
+        LOG_WARN("Chat input write skipped because chat is closed");
         return false;
     }
 

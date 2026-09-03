@@ -51,7 +51,7 @@ static void onPlayerButtonClick(uiButton *button, void *data) {
             clientSetPlayerHeadshots(client, uiSpinboxValue(headshotsSpin));
             break;
         default:
-            LOG_WARN("Cheat %d shouldn't be handled here or it doesn't exist", simpleCheatName);
+            LOG_WARN("Player panel received unsupported simple cheat %d", simpleCheatName);
     }
 }
 

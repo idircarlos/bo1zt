@@ -75,7 +75,7 @@ int poolAcquire(GSCPool *pool) {
 
 void poolRelease(GSCPool *pool, int index) {
     if (index < 0 || index >= MAX_WORKERS) {
-        LOG_ERROR("Index out of range");
+        LOG_ERROR("GSC worker index %d is outside [0, %d)", index, MAX_WORKERS);
         return;
     }
 

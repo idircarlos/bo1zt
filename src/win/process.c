@@ -73,7 +73,7 @@ bool processIsValid(Process *process) {
 }
 
 bool processExec(const char *executableName) {
-    LOG_INFO("Trying to open %s", executableName);
+    LOG_DEBUG("Launching process: %s", executableName);
     HINSTANCE result = ShellExecuteA(NULL, "open", executableName,  NULL, NULL, SW_SHOWNORMAL);
     bool success = (INT_PTR)result > 32; // https://learn.microsoft.com/es-es/windows/win32/api/shellapi/nf-shellapi-shellexecutea
     return success;
@@ -98,23 +98,27 @@ bool processTryAttachWindow(Process *process, const char *windowTitle) {
 
 bool processTerminate(Process *process) {
     if (!processIsRunning(process->executableName)) {
-        LOG_ERROR("Cannot terminate %s (PID %d) since it is not running anymore", process->executableName, process->pid);
+        LOG_DEBUG("%s (PID %lu) is already stopped", process->executableName,
+                  (unsigned long)process->pid);
         return false;
     }
     if (processIsWindowAttached(process)) {
-        LOG_INFO("Trying to terminate process %s (PID %d) gracefully...", process->executableName, process->pid);
+        LOG_INFO("Requesting graceful termination of %s (PID %lu)", process->executableName,
+                 (unsigned long)process->pid);
         // Saving these variables since they can be freed/modified by another thread.
         char *executableName = strdup(process->executableName);
         DWORD pid = process->pid;
         PostMessageA(process->windowInfo.hwnd, WM_CLOSE, 0, 0);
         if (WaitForSingleObject(process->handle, 5000) == WAIT_OBJECT_0) {
-            LOG_INFO("%s (PID %d) gracefully terminated", executableName, pid);
+            LOG_INFO("%s (PID %lu) terminated gracefully", executableName,
+                     (unsigned long)pid);
             free(executableName);
             return true;
         }
         free(executableName);
     }
-    LOG_WARN("Couldn't terminate process %s (PID %d) gracefully. Get /kill -9'ed", process->executableName, process->pid);
+    LOG_WARN("Graceful termination of %s (PID %lu) timed out; forcing termination",
+             process->executableName, (unsigned long)process->pid);
     return TerminateProcess(process->handle, 0);
 }
 
@@ -311,7 +315,7 @@ static bool _tryMakeNonBorderless(Process *process) {
     if (!IsWindow(hwnd)) return false;
 
     if (!process->windowInfo.hasSavedStyle) {
-        LOG_WARN("There are no saved window styles");
+        LOG_DEBUG("Cannot restore window styles because none were saved");
         return false;
     }
 
@@ -330,7 +334,7 @@ bool processInjectDll(Process *process, const char *dllName, const char *executa
     }
 
     if (processHasDll(process, dllName)) {
-        LOG_INFO("DLL already injected in process %lu", (unsigned long)process->pid);
+        LOG_DEBUG("DLL is already injected in process %lu", (unsigned long)process->pid);
         process->dllInjected = true;
         return true;
     }
@@ -362,7 +366,7 @@ bool processInjectDll(Process *process, const char *dllName, const char *executa
         return false;
     }
     
-    LOG_INFO("DLL extracted to: %s", fullDllPath);
+    LOG_DEBUG("DLL extracted to %s", fullDllPath);
     
     // Allocate memory in the target process for the DLL path
     size_t pathLen = strlen(fullDllPath) + 1;
@@ -396,7 +400,7 @@ bool processInjectDll(Process *process, const char *dllName, const char *executa
     }
     
     // Create a remote thread to load the DLL
-    LOG_INFO("Creating remote thread to inject DLL into process %lu", (unsigned long)process->pid);
+    LOG_DEBUG("Creating remote thread to inject DLL into process %lu", (unsigned long)process->pid);
     Thread *remoteThread = threadCreateRemote(process, loadLibraryAddr, remoteString);
     
     if (!remoteThread) {
@@ -450,7 +454,7 @@ bool processHasDll(Process *process, const char *dllName) {
 
 void processConnectPipe(Process *process) {
     if (process->pipe.handle != INVALID_HANDLE_VALUE) {
-        LOG_WARN("Pipe already created");
+        LOG_DEBUG("Named pipe is already connected");
         return;
     }
 
@@ -465,7 +469,8 @@ void processConnectPipe(Process *process) {
     );
 
     if (hPipe == INVALID_HANDLE_VALUE) {
-        LOG_ERROR("Failed to connect to named pipe. Error: %d", GetLastError());
+        LOG_ERROR("Failed to connect to named pipe (Win32 error %lu)",
+                  (unsigned long)GetLastError());
         process->pipe.handle = INVALID_HANDLE_VALUE;
         process->pipe.connected = false;
         return;
@@ -473,7 +478,8 @@ void processConnectPipe(Process *process) {
 
     process->pipe.readEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (process->pipe.readEvent == NULL) {
-        LOG_ERROR("Failed to create read event. Error: %d", GetLastError());
+        LOG_ERROR("Failed to create named-pipe read event (Win32 error %lu)",
+                  (unsigned long)GetLastError());
         CloseHandle(hPipe);
         process->pipe.handle = INVALID_HANDLE_VALUE;
         process->pipe.connected = false;
@@ -483,7 +489,7 @@ void processConnectPipe(Process *process) {
     process->pipe.handle = hPipe;
     process->pipe.connected = true;
 
-    LOG_INFO("Pipe connected successfully");
+    LOG_INFO("Named pipe connected");
 }
 
 bool processIsPipeConnected(Process *process) {
@@ -495,7 +501,7 @@ Event processPollFromPipe(Process *process) {
     event.type = EVENT_INVALID;
     
     if (process->pipe.handle == INVALID_HANDLE_VALUE) {
-        LOG_ERROR("Pipe not created");
+        LOG_DEBUG("Cannot poll events before the named pipe is connected");
         return event;
     }
 
@@ -520,23 +526,30 @@ Event processPollFromPipe(Process *process) {
             // Get result after completion
             if (!GetOverlappedResult(process->pipe.handle, &ov, &bytesRead, FALSE)) {
                 error = GetLastError();
-                LOG_ERROR("Overlapped read failed (%d)", error);
                 if (error == ERROR_BROKEN_PIPE || error == ERROR_PIPE_NOT_CONNECTED) {
+                    LOG_INFO("Named pipe disconnected");
                     process->pipe.connected = false;
+                } else {
+                    LOG_ERROR("Overlapped named-pipe read failed (Win32 error %lu)",
+                              (unsigned long)error);
                 }
                 return event;
             }
         } else {
-            LOG_ERROR("Reading from pipe failed (%d)", error);
             if (error == ERROR_BROKEN_PIPE || error == ERROR_PIPE_NOT_CONNECTED) {
+                LOG_INFO("Named pipe disconnected");
                 process->pipe.connected = false;
+            } else {
+                LOG_ERROR("Named-pipe read failed (Win32 error %lu)",
+                          (unsigned long)error);
             }
             return event;
         }
     }
     
     if (bytesRead != sizeof(Event)) {
-        LOG_ERROR("Incomplete read (expected %zu, got %lu bytes)", sizeof(Event), bytesRead);
+        LOG_ERROR("Incomplete named-pipe read: expected %zu bytes, received %lu",
+                  sizeof(Event), (unsigned long)bytesRead);
         event.type = EVENT_INVALID;
         return event;
     }

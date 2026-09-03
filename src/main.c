@@ -31,12 +31,12 @@ int processRunningThread(void *data) {
         if (!controllerIsGameAttached(controller)) {
             controllerAttachGame(controller);
         }
-        LOG_INFO("Game attached! Looking for game window");
+        LOG_INFO("Game attached! Waiting for its window");
         while (!controllerIsGameWindowAttached(controller)) {
             // This can happen if the game exits before attaching the window
             processExited = !controllerIsGameRunning(controller);
             if (processExited) {
-                LOG_INFO("Game exited before attaching the window");
+                LOG_INFO("Game exited before its window was attached");
                 controllerDetachGame(controller);
                 break;
             }
@@ -44,12 +44,12 @@ int processRunningThread(void *data) {
             threadSleep(200);
         }
         if (processExited) continue;
-        LOG_INFO("Window attached!");
+        LOG_INFO("Game window attached!");
         while (!controllerIsGameReady(controller)) {
             // This can happen if the game exits before being ready
             processExited = !controllerIsGameRunning(controller);
             if (processExited) {
-                LOG_INFO("Game exited before being ready");
+                LOG_INFO("Game exited before becoming ready");
                 controllerDetachGame(controller);
                 break;
             }
@@ -67,12 +67,12 @@ int processRunningThread(void *data) {
         }
 
         if (strlen(gameConfig.location) == 0) {
-            LOG_WARN("Game location not configured. DLL injection skipped. Use 'Launch Game' button to configure.");
+            LOG_ERROR("Game location is not configured; skipping DLL injection");
         } else {
             // Inject DLL. Add some delay to let the game completly load and avoid random crashes
             threadSleep(1000);
             if (!processInjectDll(process, DLL_NAME, gameConfig.location)) {
-                LOG_ERROR("Failed to inject DLL into game process. Events won't be received.");
+                LOG_ERROR("Failed to inject the DLL. Game events will be unavailable");
             } else {
                 threadSleep(500); // Wait a bit to let the DLL initialize the pipe
                 processConnectPipe(process);
@@ -80,7 +80,7 @@ int processRunningThread(void *data) {
         }
         controllerInitTrainerConfig(controller);
         controllerWaitUntilGameCloses(controller);
-        LOG_INFO("Game has been closed");
+        LOG_INFO("Game closed");
         controllerDetachGame(controller);
     }
     return 0;

@@ -267,7 +267,7 @@ static void *_mapAuxMalloc(size_t size) {
     void *ptr;
     ptr = malloc(size);
     if (!ptr) {
-        LOG_ERROR("Couldn't allocate space for map");
+        LOG_FATAL("Out of memory allocating %zu bytes for map storage", size);
         exit(EXIT_FAILURE);
     }
     return ptr;
@@ -277,7 +277,7 @@ static void *_mapAuxCalloc(size_t num, size_t size) {
     void *ptr;
     ptr = calloc(num, size);
     if (!ptr) {
-        LOG_ERROR("Couldn't allocate space for map");
+        LOG_FATAL("Out of memory allocating %zu bytes for map storage", num * size);
         exit(EXIT_FAILURE);
     }
     return ptr;

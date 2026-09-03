@@ -28,7 +28,7 @@ static inline char *strfmt(char *buff, const char *fmt, ...) {
 static RGBAColor colorFromString(const char *colorString) {
     uint8_t r = 255, g = 255, b = 255, a = 255;
     if (sscanf(colorString, "Color(%hhu,%hhu,%hhu,%hhu)", &r, &g, &b, &a) != 4) {
-        LOG_ERROR("Invalid color string: %s", colorString);
+        LOG_WARN("Invalid color in %s: %s; using fallback values", INI_FILE_NAME, colorString);
     }
     return rgbaColorCreate(r, g, b, a);
 }
@@ -36,7 +36,7 @@ static RGBAColor colorFromString(const char *colorString) {
 static Rect rectFromString(const char *rectString) {
     uint32_t x = 0, y = 0, w = 0, h = 0;
     if (sscanf(rectString, "Rect(%u,%u,%u,%u)", &x, &y, &w, &h) != 4) {
-        LOG_ERROR("Invalid rect string: %s", rectString);
+        LOG_WARN("Invalid rectangle in %s: %s; using fallback values", INI_FILE_NAME, rectString);
     }
     return rectCreate(x, y, w, h);
 }
@@ -199,7 +199,7 @@ Config* configCreate() {
 bool configSave(Config *config) {
     FILE *ini = fopen(INI_FILE_NAME, "w+");
     if (!ini) {
-        LOG_ERROR("Cannot create trainer.ini");
+        LOG_ERROR("Cannot create %s", INI_FILE_NAME);
         return false;
     }
 
@@ -298,7 +298,7 @@ bool configSave(Config *config) {
     ret += iniparser_set(dictionary, "Twitch:AnnounceRaids", strfmt(valueBuffer, "%d", config->twitch.announceRaids));
 
     if (ret < 0) {
-        LOG_ERROR("Error setting ini values");
+        LOG_ERROR("Failed to set values in %s", INI_FILE_NAME);
         return false;
     }
     iniparser_dump_ini(dictionary, ini);

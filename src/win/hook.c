@@ -83,7 +83,7 @@ Hook* hookCreate(Process *process, uintptr_t startAddress, size_t size, uint8_t 
     if (alreadyHooked && expectedOriginalBytes != NULL) {
         // Use the expected original bytes since memory is already hooked
         memcpy(originalBytes, expectedOriginalBytes, size);
-        LOG_INFO("Hook at 0x%08X: detected existing hook, using expected original bytes", (unsigned int)startAddress);
+        LOG_WARN("Hook at 0x%08X already exists; using expected original bytes", (unsigned int)startAddress);
     } else {
         // Use the current bytes as original
         memcpy(originalBytes, currentBytes, size);

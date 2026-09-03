@@ -127,7 +127,7 @@ static void setupUi() {
     const char *err;
     err = uiInit(&o);
     if (err != NULL) {
-        LOG_ERROR("Error initializing libui: %s", err);
+        LOG_FATAL("Failed to initialize libui: %s", err);
         uiFreeInitError(err);
         exit(1);
     }
