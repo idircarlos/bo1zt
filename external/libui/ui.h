@@ -1965,6 +1965,22 @@ _UI_EXTERN uiMenuItem *uiMenuAppendAboutItem(uiMenu *m);
 _UI_EXTERN void uiMenuAppendSeparator(uiMenu *m);
 
 /**
+ * Appends a nested menu, shown as a fly-out from its parent.
+ *
+ * @param m uiMenu instance.
+ * @param name Submenu label.\n
+ *             A `NUL` terminated UTF-8 string.\n
+ *             Data is copied internally. Ownership is not transferred.
+ * @returns A new uiMenu instance, to be filled with the usual uiMenuAppend*()
+ *          functions.
+ * @warning Menus and their items can only be appended before the menu bar is
+ *          attached to a window.\n
+ *          Menu item shortcuts are not supported on the submenu entry itself.
+ * @memberof uiMenu
+ */
+_UI_EXTERN uiMenu *uiMenuAppendSubmenu(uiMenu *m, const char *name);
+
+/**
  * A menu bar holding the drop downs of a uiWindow.
  *
  * The various operating systems impose different requirements on the

@@ -27,6 +27,7 @@ struct uiMenuItem {
 	BOOL disabled;				// template for new instances; kept in sync with everything else
 	BOOL checked;
 	std::vector<HMENU> *hmenus;
+	uiMenu *submenu;
 };
 
 enum {
@@ -36,6 +37,7 @@ enum {
 	typePreferences,
 	typeAbout,
 	typeSeparator,
+	typeSubmenu,
 };
 
 static std::vector<uiMenuBar *> menuBars;
@@ -121,6 +123,22 @@ static const shortcutKey shortcutKeys[] = {
 	{ uiExtKeyDown,		VK_DOWN,	L"Down" },
 	{ uiExtKeyLeft,		VK_LEFT,	L"Left" },
 	{ uiExtKeyRight,	VK_RIGHT,	L"Right" },
+	{ uiExtKeyN0,		VK_NUMPAD0,	L"Num 0" },
+	{ uiExtKeyN1,		VK_NUMPAD1,	L"Num 1" },
+	{ uiExtKeyN2,		VK_NUMPAD2,	L"Num 2" },
+	{ uiExtKeyN3,		VK_NUMPAD3,	L"Num 3" },
+	{ uiExtKeyN4,		VK_NUMPAD4,	L"Num 4" },
+	{ uiExtKeyN5,		VK_NUMPAD5,	L"Num 5" },
+	{ uiExtKeyN6,		VK_NUMPAD6,	L"Num 6" },
+	{ uiExtKeyN7,		VK_NUMPAD7,	L"Num 7" },
+	{ uiExtKeyN8,		VK_NUMPAD8,	L"Num 8" },
+	{ uiExtKeyN9,		VK_NUMPAD9,	L"Num 9" },
+	{ uiExtKeyNDot,		VK_DECIMAL,	L"Num ." },
+	{ uiExtKeyNEnter,	VK_RETURN,	L"Num Enter" },
+	{ uiExtKeyNAdd,		VK_ADD,		L"Num +" },
+	{ uiExtKeyNSubtract,	VK_SUBTRACT,	L"Num -" },
+	{ uiExtKeyNMultiply,	VK_MULTIPLY,	L"Num *" },
+	{ uiExtKeyNDivide,	VK_DIVIDE,	L"Num /" },
 };
 
 #define shortcutKeyCount (sizeof (shortcutKeys) / sizeof (*shortcutKeys))
@@ -196,6 +214,8 @@ void uiMenuItemSetShortcut(uiMenuItem *i, int modifiers, int key)
 		uiprivUserBug("You can not set a menu item shortcut after the menu bar has been attached to a window.");
 	if (i->type == typeSeparator)
 		uiprivUserBug("You can not set a shortcut on a separator.");
+	if (i->type == typeSubmenu)
+		uiprivUserBug("You can not set a shortcut on a submenu.");
 	if ((modifiers & uiModifierSuper) != 0)
 		uiprivUserBug("Windows does not support the Super key in menu item shortcuts.");
 	if (!isShortcutKey(key))
@@ -214,6 +234,20 @@ void uiMenuItemSetShortcut(uiMenuItem *i, int modifiers, int key)
 		i->accel.fVirt |= FSHIFT;
 	i->accel.key = shortcutVirtualKey(key);
 	i->accel.cmd = i->id;
+}
+
+static uiMenu *newMenu(uiMenuBar *mb, const char *name)
+{
+	uiMenu *m;
+
+	if (mb->finalized)
+		uiprivUserBug("You can not append a menu after the menu bar has been attached to a window.");
+
+	m = uiprivNew(uiMenu);
+	m->menuBar = mb;
+	m->name = toUTF16(name);
+	m->items = new std::vector<uiMenuItem *>;
+	return m;
 }
 
 static uiMenuItem *newItem(uiMenu *m, int type, const char *name)
@@ -304,6 +338,15 @@ void uiMenuAppendSeparator(uiMenu *m)
 	newItem(m, typeSeparator, NULL);
 }
 
+uiMenu *uiMenuAppendSubmenu(uiMenu *m, const char *name)
+{
+	uiMenuItem *item;
+
+	item = newItem(m, typeSubmenu, name);
+	item->submenu = newMenu(m->menuBar, name);
+	return item->submenu;
+}
+
 uiMenuBar *uiNewMenuBar(void)
 {
 	uiMenuBar *mb;
@@ -318,21 +361,32 @@ uiMenu *uiMenuBarAppendMenu(uiMenuBar *mb, const char *name)
 {
 	uiMenu *m;
 
-	if (mb->finalized)
-		uiprivUserBug("You can not append a menu after the menu bar has been attached to a window.");
-
-	m = uiprivNew(uiMenu);
-	m->menuBar = mb;
-	m->name = toUTF16(name);
-	m->items = new std::vector<uiMenuItem *>;
+	m = newMenu(mb, name);
 	mb->menus->push_back(m);
 	return m;
+}
+
+static HMENU makeMenu(uiMenu *m);
+
+// AppendMenuW() spends the ID slot of a popup item on its HMENU, so the ID that sync() looks
+// items up by has to be written back afterwards
+static void setPopupItemID(HMENU menu, WORD id)
+{
+	MENUITEMINFOW mi;
+
+	ZeroMemory(&mi, sizeof (MENUITEMINFOW));
+	mi.cbSize = sizeof (MENUITEMINFOW);
+	mi.fMask = MIIM_ID;
+	mi.wID = id;
+	if (SetMenuItemInfoW(menu, GetMenuItemCount(menu) - 1, TRUE, &mi) == 0)
+		logLastError(L"error setting submenu item ID");
 }
 
 static void appendMenuItem(HMENU menu, uiMenuItem *item)
 {
 	UINT uFlags;
 	WCHAR *text;
+	UINT_PTR idNewItem;
 
 	uFlags = MF_SEPARATOR;
 	if (item->type != typeSeparator) {
@@ -345,10 +399,17 @@ static void appendMenuItem(HMENU menu, uiMenuItem *item)
 	text = item->name;
 	if (item->shortcut != NULL)
 		text = strf(L"%s\t%s", item->name, item->shortcut);
-	if (AppendMenuW(menu, uFlags, item->id, text) == 0)
+	idNewItem = item->id;
+	if (item->type == typeSubmenu) {
+		uFlags |= MF_POPUP;
+		idNewItem = (UINT_PTR) makeMenu(item->submenu);
+	}
+	if (AppendMenuW(menu, uFlags, idNewItem, text) == 0)
 		logLastError(L"error appending menu item");
 	if (text != item->name)
 		uiprivFree(text);
+	if (item->type == typeSubmenu)
+		setPopupItemID(menu, item->id);
 
 	item->hmenus->push_back(menu);
 }
@@ -385,15 +446,23 @@ HMENU uiprivMenuBarMake(uiMenuBar *mb)
 	return menubar;
 }
 
+static void menuCollectAccelerators(uiMenu *m, std::vector<ACCEL> *accels)
+{
+	for (uiMenuItem *item : *(m->items)) {
+		if (item->type == typeSubmenu)
+			menuCollectAccelerators(item->submenu, accels);
+		else if (item->accel.key != 0)
+			accels->push_back(item->accel);
+	}
+}
+
 HACCEL uiprivMenuBarMakeAccelerators(uiMenuBar *mb)
 {
 	std::vector<ACCEL> accels;
 	HACCEL table;
 
 	for (uiMenu *m : *(mb->menus))
-		for (uiMenuItem *item : *(m->items))
-			if (item->accel.key != 0)
-				accels.push_back(item->accel);
+		menuCollectAccelerators(m, &accels);
 	if (accels.empty())
 		return NULL;
 
@@ -403,49 +472,74 @@ HACCEL uiprivMenuBarMakeAccelerators(uiMenuBar *mb)
 	return table;
 }
 
+static BOOL menuRunEvent(uiMenu *m, WORD id, uiWindow *w)
+{
+	for (uiMenuItem *item : *(m->items)) {
+		if (item->type == typeSubmenu) {
+			if (menuRunEvent(item->submenu, id, w))
+				return TRUE;
+			continue;
+		}
+		if (item->id != id)
+			continue;
+		if (item->type == typeCheckbox)
+			uiMenuItemSetChecked(item, !uiMenuItemChecked(item));
+		(*(item->onClicked))(item, w, item->onClickedData);
+		return TRUE;
+	}
+	return FALSE;
+}
+
 void uiprivMenuBarRunEvent(uiMenuBar *mb, WORD id, uiWindow *w)
 {
 	for (uiMenu *m : *(mb->menus))
-		for (uiMenuItem *item : *(m->items)) {
-			if (item->id != id)
-				continue;
-			if (item->type == typeCheckbox)
-				uiMenuItemSetChecked(item, !uiMenuItemChecked(item));
-			(*(item->onClicked))(item, w, item->onClickedData);
+		if (menuRunEvent(m, id, w))
 			return;
-		}
+}
+
+static HMENU submenuAt(HMENU menu, size_t position)
+{
+	MENUITEMINFOW mi;
+
+	ZeroMemory(&mi, sizeof (MENUITEMINFOW));
+	mi.cbSize = sizeof (MENUITEMINFOW);
+	mi.fMask = MIIM_SUBMENU;
+	if (GetMenuItemInfoW(menu, position, TRUE, &mi) == 0) {
+		logLastError(L"error getting menu to delete item references from");
+		return NULL;
+	}
+	return mi.hSubMenu;
 }
 
 static void menuForgetHMENU(uiMenu *m, HMENU submenu)
 {
-	for (uiMenuItem *item : *(m->items))
-		for (size_t i = 0; i < item->hmenus->size(); i++)
-			if ((*(item->hmenus))[i] == submenu) {
-				item->hmenus->erase(item->hmenus->begin() + i);
+	if (submenu == NULL)
+		return;
+	for (size_t i = 0; i < m->items->size(); i++) {
+		uiMenuItem *item = (*(m->items))[i];
+
+		for (size_t j = 0; j < item->hmenus->size(); j++)
+			if ((*(item->hmenus))[j] == submenu) {
+				item->hmenus->erase(item->hmenus->begin() + j);
 				break;
 			}
+		if (item->type == typeSubmenu)
+			menuForgetHMENU(item->submenu, submenuAt(submenu, i));
+	}
 }
 
 void uiprivMenuBarForgetHMENU(uiMenuBar *mb, HMENU menubar)
 {
-	MENUITEMINFOW mi;
-
-	for (size_t i = 0; i < mb->menus->size(); i++) {
-		ZeroMemory(&mi, sizeof (MENUITEMINFOW));
-		mi.cbSize = sizeof (MENUITEMINFOW);
-		mi.fMask = MIIM_SUBMENU;
-		if (GetMenuItemInfoW(menubar, i, TRUE, &mi) == 0) {
-			logLastError(L"error getting menu to delete item references from");
-			continue;
-		}
-		menuForgetHMENU((*(mb->menus))[i], mi.hSubMenu);
-	}
+	for (size_t i = 0; i < mb->menus->size(); i++)
+		menuForgetHMENU((*(mb->menus))[i], submenuAt(menubar, i));
 	// no need to worry about destroying any menus; destruction of the window they're in will do it for us
 }
 
 static void freeMenu(uiMenu *m)
 {
 	for (uiMenuItem *item : *(m->items)) {
+		if (item->type == typeSubmenu)
+			freeMenu(item->submenu);
 		if (item->name != NULL)
 			uiprivFree(item->name);
 		if (item->shortcut != NULL)
