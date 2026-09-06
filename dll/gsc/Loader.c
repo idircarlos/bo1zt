@@ -25,18 +25,17 @@
 
 #define GSC_APP_FOLDER "bo1zt"
 #define GSC_APPDATA_SCRIPTS "gsc"
-#define GSC_APPDATA_CUSTOM GSC_APPDATA_SCRIPTS "/custom"
 #define GSC_APPDATA_DUMP "dump"
 
-// Scripts reference each other as bo1zt\gsc\<name>, so asset names must keep this prefix
-#define GSC_SCRIPT_ROOT "bo1zt/gsc"
-#define GSC_SCRIPT_CUSTOM_ROOT GSC_SCRIPT_ROOT "/custom"
-#define GSC_SCRIPT_ENTRY GSC_SCRIPT_ROOT "/main"
+// Asset names mirror the layout under the scripts folder, so a file path is its GSC path
+#define GSC_SCRIPT_ROOT "bo1zt"
+#define GSC_SCRIPT_MODS_ROOT GSC_SCRIPT_ROOT "/mods"
+#define GSC_SCRIPT_ENTRY GSC_SCRIPT_ROOT "/core/main"
 
 #define GSC_FILE_OFFSET 0x8
 #define GSC_SCRIPT_MAX 128
 #define GSC_SCRIPT_EXTENSION ".gsc"
-#define GSC_MOD_ENTRY "main.gsc"
+#define GSC_MOD_ENTRY "main"
 
 // Debug only: inflates every stock script to the dump directory on each map load
 #define GSC_DUMP_NATIVE_SCRIPTS 0
@@ -59,7 +58,6 @@ typedef struct GscScript {
 
 static int* initTrigger = (int*)T5_init_trigger;
 static char scriptDir[GSC_SIZE_PATH];
-static char customDir[GSC_SIZE_PATH];
 static char dumpDir[GSC_SIZE_PATH];
 
 static GscScript scripts[GSC_SCRIPT_MAX];
@@ -101,21 +99,6 @@ static const char* nativeScripts[] = {
 };
 
 static const size_t nativeScriptCount = sizeof(nativeScripts) / sizeof(nativeScripts[0]);
-
-static const char* trainerScripts[] = {
-    "api/box",
-    "api/perks",
-    "api/music",
-    "api/level",
-    "api/weapons",
-    "api",
-    "startup",
-    "listeners",
-    "workers",
-    "main",
-};
-
-static const size_t trainerScriptCount = sizeof(trainerScripts) / sizeof(trainerScripts[0]);
 
 static void stripExt(char* fileName) {
     char* dot = strrchr(fileName, '.');
@@ -251,31 +234,21 @@ static void loadNativeScripts(void) {
     }
 }
 
-static void linkTrainerScripts(void) {
-    for (size_t i = 0; i < trainerScriptCount; i++) {
-        char filePath[GSC_SIZE_PATH];
-        char assetName[GSC_SIZE_PATH];
-
-        snprintf(filePath, sizeof(filePath), "%s/%s.gsc", scriptDir, trainerScripts[i]);
-        snprintf(assetName, sizeof(assetName), "%s/%s", GSC_SCRIPT_ROOT, trainerScripts[i]);
-
-        addScript(filePath, assetName, strcmp(assetName, GSC_SCRIPT_ENTRY) == 0);
-    }
-}
-
 static bool isScriptFile(const char* fileName) {
     const char* dot = strrchr(fileName, '.');
     return dot && _stricmp(dot, GSC_SCRIPT_EXTENSION) == 0;
 }
 
-// A mod is a folder under custom/ and only its main.gsc is executed
-static bool isModEntry(const char* relativePath) {
-    const char* slash = strchr(relativePath, '/');
-    if (!slash) return false;
-    return strchr(slash + 1, '/') == NULL && _stricmp(slash + 1, GSC_MOD_ENTRY) == 0;
+// A mod is a folder under mods/ and only its main.gsc is executed
+static bool isModEntry(const char* assetName) {
+    const size_t rootLength = sizeof(GSC_SCRIPT_MODS_ROOT "/") - 1;
+    if (strncmp(assetName, GSC_SCRIPT_MODS_ROOT "/", rootLength) != 0) return false;
+
+    const char* slash = strchr(assetName + rootLength, '/');
+    return slash && _stricmp(slash + 1, GSC_MOD_ENTRY) == 0;
 }
 
-static void linkCustomDir(const char* dir, const char* prefix) {
+static void linkScriptDir(const char* dir, const char* prefix) {
     char pattern[GSC_SIZE_PATH];
     snprintf(pattern, sizeof(pattern), "%s/*", dir);
 
@@ -286,33 +259,30 @@ static void linkCustomDir(const char* dir, const char* prefix) {
     do {
         if (strcmp(found.cFileName, ".") == 0 || strcmp(found.cFileName, "..") == 0) continue;
 
-        char relativePath[GSC_SIZE_PATH];
+        char assetName[GSC_SIZE_PATH];
         char filePath[GSC_SIZE_PATH];
 
-        snprintf(relativePath, sizeof(relativePath), "%s%s", prefix, found.cFileName);
+        snprintf(assetName, sizeof(assetName), "%s/%s", prefix, found.cFileName);
         snprintf(filePath, sizeof(filePath), "%s/%s", dir, found.cFileName);
 
         if (found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            char childPrefix[GSC_SIZE_PATH];
-            snprintf(childPrefix, sizeof(childPrefix), "%s/", relativePath);
-            linkCustomDir(filePath, childPrefix);
+            linkScriptDir(filePath, assetName);
             continue;
         }
 
         if (!isScriptFile(found.cFileName)) continue;
 
-        char assetName[GSC_SIZE_PATH];
-        snprintf(assetName, sizeof(assetName), "%s/%s", GSC_SCRIPT_CUSTOM_ROOT, relativePath);
         stripExt(assetName);
-
-        addScript(filePath, assetName, isModEntry(relativePath));
+        addScript(filePath, assetName, strcmp(assetName, GSC_SCRIPT_ENTRY) == 0 || isModEntry(assetName));
     } while (FindNextFileA(search, &found));
 
     FindClose(search);
 }
 
-static void linkCustomScripts(void) {
-    linkCustomDir(customDir, "");
+static void linkScripts(void) {
+    char rootDir[GSC_SIZE_PATH];
+    snprintf(rootDir, sizeof(rootDir), "%s/%s", scriptDir, GSC_SCRIPT_ROOT);
+    linkScriptDir(rootDir, GSC_SCRIPT_ROOT);
 }
 
 static void compileScripts(void) {
@@ -336,8 +306,7 @@ static void loadScripts(void) {
     loadNativeScripts();
 
     scriptCount = 0;
-    linkTrainerScripts();
-    linkCustomScripts();
+    linkScripts();
     compileScripts();
 }
 
@@ -444,14 +413,13 @@ static DWORD WINAPI GSCInitThread(LPVOID lpParam) {
     LOG_INFO("[GSC] Loader init");
 
     if (!appFolderPath(scriptDir, sizeof(scriptDir), GSC_APPDATA_SCRIPTS) ||
-        !appFolderPath(customDir, sizeof(customDir), GSC_APPDATA_CUSTOM) ||
         !appFolderPath(dumpDir, sizeof(dumpDir), GSC_APPDATA_DUMP)) {
         LOG_ERROR("[GSC] Failed to resolve %%APPDATA%%");
         return EXIT_FAILURE;
     }
 
     char entryFile[GSC_SIZE_PATH];
-    snprintf(entryFile, sizeof(entryFile), "%s/main.gsc", scriptDir);
+    snprintf(entryFile, sizeof(entryFile), "%s/%s.gsc", scriptDir, GSC_SCRIPT_ENTRY);
 
     if (!fileExists(entryFile)) {
         LOG_WARN("[GSC] Trainer entry file does not exist: %s", entryFile);
@@ -459,7 +427,6 @@ static DWORD WINAPI GSCInitThread(LPVOID lpParam) {
     }
 
     LOG_INFO("[GSC] Trainer entry found: %s", entryFile);
-    LOG_INFO("[GSC] Custom script directory: %s", customDir);
     LOG_INFO("[GSC] Dump directory: %s", dumpDir);
     LOG_INFO("[GSC] Applying detours...");
 

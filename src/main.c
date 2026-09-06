@@ -60,9 +60,9 @@ int processRunningThread(void *data) {
         LOG_INFO("Game ready!");
         Process *process = controllerGetProcess(controller);
 
-        char gscPath[MAX_PATH];
-        if (fileAppFolderPath(gscPath, sizeof(gscPath), "gsc")) {
-            resourcesExtractZip(IDR_GSC_ZIP, gscPath);
+        char corePath[MAX_PATH];
+        if (fileAppFolderPath(corePath, sizeof(corePath), "gsc\\bo1zt\\core")) {
+            resourcesExtractZip(IDR_GSC_ZIP, corePath);
         }
 
         // Inject DLL. Add some delay to let the game completly load and avoid random crashes

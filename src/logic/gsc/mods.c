@@ -8,7 +8,7 @@
 #include "logger.h"
 #include "win/file.h"
 
-#define GSC_MODS_PATH "gsc\\custom"
+#define GSC_MODS_PATH "gsc\\bo1zt\\mods"
 #define GSC_SCRIPT_EXTENSION ".gsc"
 #define GSC_MOD_ENTRY "main.gsc"
 #define GSC_MOD_TEMPLATE "main() {\n}\n"

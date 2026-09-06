@@ -21,32 +21,32 @@ _RunWorker(workerId) {
             result = "success";
             switch (method) {
                 case "AddPerks":
-                    bo1zt\gsc\api\perks::AddPerks(args);
+                    bo1zt\core\api\perks::AddPerks(args);
                     break;
                 case "RemovePerks":
-                    bo1zt\gsc\api\perks::RemovePerks(args);
+                    bo1zt\core\api\perks::RemovePerks(args);
                     break;
                 case "NumPerks":
-                    result = bo1zt\gsc\api\perks::NumPerks();
+                    result = bo1zt\core\api\perks::NumPerks();
                     break;
                 case "StaticBox":
                     if (args.size == 0) {
-                        result = bo1zt\gsc\api\box::GetStaticBox();
+                        result = bo1zt\core\api\box::GetStaticBox();
                     } else {
-                        bo1zt\gsc\api\box::SetStaticBox(args);
+                        bo1zt\core\api\box::SetStaticBox(args);
                     }
                     break;
                 case "PlayEasterEggSong":
-                    result = bo1zt\gsc\api\music::PlayEasterEggSong();
+                    result = bo1zt\core\api\music::PlayEasterEggSong();
                     break;
                 case "GetRound":
-                    result = bo1zt\gsc\api\level::GetRound();
+                    result = bo1zt\core\api\level::GetRound();
                     break;
                 case "GiveWeapons":
-                    result = bo1zt\gsc\api\weapons::GiveWeapons(args);
+                    result = bo1zt\core\api\weapons::GiveWeapons(args);
                     break;
                 case "TakeWeapons":
-                    result = bo1zt\gsc\api\weapons::TakeWeapons();
+                    result = bo1zt\core\api\weapons::TakeWeapons();
                     break;
                 default:
                     break;
