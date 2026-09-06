@@ -23,10 +23,10 @@
 #define GSC_SIZE_BUF (1024 * 1024)
 #define GSC_SIZE_PATH 512
 
-#define GSC_APPDATA_ROOT "bo1zt"
-#define GSC_APPDATA_SCRIPTS GSC_APPDATA_ROOT "/gsc"
+#define GSC_APP_FOLDER "bo1zt"
+#define GSC_APPDATA_SCRIPTS "gsc"
 #define GSC_APPDATA_CUSTOM GSC_APPDATA_SCRIPTS "/custom"
-#define GSC_APPDATA_DUMP GSC_APPDATA_ROOT "/dump"
+#define GSC_APPDATA_DUMP "dump"
 
 // Scripts reference each other as bo1zt\gsc\<name>, so asset names must keep this prefix
 #define GSC_SCRIPT_ROOT "bo1zt/gsc"
@@ -126,7 +126,7 @@ static bool fileExists(const char* path) {
     return GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES;
 }
 
-static bool appDataPath(char* out, size_t size, const char* subPath) {
+static bool appFolderPath(char* out, size_t size, const char* subPath) {
     char appData[GSC_SIZE_PATH];
     if (!GetEnvironmentVariableA("APPDATA", appData, sizeof(appData))) return false;
 
@@ -134,7 +134,7 @@ static bool appDataPath(char* out, size_t size, const char* subPath) {
         if (*p == '\\') *p = '/';
     }
 
-    int written = snprintf(out, size, "%s/%s", appData, subPath);
+    int written = snprintf(out, size, "%s/%s/%s", appData, GSC_APP_FOLDER, subPath);
     return written > 0 && (size_t)written < size;
 }
 
@@ -443,9 +443,9 @@ static DWORD WINAPI GSCInitThread(LPVOID lpParam) {
 
     LOG_INFO("[GSC] Loader init");
 
-    if (!appDataPath(scriptDir, sizeof(scriptDir), GSC_APPDATA_SCRIPTS) ||
-        !appDataPath(customDir, sizeof(customDir), GSC_APPDATA_CUSTOM) ||
-        !appDataPath(dumpDir, sizeof(dumpDir), GSC_APPDATA_DUMP)) {
+    if (!appFolderPath(scriptDir, sizeof(scriptDir), GSC_APPDATA_SCRIPTS) ||
+        !appFolderPath(customDir, sizeof(customDir), GSC_APPDATA_CUSTOM) ||
+        !appFolderPath(dumpDir, sizeof(dumpDir), GSC_APPDATA_DUMP)) {
         LOG_ERROR("[GSC] Failed to resolve %%APPDATA%%");
         return EXIT_FAILURE;
     }

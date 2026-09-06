@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 #define READ_STRING_MAX_SIZE 8192
-#define DLL_APPDATA_FOLDER "bo1zt\\dll"
+#define DLL_APPDATA_FOLDER "dll"
 
 static BOOL CALLBACK _EnumWindowsProc(HWND hWnd, LPARAM lParam);
 static bool _tryMakeBorderless(Process *process);
@@ -341,7 +341,7 @@ bool processInjectDll(Process *process, const char *dllName) {
     }
 
     char folder[MAX_PATH];
-    if (!fileAppDataPath(folder, sizeof(folder), DLL_APPDATA_FOLDER)) {
+    if (!fileAppFolderPath(folder, sizeof(folder), DLL_APPDATA_FOLDER)) {
         LOG_ERROR("Failed to resolve %%APPDATA%%");
         return false;
     }

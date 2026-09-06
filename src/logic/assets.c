@@ -20,7 +20,7 @@ static const char *const ASSETS_ZONES[] = {
 };
 
 static bool assetsDir(char *out, size_t bufSize) {
-    if (!fileAppDataPath(out, bufSize, "bo1zt\\assets")) {
+    if (!fileAppFolderPath(out, bufSize, "assets")) {
         LOG_ERROR("Failed to resolve %%APPDATA%%");
         return false;
     }

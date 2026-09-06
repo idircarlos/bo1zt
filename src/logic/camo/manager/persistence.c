@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CAMO_APP_FOLDER   "bo1zt"
 #define CAMO_ROOT_FOLDER  "camo-manager"
 #define CAMO_CAMOS_FOLDER "camos"
 #define CAMO_BUNDLES_FOLDER "bundles"
@@ -58,14 +57,7 @@ bool camoPersistenceValidId(const char *id) {
 static bool camoPersistenceBaseDir(char *out, size_t bufSize) {
     if (!out || bufSize == 0) return false;
 
-    char sub[MAX_PATH];
-    int n = snprintf(sub, sizeof(sub), "%s\\%s", CAMO_APP_FOLDER, CAMO_ROOT_FOLDER);
-    if (n < 0 || (size_t)n >= sizeof(sub)) {
-        LOG_ERROR("Camo manager base path too long");
-        return false;
-    }
-
-    if (!fileAppDataPath(out, bufSize, sub)) {
+    if (!fileAppFolderPath(out, bufSize, CAMO_ROOT_FOLDER)) {
         LOG_ERROR("Failed to resolve %%APPDATA%%");
         return false;
     }

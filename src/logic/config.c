@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#define INI_FOLDER "bo1zt\\config"
+#define INI_FOLDER "config"
 #define INI_FILE_NAME "bo1zt.ini"
 #define STRFMT_BUFF_SIZE 1024
 #define COLOR_INI_FMT "Color(%hhu,%hhu,%hhu,%hhu)"
@@ -21,7 +21,7 @@
 // Helpers
 bool configFilePath(char *out, size_t size) {
     char folder[MAX_PATH];
-    if (!fileAppDataPath(folder, sizeof(folder), INI_FOLDER)) {
+    if (!fileAppFolderPath(folder, sizeof(folder), INI_FOLDER)) {
         LOG_ERROR("Failed to resolve %%APPDATA%%");
         return false;
     }

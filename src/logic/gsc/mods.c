@@ -8,7 +8,7 @@
 #include "logger.h"
 #include "win/file.h"
 
-#define GSC_MODS_PATH "bo1zt\\gsc\\custom"
+#define GSC_MODS_PATH "gsc\\custom"
 #define GSC_SCRIPT_EXTENSION ".gsc"
 #define GSC_MOD_ENTRY "main.gsc"
 #define GSC_MOD_TEMPLATE "main() {\n}\n"
@@ -141,7 +141,7 @@ static void scanMods(const char *modsDir) {
 }
 
 bool gscModsDir(char *out, size_t size) {
-    if (fileAppDataPath(out, size, GSC_MODS_PATH)) return true;
+    if (fileAppFolderPath(out, size, GSC_MODS_PATH)) return true;
     LOG_ERROR("GSC Mods: failed to resolve %%APPDATA%%");
     return false;
 }

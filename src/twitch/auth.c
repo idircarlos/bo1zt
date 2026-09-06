@@ -13,7 +13,7 @@
 #define FORM_HEADERS "Content-Type: application/x-www-form-urlencoded\r\n"
 #define DEVICE_GRANT "urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"
 
-#define TOKEN_FOLDER "bo1zt\\twitch"
+#define TOKEN_FOLDER "twitch"
 #define TOKEN_FILE   "tokens.dat"
 
 #define TOKEN_BLOB_SIZE 1280
@@ -141,7 +141,7 @@ TwitchResult twitchAuthRefresh(TwitchClient *client) {
 }
 
 static bool tokenFolder(char *out, size_t size) {
-    if (!fileAppDataPath(out, size, TOKEN_FOLDER)) {
+    if (!fileAppFolderPath(out, size, TOKEN_FOLDER)) {
         LOG_ERROR("Twitch: failed to resolve %%APPDATA%%");
         return false;
     }

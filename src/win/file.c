@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define APP_FOLDER "bo1zt"
+
 static bool removeTree(const char *path) {
     char pattern[MAX_PATH];
     int n = snprintf(pattern, sizeof(pattern), "%s\\*", path);
@@ -120,7 +122,7 @@ bool fileWriteAll(const char *path, const void *data, size_t size) {
     return written == size && closeErr == 0;
 }
 
-bool fileAppDataPath(char *out, size_t size, const char *subPath) {
+bool fileAppFolderPath(char *out, size_t size, const char *subPath) {
     if (!out || size == 0) return false;
 
     char appData[MAX_PATH];
@@ -130,9 +132,9 @@ bool fileAppDataPath(char *out, size_t size, const char *subPath) {
 
     int n;
     if (subPath && subPath[0] != '\0') {
-        n = snprintf(out, size, "%s\\%s", appData, subPath);
+        n = snprintf(out, size, "%s\\%s\\%s", appData, APP_FOLDER, subPath);
     } else {
-        n = snprintf(out, size, "%s", appData);
+        n = snprintf(out, size, "%s\\%s", appData, APP_FOLDER);
     }
     return n >= 0 && (size_t)n < size;
 }

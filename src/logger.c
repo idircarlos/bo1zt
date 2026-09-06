@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
-#define LOG_FOLDER "bo1zt\\logs"
+#define LOG_FOLDER "logs"
 #define LOG_FILE "bo1zt.log"
 
 typedef struct {
@@ -21,7 +21,7 @@ typedef struct {
 static Logger logger = {};
 
 bool loggerFolder(char *out, size_t size) {
-    return fileAppDataPath(out, size, LOG_FOLDER);
+    return fileAppFolderPath(out, size, LOG_FOLDER);
 }
 
 static FILE *openLogFile(void) {
