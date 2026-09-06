@@ -1,11 +1,14 @@
 #include "logger.h"
 #include "controller.h"
+#include "win/file.h"
+#include <windows.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
 #include <stdlib.h>
 
 #define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
+#define LOG_FOLDER "bo1zt\\logs"
 #define LOG_FILE "bo1zt.log"
 
 typedef struct {
@@ -17,12 +20,26 @@ typedef struct {
 
 static Logger logger = {};
 
+bool loggerFolder(char *out, size_t size) {
+    return fileAppDataPath(out, size, LOG_FOLDER);
+}
+
+static FILE *openLogFile(void) {
+    char folder[MAX_PATH];
+    if (!loggerFolder(folder, sizeof(folder))) return NULL;
+    if (!fileCreateFolder(folder)) return NULL;
+
+    char path[MAX_PATH];
+    snprintf(path, sizeof(path), "%s\\%s", folder, LOG_FILE);
+    return fopen(path, "a");
+}
+
 void loggerInit(Controller *controller) {
     if (logger.initialized) return;
     logger.level = L_TRACE;
     logger.initialized = 1;
     logger.controller = controller;
-    logger.logFile = fopen(LOG_FILE, "a");
+    logger.logFile = openLogFile();
 
     if (logger.logFile) {
         time_t now = time(NULL);

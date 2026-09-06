@@ -6,6 +6,7 @@
 #include <string.h>
 
 #define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
+#define LOG_FOLDER "bo1zt\\logs"
 
 typedef struct {
     LogLevel level;
@@ -39,28 +40,33 @@ static const char* LogGetLevelString(LogLevel level) {
     }
 }
 
-// Store DLL module handle for getting its path
-static HMODULE dllModule = NULL;
+static void CreateDirs(char* path) {
+    for (char* p = path + 1; *p; ++p) {
+        if (*p != '\\') continue;
+        *p = '\0';
+        CreateDirectoryA(path, NULL);
+        *p = '\\';
+    }
+    CreateDirectoryA(path, NULL);
+}
 
-void LogSetModule(HMODULE hModule) {
-    dllModule = hModule;
+static bool LogFolder(char* out, size_t size) {
+    char appData[MAX_PATH];
+    if (!GetEnvironmentVariableA("APPDATA", appData, sizeof(appData))) return false;
+
+    int written = _snprintf(out, size, "%s\\%s", appData, LOG_FOLDER);
+    return written > 0 && (size_t)written < size;
 }
 
 bool LogInit(const char* filename) {
     if (logger.initialized) return true;
     if (!filename) return false;
-    
-    // Get the DLL's directory (where bo1zt.dll is located)
-    char modulePath[MAX_PATH];
-    GetModuleFileNameA(dllModule, modulePath, MAX_PATH);
-    
-    // Extract directory from full path
-    char* lastSlash = strrchr(modulePath, '\\');
-    if (lastSlash)
-        *lastSlash = '\0';
-    
-    // Build full log file path in the bo1zt folder
-    _snprintf(logger.logFilePath, MAX_PATH - 1, "%s\\%s", modulePath, filename);
+
+    char folder[MAX_PATH];
+    if (!LogFolder(folder, sizeof(folder))) return false;
+    CreateDirs(folder);
+
+    _snprintf(logger.logFilePath, MAX_PATH - 1, "%s\\%s", folder, filename);
     logger.logFilePath[MAX_PATH - 1] = '\0';
     
     // Open log file in append mode to preserve previous sessions
@@ -83,8 +89,20 @@ bool LogInit(const char* filename) {
     return true;
 }
 
-void LogSetLevel(LogLevel level) {
-    logger.level = level;
+bool LogDirectory(char* out, size_t size) {
+    if (!logger.initialized || !out) return false;
+
+    _snprintf(out, size - 1, "%s", logger.logFilePath);
+    out[size - 1] = '\0';
+
+    char* lastSlash = strrchr(out, '\\');
+    if (!lastSlash) return false;
+
+    *lastSlash = '\0';
+    return true;
+}
+
+void LogSetLevel(LogLevel level) {    logger.level = level;
 }
 
 void LogWrite(LogLevel level, const char* file, int line, const char* format, ...) {

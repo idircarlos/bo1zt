@@ -12,6 +12,7 @@
 #include "gui/logs/view.h"
 #include "logger.h"
 #include "resource_ids.h"
+#include "win/file.h"
 
 #define LOGS_WINDOW_TITLE "Logs"
 #define LOGS_WINDOW_WIDTH 940
@@ -19,8 +20,7 @@
 #define LOGS_REFRESH_INTERVAL_MS 400
 
 #define LOGS_EXE_FILE "bo1zt.log"
-#define LOGS_FOLDER "bo1zt"
-#define LOGS_DLL_FILE LOGS_FOLDER "\\bo1zt_dll.log"
+#define LOGS_DLL_FILE "bo1zt_dll.log"
 
 static const char *const LOGS_LEVEL_NAME[] = {
     "Trace", "Debug", "Info", "Warn", "Error", "Fatal"
@@ -47,10 +47,12 @@ static void refreshDllPath(void) {
 
     const GuiSnapshot *snapshot = guiGetSnapshot();
     if (!snapshot->statusValid || !snapshot->status.dllInjected) return;
-    if (!snapshot->gameConfigValid || snapshot->gameConfig.location[0] == '\0') return;
+
+    char folder[MAX_PATH];
+    if (!loggerFolder(folder, sizeof(folder))) return;
 
     char path[MAX_PATH];
-    snprintf(path, sizeof(path), "%s\\%s", snapshot->gameConfig.location, LOGS_DLL_FILE);
+    snprintf(path, sizeof(path), "%s\\%s", folder, LOGS_DLL_FILE);
     logsViewSetPath(dllView, path);
     dllTailing = true;
 }
@@ -85,14 +87,13 @@ static void onLevelSelected(uiRadioButtons *buttons, void *data) {
 static void onOpenFolderClicked(uiMenuItem *item, uiWindow *window, void *data) {
     (void)item; (void)window; (void)data;
 
-    const GuiSnapshot *snapshot = guiGetSnapshot();
-    if (!snapshot->gameConfigValid || snapshot->gameConfig.location[0] == '\0') {
-        LOG_ERROR("Logs: cannot open the logs folder because the game location is not configured");
+    char folder[MAX_PATH];
+    if (!loggerFolder(folder, sizeof(folder))) {
+        LOG_ERROR("Logs: failed to resolve %%APPDATA%%");
         return;
     }
 
-    char folder[MAX_PATH];
-    snprintf(folder, sizeof(folder), "%s\\%s", snapshot->gameConfig.location, LOGS_FOLDER);
+    fileCreateFolder(folder);
     ShellExecuteA(NULL, "open", folder, NULL, NULL, SW_SHOWNORMAL);
 }
 
@@ -251,12 +252,11 @@ static uiMenuBar *buildMenuBar(void) {
 }
 
 static void setExePath(void) {
-    char path[MAX_PATH];
+    char folder[MAX_PATH];
+    if (!loggerFolder(folder, sizeof(folder))) return;
 
-    if (GetFullPathNameA(LOGS_EXE_FILE, MAX_PATH, path, NULL) == 0) {
-        logsViewSetPath(exeView, LOGS_EXE_FILE);
-        return;
-    }
+    char path[MAX_PATH];
+    snprintf(path, sizeof(path), "%s\\%s", folder, LOGS_EXE_FILE);
     logsViewSetPath(exeView, path);
 }
 

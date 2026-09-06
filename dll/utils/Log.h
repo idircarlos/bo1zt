@@ -13,8 +13,8 @@ typedef enum {
     LOG_FATAL
 } LogLevel;
 
-void LogSetModule(HMODULE hModule);
 bool LogInit(const char* filename);
+bool LogDirectory(char* out, size_t size);
 void LogSetLevel(LogLevel level);
 void LogWrite(LogLevel level, const char* file, int line, const char* format, ...);
 

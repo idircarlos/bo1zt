@@ -1,6 +1,9 @@
 #ifndef LOGGER_H_
 #define LOGGER_H_
 
+#include <stdbool.h>
+#include <stddef.h>
+
 #include "controller.h"
 
 #define LOG_TRACE(fmt, ...) loggerLog(L_TRACE, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
@@ -23,5 +26,6 @@ void loggerInit(Controller *controller);
 void loggerClose(void);
 void loggerSetLevel(LogLevel level);
 void loggerLog(LogLevel level, const char *cfile, int cline, const char *fmt, ...);
+bool loggerFolder(char *out, size_t size);
 
 #endif // LOGGER_H_
