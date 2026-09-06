@@ -12,6 +12,7 @@
 #include <stdio.h>
 
 #define READ_STRING_MAX_SIZE 8192
+#define DLL_APPDATA_FOLDER "bo1zt\\dll"
 
 static BOOL CALLBACK _EnumWindowsProc(HWND hWnd, LPARAM lParam);
 static bool _tryMakeBorderless(Process *process);
@@ -327,7 +328,7 @@ static bool _tryMakeNonBorderless(Process *process) {
                                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 }
 
-bool processInjectDll(Process *process, const char *dllName, const char *executablePath) {
+bool processInjectDll(Process *process, const char *dllName) {
     if (!process || !process->handle) {
         LOG_ERROR("Invalid process for DLL injection");
         return false;
@@ -339,26 +340,18 @@ bool processInjectDll(Process *process, const char *dllName, const char *executa
         return true;
     }
 
-    // Build path to bo1zt folder in game directory
-    char bo1ztFolder[MAX_PATH];
-    char fullDllPath[MAX_PATH];
-    
-    if (executablePath && strlen(executablePath) > 0) {
-        // Build bo1zt folder path directly from game directory
-        snprintf(bo1ztFolder, MAX_PATH, "%s\\bo1zt", executablePath);
-        
-        // Create the folder if it doesn't exist
-        fileCreateFolder(bo1ztFolder);
-        
-        // Build full DLL path
-        snprintf(fullDllPath, MAX_PATH, "%s\\%s", bo1ztFolder, dllName);
-    } else {
-        // Fallback to current directory
-        if (GetFullPathNameA(dllName, MAX_PATH, fullDllPath, NULL) == 0) {
-            LOG_ERROR("Failed to get full path for DLL");
-            return false;
-        }
+    char folder[MAX_PATH];
+    if (!fileAppDataPath(folder, sizeof(folder), DLL_APPDATA_FOLDER)) {
+        LOG_ERROR("Failed to resolve %%APPDATA%%");
+        return false;
     }
+    if (!fileCreateFolder(folder)) {
+        LOG_ERROR("Cannot create %s", folder);
+        return false;
+    }
+
+    char fullDllPath[MAX_PATH];
+    snprintf(fullDllPath, MAX_PATH, "%s\\%s", folder, dllName);
 
     // Extract DLL from resources to bo1zt folder
     if (!resourcesExtractToFile(IDR_CHAT_HOOK_DLL, fullDllPath)) {

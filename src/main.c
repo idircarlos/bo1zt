@@ -59,24 +59,19 @@ int processRunningThread(void *data) {
         if (processExited) continue;
         LOG_INFO("Game ready!");
         Process *process = controllerGetProcess(controller);
-        GameConfig gameConfig = controllerGetGameConfig(controller);
 
         char gscPath[MAX_PATH];
         if (fileAppDataPath(gscPath, sizeof(gscPath), "bo1zt\\gsc")) {
             resourcesExtractZip(IDR_GSC_ZIP, gscPath);
         }
 
-        if (strlen(gameConfig.location) == 0) {
-            LOG_ERROR("Game location is not configured; skipping DLL injection");
+        // Inject DLL. Add some delay to let the game completly load and avoid random crashes
+        threadSleep(1000);
+        if (!processInjectDll(process, DLL_NAME)) {
+            LOG_ERROR("Failed to inject the DLL. Game events will be unavailable");
         } else {
-            // Inject DLL. Add some delay to let the game completly load and avoid random crashes
-            threadSleep(1000);
-            if (!processInjectDll(process, DLL_NAME, gameConfig.location)) {
-                LOG_ERROR("Failed to inject the DLL. Game events will be unavailable");
-            } else {
-                threadSleep(500); // Wait a bit to let the DLL initialize the pipe
-                processConnectPipe(process);
-            }
+            threadSleep(500); // Wait a bit to let the DLL initialize the pipe
+            processConnectPipe(process);
         }
         controllerInitTrainerConfig(controller);
         controllerWaitUntilGameCloses(controller);
