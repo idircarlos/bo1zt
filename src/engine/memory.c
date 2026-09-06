@@ -253,8 +253,6 @@ bool memoryBackendSetSimpleCheat(MemoryBackend *memoryBackend, SimpleCheatName s
         return false;
     }
 
-    LOG_DEBUG("Setting simple cheat %d from value at %p", simpleCheatName, value);
-
     switch(simpleCheatName) {
         case SIMPLE_CHEAT_NAME_CHANGE_NAME:
             return _memoryBackendChangeName(process, (char*)value);
@@ -1188,7 +1186,6 @@ bool _memoryBackendFov(Process *process, float value) {
         LOG_ERROR("Failed to read Fov address");
         return false;
     }
-    LOG_DEBUG("Writing %.2f to 0x%08X", value, (unsigned)cheat.offset);
     return processWrite(process, address1 + 0x18, &value, sizeof(float));
 }
 
