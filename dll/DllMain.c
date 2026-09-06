@@ -190,7 +190,6 @@ static bool InitBO1ZT() {
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
         case DLL_PROCESS_ATTACH:
-            LogSetModule(hinstDLL);
             LogInit("bo1zt_dll.log");
             LOG_INFO("BO1ZT DLL loaded");
             DisableThreadLibraryCalls(hinstDLL);
