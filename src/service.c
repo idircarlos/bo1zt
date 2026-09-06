@@ -26,6 +26,7 @@
 #include "logger.h"
 
 #include <iniparser.h>
+#include <windows.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -62,7 +63,10 @@ int serviceResolvePort(void) {
         if (p > 0 && p < 65536) return p;
     }
     int port = SERVICE_DEFAULT_PORT;
-    dictionary *dict = iniparser_load("bo1zt.ini");
+    char path[MAX_PATH];
+    if (!configFilePath(path, sizeof(path))) return port;
+
+    dictionary *dict = iniparser_load(path);
     if (dict) {
         port = iniparser_getint(dict, "Api:Port", SERVICE_DEFAULT_PORT);
         iniparser_freedict(dict);

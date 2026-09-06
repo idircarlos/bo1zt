@@ -5,6 +5,7 @@
 #include "utils/color.h"
 #include "utils/common.h"
 #include <stdbool.h>
+#include <stddef.h>
 
 #define N_CONFIG_WIDGETS 6
 #define MAX_BINDS 100
@@ -110,6 +111,7 @@ typedef enum {
 } ConfigType;
 
 Config* configCreate();
+bool configFilePath(char *out, size_t size);
 bool configSave(Config *config);
 void configReset(Config *config);
 void configResetGame(Config *config);

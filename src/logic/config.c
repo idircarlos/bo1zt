@@ -3,12 +3,14 @@
 #include "logic/widget/manager.h"
 #include "logic/cheat.h"
 #include "win/file.h"
+#include <windows.h>
 #include <iniparser.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 
+#define INI_FOLDER "bo1zt\\config"
 #define INI_FILE_NAME "bo1zt.ini"
 #define STRFMT_BUFF_SIZE 1024
 #define COLOR_INI_FMT "Color(%hhu,%hhu,%hhu,%hhu)"
@@ -17,6 +19,21 @@
 #define RECT_INI_DEFAULT "Rect(111,111,111,111)"
 
 // Helpers
+bool configFilePath(char *out, size_t size) {
+    char folder[MAX_PATH];
+    if (!fileAppDataPath(folder, sizeof(folder), INI_FOLDER)) {
+        LOG_ERROR("Failed to resolve %%APPDATA%%");
+        return false;
+    }
+    if (!fileCreateFolder(folder)) {
+        LOG_ERROR("Cannot create %s", folder);
+        return false;
+    }
+
+    int written = snprintf(out, size, "%s\\%s", folder, INI_FILE_NAME);
+    return written > 0 && (size_t)written < size;
+}
+
 static inline char *strfmt(char *buff, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -42,7 +59,8 @@ static Rect rectFromString(const char *rectString) {
 }
 
 static bool iniFileExists() {
-    return fileExists(INI_FILE_NAME);
+    char path[MAX_PATH];
+    return configFilePath(path, sizeof(path)) && fileExists(path);
 }
 
 // Normalize path: collapse multiple backslashes into single ones
@@ -94,9 +112,12 @@ static void configLoadBinds(Config *config, dictionary *dict) {
 }
 
 static bool configLoad(Config *config) {
-    dictionary *dictionary = iniparser_load(INI_FILE_NAME);
+    char path[MAX_PATH];
+    if (!configFilePath(path, sizeof(path))) return false;
+
+    dictionary *dictionary = iniparser_load(path);
     if (!dictionary) {
-        LOG_ERROR("Cannot parse file: %s", INI_FILE_NAME);
+        LOG_ERROR("Cannot parse file: %s", path);
         return false;
     }
 
@@ -197,17 +218,20 @@ Config* configCreate() {
 }
 
 bool configSave(Config *config) {
-    FILE *ini = fopen(INI_FILE_NAME, "w+");
+    char path[MAX_PATH];
+    if (!configFilePath(path, sizeof(path))) return false;
+
+    FILE *ini = fopen(path, "w+");
     if (!ini) {
-        LOG_ERROR("Cannot create %s", INI_FILE_NAME);
+        LOG_ERROR("Cannot create %s", path);
         return false;
     }
 
     int ret = 0; 
-    dictionary *dictionary = iniparser_load(INI_FILE_NAME);
+    dictionary *dictionary = iniparser_load(path);
 
     if (!dictionary) {
-        LOG_ERROR("Cannot parse file: %s", INI_FILE_NAME);
+        LOG_ERROR("Cannot parse file: %s", path);
         return -1;
     }
 
