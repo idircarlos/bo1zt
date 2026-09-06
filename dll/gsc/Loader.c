@@ -21,7 +21,8 @@
 #define T5_Thread_Timer           0x004C06E0
 
 #define GSC_SIZE_BUF (1024 * 1024)
-#define GSC_SIZE_PATH 512
+#define GSC_SIZE_NAME 512
+#define GSC_SIZE_PATH 1024
 
 #define GSC_APP_FOLDER "bo1zt"
 #define GSC_APPDATA_SCRIPTS "gsc"
@@ -51,14 +52,14 @@ static Assign_Hotfix_t Assign_Hotfix = (Assign_Hotfix_t)T5_Assign_Hotfix;
 static Thread_Timer_t Thread_Timer = (Thread_Timer_t)T5_Thread_Timer;
 
 typedef struct GscScript {
-    char assetName[GSC_SIZE_PATH];
+    char assetName[GSC_SIZE_NAME];
     bool execMain;
     int handle;
 } GscScript;
 
 static int* initTrigger = (int*)T5_init_trigger;
-static char scriptDir[GSC_SIZE_PATH];
-static char dumpDir[GSC_SIZE_PATH];
+static char scriptDir[GSC_SIZE_NAME];
+static char dumpDir[GSC_SIZE_NAME];
 
 static GscScript scripts[GSC_SCRIPT_MAX];
 static size_t scriptCount = 0;
@@ -110,7 +111,7 @@ static bool fileExists(const char* path) {
 }
 
 static bool appFolderPath(char* out, size_t size, const char* subPath) {
-    char appData[GSC_SIZE_PATH];
+    char appData[GSC_SIZE_NAME];
     if (!GetEnvironmentVariableA("APPDATA", appData, sizeof(appData))) return false;
 
     for (char* p = appData; *p; ++p) {
@@ -259,7 +260,7 @@ static void linkScriptDir(const char* dir, const char* prefix) {
     do {
         if (strcmp(found.cFileName, ".") == 0 || strcmp(found.cFileName, "..") == 0) continue;
 
-        char assetName[GSC_SIZE_PATH];
+        char assetName[GSC_SIZE_NAME];
         char filePath[GSC_SIZE_PATH];
 
         snprintf(assetName, sizeof(assetName), "%s/%s", prefix, found.cFileName);
@@ -328,7 +329,7 @@ static int32_t __cdecl Scr_LoadScript_hk(int32_t scriptInstance, const uint8_t* 
 
     if (isFrontend()) return result;
 
-    char mapScript[GSC_SIZE_PATH];
+    char mapScript[GSC_SIZE_NAME];
     snprintf(mapScript, sizeof(mapScript), "maps/%s", currentMapName());
 
     if (strcmp(mapScript, (const char*)scriptName) == 0) {
